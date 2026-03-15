@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   MessageCircle,
   Repeat2,
@@ -241,13 +241,12 @@ function PostRow({ item }: { item: FeedItem }) {
           {/* Image */}
           {item.imageUrl && (
             <div className="mt-3 relative rounded-2xl overflow-hidden border border-gray-200 max-h-80">
-              <Image
-                src={item.imageUrl}
-                alt=""
-                width={600}
-                height={340}
-                className="w-full object-cover"
-              />
+              {item.imageUrl.startsWith('blob:') ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={item.imageUrl} alt="" className="w-full object-cover max-h-80" />
+              ) : (
+                <Image src={item.imageUrl} alt="" width={600} height={340} className="w-full object-cover" />
+              )}
             </div>
           )}
 
@@ -376,12 +375,20 @@ function PostRow({ item }: { item: FeedItem }) {
 
 type FeedTab = 'brands' | 'users';
 
-export default function RealTimeFeed() {
+interface RealTimeFeedProps {
+  showCreateModal?: boolean;
+  setShowCreateModal?: (show: boolean) => void;
+}
+
+export default function RealTimeFeed({ showCreateModal = false, setShowCreateModal }: RealTimeFeedProps) {
   const [activeTab, setActiveTab] = useState<FeedTab>('brands');
 
-  // — Create‑post state —
-  const [postText, setPostText] = useState('');
-  const [isPosting, setIsPosting] = useState(false);
+  // — Create-post modal state —
+  const [modalText, setModalText] = useState('');
+  const [modalImagePreview, setModalImagePreview] = useState<string | null>(null);
+  const [modalLocation, setModalLocation] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // — Mutable feed arrays —
   const [extraBrandItems, setExtraBrandItems] = useState<FeedItem[]>([]);
@@ -397,13 +404,34 @@ export default function RealTimeFeed() {
   ];
   const feed = activeTab === 'brands' ? brandFeed : userFeed;
 
-  // — Submit new post —
-  const handlePost = useCallback(async () => {
-    const text = postText.trim();
-    if (!text || isPosting) return;
+  // — Modal handlers —
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (modalImagePreview) URL.revokeObjectURL(modalImagePreview);
+      setModalImagePreview(URL.createObjectURL(file));
+    }
+  };
 
-    setIsPosting(true);
-    await new Promise((r) => setTimeout(r, 1000));
+  const removeImage = () => {
+    if (modalImagePreview) URL.revokeObjectURL(modalImagePreview);
+    setModalImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const openModal = () => setShowCreateModal?.(true);
+
+  const closeModal = () => {
+    setShowCreateModal?.(false);
+    setModalText('');
+    removeImage();
+    setModalLocation('');
+  };
+
+  const handleModalSubmit = async () => {
+    if (!modalText.trim() || !modalImagePreview || isSubmitting) return;
+    setIsSubmitting(true);
+    await new Promise((r) => setTimeout(r, 800));
 
     const newItem: FeedItem = {
       id: `new-${Date.now()}`,
@@ -412,23 +440,21 @@ export default function RealTimeFeed() {
       avatar: 'https://i.pravatar.cc/150?img=68',
       verified: false,
       timeAgo: 'เมื่อกี้',
-      content: text,
+      content: modalText.trim(),
+      imageUrl: modalImagePreview,
+      location: modalLocation.trim() || undefined,
       likes: 0,
       comments: 0,
       reposts: 0,
       shares: 0,
-      isBrand: activeTab === 'brands',
+      isBrand: false,
     };
 
-    if (activeTab === 'brands') {
-      setExtraBrandItems((prev) => [newItem, ...prev]);
-    } else {
-      setExtraUserItems((prev) => [newItem, ...prev]);
-    }
-
-    setPostText('');
-    setIsPosting(false);
-  }, [postText, isPosting, activeTab]);
+    setExtraUserItems((prev) => [newItem, ...prev]);
+    setActiveTab('users');
+    setIsSubmitting(false);
+    closeModal();
+  };
 
   return (
     <section className="bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 py-8 min-h-screen">
@@ -483,59 +509,21 @@ export default function RealTimeFeed() {
           </div>
         </div>
 
-        {/* ─── Create Post Box ──────────────────────────────────────── */}
-        <div className="mx-4 mb-6 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-4 flex gap-3">
-            <Image
-              src="https://i.pravatar.cc/150?img=68"
-              alt="You"
-              width={44}
-              height={44}
-              className="rounded-full flex-shrink-0 ring-2 ring-orange-200"
-            />
-            <div className="flex-1 min-w-0">
-              <textarea
-                value={postText}
-                onChange={(e) => setPostText(e.target.value)}
-                placeholder="แชร์ดีลเด็ดๆ ที่เจอ..."
-                rows={2}
-                className="w-full bg-transparent text-[15px] text-gray-800 placeholder:text-gray-400 resize-none focus:outline-none leading-relaxed"
-              />
-            </div>
-          </div>
-          {/* Toolbar */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50">
-            <div className="flex items-center gap-1">
-              <button type="button" className="p-2 rounded-full text-orange-400 hover:bg-orange-100 transition-colors">
-                <ImageIcon className="w-5 h-5" />
-              </button>
-              <button type="button" className="p-2 rounded-full text-orange-400 hover:bg-orange-100 transition-colors">
-                <MapPin className="w-5 h-5" />
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={handlePost}
-              disabled={!postText.trim() || isPosting}
-              className={`
-                px-6 py-2.5 rounded-full text-sm font-bold transition-all
-                ${postText.trim() && !isPosting
-                  ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:shadow-lg hover:shadow-orange-500/25 hover:scale-105'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }
-              `}
-            >
-              {isPosting ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  กำลังโพสต์...
-                </span>
-              ) : (
-                'โพสต์'
-              )}
-            </button>
-          </div>
-        </div>
+        {/* ─── Create Post Trigger ─────────────────────────────────── */}
+        <button
+          type="button"
+          onClick={openModal}
+          className="mx-4 mb-6 w-[calc(100%-2rem)] bg-white border-2 border-dashed border-gray-300 rounded-2xl p-4 hover:border-orange-400 hover:bg-orange-50/30 transition-all flex items-center gap-3"
+        >
+          <Image
+            src="https://i.pravatar.cc/150?img=68"
+            alt="You"
+            width={40}
+            height={40}
+            className="rounded-full ring-2 ring-orange-200 flex-shrink-0"
+          />
+          <span className="text-gray-400 text-[15px]">💬 แชร์ดีลดีๆ ที่เจอ...</span>
+        </button>
 
         {/* ─── Feed ─────────────────────────────────────────────────── */}
         <div className="mx-4 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden divide-y divide-gray-200">
@@ -552,6 +540,141 @@ export default function RealTimeFeed() {
         </div>
 
       </div>
+
+      {/* ═══ Create Post Modal ═══════════════════════════════════════ */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeModal}
+            aria-hidden
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">สร้างโพสต์ใหม่</h3>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+              {/* Author row */}
+              <div className="flex items-center gap-3">
+                <Image
+                  src="https://i.pravatar.cc/150?img=68"
+                  alt="You"
+                  width={40}
+                  height={40}
+                  className="rounded-full ring-2 ring-orange-200"
+                />
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">You</p>
+                  <p className="text-xs text-gray-400">@hunter_you</p>
+                </div>
+              </div>
+
+              {/* Text area */}
+              <textarea
+                value={modalText}
+                onChange={(e) => setModalText(e.target.value)}
+                placeholder="เล่ารายละเอียดดีลที่เจอ..."
+                rows={4}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[15px] text-gray-800 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent leading-relaxed"
+                autoFocus
+              />
+
+              {/* Image upload */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                {modalImagePreview ? (
+                  <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={modalImagePreview}
+                      alt="Preview"
+                      className="w-full max-h-64 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-36 border-2 border-dashed border-gray-300 rounded-xl hover:border-orange-400 hover:bg-orange-50/30 transition-all flex flex-col items-center justify-center gap-2 group"
+                  >
+                    <ImageIcon className="w-8 h-8 text-gray-300 group-hover:text-orange-400 transition-colors" />
+                    <span className="text-sm text-gray-400 group-hover:text-orange-500 font-medium">คลิกเพื่อเลือกรูปภาพ</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Location input */}
+              <div className="relative">
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-red-400" />
+                <input
+                  type="text"
+                  value={modalLocation}
+                  onChange={(e) => setModalLocation(e.target.value)}
+                  placeholder="ระบุสถานที่ร้านค้า เช่น Starbucks Siam Paragon"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/50">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 rounded-full text-orange-400 hover:bg-orange-100 transition-colors"
+                title="เพิ่มรูปภาพ"
+              >
+                <ImageIcon className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleModalSubmit}
+                disabled={!modalText.trim() || !modalImagePreview || isSubmitting}
+                className={`px-7 py-2.5 rounded-full text-sm font-bold transition-all ${
+                  modalText.trim() && modalImagePreview && !isSubmitting
+                    ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:shadow-lg hover:shadow-orange-500/25 hover:scale-105'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {isSubmitting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    กำลังโพสต์...
+                  </span>
+                ) : (
+                  'โพสต์'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

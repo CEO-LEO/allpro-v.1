@@ -8,7 +8,6 @@ import {
   ChatBubbleLeftRightIcon 
 } from "@heroicons/react/24/solid";
 import RealTimeFeed from "@/components/Community/RealTimeFeed";
-import CreatePostModal from "@/components/Community/CreatePostModal";
 import HunterFab from "@/components/Community/HunterFab";
 
 export default function CommunityPage() {
@@ -58,16 +57,13 @@ export default function CommunityPage() {
         </button>
 
         {/* Real-Time Feed */}
-        <RealTimeFeed />
+        <RealTimeFeed
+          showCreateModal={showCreatePost}
+          setShowCreateModal={setShowCreatePost}
+        />
 
         {/* Hunter FAB */}
         <HunterFab onClick={() => setShowCreatePost(true)} />
-
-        {/* Create Post Modal */}
-        <CreatePostModal 
-          isOpen={showCreatePost}
-          onClose={() => setShowCreatePost(false)} 
-        />
       </div>
     </div>
   );
