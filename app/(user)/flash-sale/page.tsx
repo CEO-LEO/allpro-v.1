@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowLeftIcon, ClockIcon, FireIcon, BoltIcon, XMarkIcon, ShoppingCartIcon, TicketIcon } from '@heroicons/react/24/solid';
+import { useRouter } from 'next/navigation';
+import { ArrowLeftIcon, ClockIcon, FireIcon, BoltIcon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/solid';
 import { MapPinIcon, HeartIcon } from '@heroicons/react/24/outline';
 
 // Flash sale item type
@@ -156,6 +157,7 @@ function DealDetailModal({
   onToggleFav: () => void;
   onClose: () => void;
 }) {
+  const router = useRouter();
   const pct = Math.round((deal.claimed / deal.total) * 100);
 
   return (
@@ -226,12 +228,11 @@ function DealDetailModal({
         </div>
 
         {/* Action footer */}
-        <div className="flex gap-3 px-5 py-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
-          <button className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-orange-500 text-orange-600 font-bold py-3 rounded-xl hover:bg-orange-50 transition-colors">
-            <TicketIcon className="w-5 h-5" />
-            เก็บโค้ดส่วนลด
-          </button>
-          <button className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition-all">
+        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
+          <button
+            onClick={() => router.push(`/checkout?dealId=${deal.id}&price=${deal.salePrice}`)}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all"
+          >
             <ShoppingCartIcon className="w-5 h-5" />
             ซื้อเลย
           </button>
