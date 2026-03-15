@@ -7,7 +7,8 @@ import {
   Activity,
   Database,
   Wifi,
-  RefreshCw
+  RefreshCw,
+  ChevronDown
 } from 'lucide-react';
 
 interface SyncStatus {
@@ -44,6 +45,7 @@ export default function CPAllSyncDisplay() {
     },
   ]);
 
+  const [isEcosystemExpanded, setIsEcosystemExpanded] = useState(true);
   const [totalSynced, setTotalSynced] = useState(17185);
   const [syncSpeed, setSyncSpeed] = useState(0);
 
@@ -104,8 +106,12 @@ export default function CPAllSyncDisplay() {
     <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
       {/* Compact Display */}
       <div className="bg-white shadow-2xl rounded-xl sm:rounded-2xl border-2 border-green-200 p-3 sm:p-4 w-72 sm:w-80">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Header — Clickable */}
+        <button
+          type="button"
+          onClick={() => setIsEcosystemExpanded(!isEcosystemExpanded)}
+          className="w-full flex items-center justify-between cursor-pointer mb-0"
+        >
           <div className="flex items-center gap-2">
             <div className="relative">
               <Radio className={`w-5 h-5 ${allConnected ? 'text-green-600' : 'text-red-600'}`} />
@@ -115,14 +121,23 @@ export default function CPAllSyncDisplay() {
             </div>
             <span className="font-bold text-gray-900 text-sm">CP ALL Ecosystem</span>
           </div>
-          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-            allConnected 
-              ? 'bg-green-100 text-green-700' 
-              : 'bg-red-100 text-red-700'
-          }`}>
-            {allConnected ? '✓ Live' : '⚠ Alert'}
-          </span>
-        </div>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+              allConnected 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {allConnected ? '✓ Live' : '⚠ Alert'}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isEcosystemExpanded ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        {/* Collapsible Body — CSS Grid technique */}
+        <div className={`grid transition-all duration-300 ease-in-out ${isEcosystemExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+        <div className="overflow-hidden">
+
+        <div className="mt-4" />
 
         {/* Sync Sources */}
         <div className="space-y-2 mb-4">
@@ -184,6 +199,9 @@ export default function CPAllSyncDisplay() {
           </div>
           <span className="text-gray-400">API v2.1</span>
         </div>
+
+        </div>{/* end overflow-hidden */}
+        </div>{/* end grid collapsible */}
 
         {/* Pulse Animation */}
         <div className="absolute -top-1 -right-1 w-3 h-3">
