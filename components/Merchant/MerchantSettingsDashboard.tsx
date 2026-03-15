@@ -6,7 +6,8 @@ import {
   Save, Loader2, CheckCircle, Upload, Camera, AlertTriangle, Trash2,
   X, ChevronRight, Lock, Eye, EyeOff, Smartphone, Mail,
   Zap, Clock, CreditCard as CardIcon, Building2, Languages,
-  Sun, Moon, Monitor, RotateCcw
+  Sun, Moon, Monitor, RotateCcw,
+  ChevronDown, ChevronUp, Network, Truck, Award, Wallet, PackageCheck
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -41,6 +42,11 @@ interface SettingsState {
   language: 'th' | 'en';
   timezone: string;
   autoCleanExpired: boolean;
+  // CP ALL Ecosystem
+  sevenDelivery: boolean;
+  allMember: boolean;
+  trueMoneyWallet: boolean;
+  smeShelfSync: boolean;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -54,6 +60,7 @@ const TABS: TabDef[] = [
   { id: 'payment',       label: 'การชำระเงิน',     icon: CreditCard,  description: 'วิธีการรับชำระเงิน' },
   { id: 'theme',         label: 'ธีมและรูปแบบ',    icon: Palette,     description: 'ปรับแต่งหน้าตาแอปพลิเคชัน' },
   { id: 'language',      label: 'ภาษาและภูมิภาค',  icon: Globe,       description: 'ภาษาและเขตเวลา' },
+  { id: 'ecosystem',     label: 'CP ALL Ecosystem', icon: Network,     description: 'เชื่อมต่อบริการจาก CP ALL Ecosystem' },
   { id: 'advanced',      label: 'ตั้งค่าขั้นสูง',   icon: Settings2,   description: 'การตั้งค่าขั้นสูงและโซนอันตราย' },
 ];
 
@@ -216,7 +223,14 @@ export default function MerchantSettingsDashboard() {
     language: 'th',
     timezone: 'Asia/Bangkok',
     autoCleanExpired: true,
+    // CP ALL Ecosystem
+    sevenDelivery: false,
+    allMember: true,
+    trueMoneyWallet: false,
+    smeShelfSync: false,
   });
+
+  const [isEcosystemExpanded, setIsEcosystemExpanded] = useState(true);
 
   const update = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -521,10 +535,197 @@ export default function MerchantSettingsDashboard() {
     </div>
   );
 
+  // ═══════════════════════════════════════════════════════════════════════
+  //  CP ALL ECOSYSTEM — Collapsible Accordion
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const ECOSYSTEM_SERVICES: {
+    key: keyof Pick<SettingsState, 'sevenDelivery' | 'allMember' | 'trueMoneyWallet' | 'smeShelfSync'>;
+    label: string;
+    description: string;
+    icon: React.ElementType;
+    color: string;
+    glowColor: string;
+  }[] = [
+    {
+      key: 'sevenDelivery',
+      label: '7-Delivery',
+      description: 'เปิดรับออเดอร์ผ่านระบบจัดส่งของ 7-Eleven ส่งตรงถึงหน้าบ้านลูกค้า',
+      icon: Truck,
+      color: 'text-orange-400',
+      glowColor: 'bg-orange-500/15 ring-orange-500/20',
+    },
+    {
+      key: 'allMember',
+      label: 'All Member',
+      description: 'อนุญาตให้ลูกค้าสะสมและใช้แต้ม All Member ที่ร้านนี้ได้',
+      icon: Award,
+      color: 'text-yellow-400',
+      glowColor: 'bg-yellow-500/15 ring-yellow-500/20',
+    },
+    {
+      key: 'trueMoneyWallet',
+      label: 'TrueMoney Wallet',
+      description: 'เปิดรับการชำระเงินอัตโนมัติผ่านแอป TrueMoney Wallet',
+      icon: Wallet,
+      color: 'text-orange-500',
+      glowColor: 'bg-orange-500/15 ring-orange-500/20',
+    },
+    {
+      key: 'smeShelfSync',
+      label: 'SME Shelf Sync',
+      description: 'ซิงค์ข้อมูลสต็อกสินค้ากับเชลฟ์ของเซเว่นสาขาใกล้เคียงแบบเรียลไทม์',
+      icon: PackageCheck,
+      color: 'text-lime-400',
+      glowColor: 'bg-lime-500/15 ring-lime-500/20',
+    },
+  ];
+
+  const renderEcosystemTab = () => {
+    const enabledCount = [settings.sevenDelivery, settings.allMember, settings.trueMoneyWallet, settings.smeShelfSync].filter(Boolean).length;
+
+    return (
+      <div className="space-y-8">
+        <SectionTitle>
+          <Network className="w-5 h-5 text-lime-400" /> การเชื่อมต่อ CP ALL Ecosystem
+        </SectionTitle>
+
+        {/* Collapsible Accordion Card */}
+        <div
+          className={`
+            rounded-2xl border-2 transition-all duration-300 overflow-hidden
+            ${isEcosystemExpanded
+              ? 'border-lime-500/50 bg-neutral-900/80 shadow-[0_0_32px_-8px_rgba(132,204,22,0.15)]'
+              : 'border-neutral-800/50 bg-neutral-900/60 hover:border-neutral-700'
+            }
+          `}
+        >
+          {/* Accordion Header */}
+          <button
+            type="button"
+            onClick={() => setIsEcosystemExpanded(!isEcosystemExpanded)}
+            className="w-full flex items-center justify-between gap-4 p-5 sm:p-6 text-left cursor-pointer group"
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div className={`
+                w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
+                transition-all duration-300
+                ${isEcosystemExpanded
+                  ? 'bg-lime-500/15 ring-1 ring-lime-500/30 shadow-[0_0_16px_-4px_rgba(132,204,22,0.3)]'
+                  : 'bg-neutral-800 ring-1 ring-neutral-700'
+                }
+              `}>
+                <Network className={`w-6 h-6 transition-colors duration-300 ${isEcosystemExpanded ? 'text-lime-400' : 'text-neutral-500'}`} />
+              </div>
+              <div className="min-w-0">
+                <p className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${isEcosystemExpanded ? 'text-lime-400' : 'text-neutral-200'}`}>
+                  CP ALL Ecosystem Services
+                </p>
+                <p className="text-xs sm:text-sm text-neutral-500 mt-0.5">
+                  เปิดใช้งาน {enabledCount} จาก {ECOSYSTEM_SERVICES.length} บริการ
+                </p>
+              </div>
+            </div>
+
+            <div className={`
+              flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center
+              transition-all duration-300
+              ${isEcosystemExpanded
+                ? 'bg-lime-500/10 text-lime-400'
+                : 'bg-neutral-800 text-neutral-500 group-hover:text-neutral-300'
+              }
+            `}>
+              {isEcosystemExpanded
+                ? <ChevronUp className="w-5 h-5" />
+                : <ChevronDown className="w-5 h-5" />
+              }
+            </div>
+          </button>
+
+          {/* Accordion Body — CSS transition */}
+          <div
+            className={`
+              transition-all duration-300 ease-in-out overflow-hidden
+              ${isEcosystemExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}
+            `}
+          >
+            <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-3">
+              {/* Subtle separator */}
+              <div className="border-t border-neutral-800/60 mb-4" />
+
+              {ECOSYSTEM_SERVICES.map((svc) => (
+                <div
+                  key={svc.key}
+                  className={`
+                    flex items-center gap-4 p-4 rounded-xl transition-all duration-200
+                    ${settings[svc.key]
+                      ? 'bg-neutral-800/50 ring-1 ring-neutral-700/50'
+                      : 'bg-neutral-800/20 hover:bg-neutral-800/30'
+                    }
+                  `}
+                >
+                  {/* Service Icon */}
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ring-1 ${svc.glowColor}`}>
+                    <svc.icon className={`w-5 h-5 ${svc.color}`} />
+                  </div>
+
+                  {/* Label & Description */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm sm:text-base font-medium text-neutral-200">{svc.label}</p>
+                    <p className="text-xs sm:text-sm text-neutral-500 mt-0.5 leading-relaxed">{svc.description}</p>
+                  </div>
+
+                  {/* Toggle */}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={settings[svc.key]}
+                    onClick={() => update(svc.key, !settings[svc.key])}
+                    className="flex-shrink-0 cursor-pointer"
+                  >
+                    <div
+                      className={`
+                        relative h-7 w-12 rounded-full transition-colors duration-200 ease-in-out
+                        ${settings[svc.key] ? 'bg-lime-500 shadow-[0_0_12px_-2px_rgba(132,204,22,0.5)]' : 'bg-neutral-700'}
+                      `}
+                    >
+                      <span
+                        className={`
+                          pointer-events-none inline-block rounded-full bg-white shadow-lg
+                          absolute top-[3px] transition-transform duration-200 ease-in-out
+                          ${settings[svc.key] ? 'translate-x-[22px]' : 'translate-x-[3px]'}
+                        `}
+                        style={{ width: 22, height: 22 }}
+                      />
+                    </div>
+                  </button>
+                </div>
+              ))}
+
+              {/* Status summary */}
+              <div className="mt-4 flex items-center gap-2.5 text-sm text-neutral-500 px-1 pt-2">
+                <Network className="w-4 h-4" />
+                <span>
+                  {enabledCount === 0
+                    ? 'ยังไม่ได้เปิดใช้งานบริการใดๆ'
+                    : enabledCount === ECOSYSTEM_SERVICES.length
+                      ? 'เปิดใช้งานครบทุกบริการแล้ว!'
+                      : `กำลังใช้งาน ${enabledCount} บริการจาก CP ALL Ecosystem`
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const tabContent: Record<string, () => React.ReactNode> = {
     profile: renderProfileTab, notifications: renderNotificationsTab,
     security: renderSecurityTab, payment: renderPaymentTab,
-    theme: renderThemeTab, language: renderLanguageTab, advanced: renderAdvancedTab,
+    theme: renderThemeTab, language: renderLanguageTab,
+    ecosystem: renderEcosystemTab, advanced: renderAdvancedTab,
   };
 
   // ═══════════════════════════════════════════════════════════════════════
