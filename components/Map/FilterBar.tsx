@@ -1,0 +1,64 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { Store as StoreIcon, Coffee, ShoppingBag, Shirt, Sparkles } from 'lucide-react';
+import { ReactNode } from 'react';
+
+export type FilterCategory = 'all' | '7-Eleven' | 'Lotus' | 'coffee' | 'food' | 'fashion';
+
+interface FilterBarProps {
+  activeFilter: FilterCategory;
+  onFilterChange: (filter: FilterCategory) => void;
+}
+
+const filters: { id: FilterCategory; label: string; icon: ReactNode }[] = [
+  { id: 'all', label: 'All', icon: <Sparkles className="w-4 h-4" /> },
+  { id: '7-Eleven', label: '7-Eleven', icon: <StoreIcon className="w-4 h-4" /> },
+  { id: 'Lotus', label: "Lotus's", icon: <ShoppingBag className="w-4 h-4" /> },
+  { id: 'coffee', label: 'Coffee', icon: <Coffee className="w-4 h-4" /> },
+  { id: 'food', label: 'Food', icon: <ShoppingBag className="w-4 h-4" /> },
+  { id: 'fashion', label: 'Fashion', icon: <Shirt className="w-4 h-4" /> },
+];
+
+export default function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
+  return (
+    <div className="absolute top-4 left-0 right-0 z-[1000] px-4">
+      <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-lg p-2 max-w-full overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 min-w-max">
+          {filters.map((filter) => {
+            const isActive = activeFilter === filter.id;
+            return (
+              <motion.button
+                key={filter.id}
+                onClick={() => onFilterChange(filter.id)}
+                className={`
+                  flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+                  transition-all duration-200 whitespace-nowrap
+                  ${isActive 
+                    ? 'bg-red-600 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }
+                `}
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+              >
+                {filter.icon}
+                <span>{filter.label}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+    </div>
+  );
+}

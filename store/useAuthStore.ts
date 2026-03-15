@@ -1,0 +1,198 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+export type UserRole = 'USER' | 'MERCHANT' | null;
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+  phone?: string;
+  createdAt?: string;
+  // User specific - Gamification
+  xp?: number; // Experience points
+  level?: number; // Current level (derived from xp)
+  coins?: number; // Reward currency
+  points?: number; // Legacy field (for compatibility)
+  // Merchant specific
+  shopName?: string;
+  shopLogo?: string;
+  verified?: boolean;
+  isPro?: boolean;
+}
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  
+  // Actions
+  login: (user: User) => void;
+  loginAsUser: () => void; // Quick login as customer
+  loginAsMerchant: () => void; // Quick login as merchant
+  logout: () => void;
+  updateUser: (updates: Partial<User>) => void;
+  updateProfile: (updates: { name?: string; phone?: string }) => void;
+  switchRole: (role: UserRole) => void; // For demo/testing
+  
+  // Gamification Actions
+  addXp: (amount: number) => void;
+  addCoins: (amount: number) => void;
+  redeemReward: (cost: number) => boolean; // Returns success
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+
+      login: (user) => set({ user, isAuthenticated: true }),
+      
+      loginAsUser: () => set({
+        user: {
+          id: `user-${Date.now()}`,
+          name: 'Hunter 007',
+          email: 'hunter007@allpro.com',
+          role: 'USER',
+          avatar: 'https://i.pravatar.cc/150?img=12',
+          phone: '081-234-5678',
+          createdAt: new Date().toISOString(),
+          xp: 0,
+          level: 1,
+          coins: 100,
+          points: 0
+        },
+        isAuthenticated: true
+      }),
+      
+      loginAsMerchant: () => set({
+        user: {
+          id: `merchant-${Date.now()}`,
+          name: 'Siam Store',
+          email: 'siam@store.com',
+          role: 'MERCHANT',
+          avatar: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=150&h=150&fit=crop',
+          phone: '02-123-4567',
+          shopName: 'Siam Store',
+          shopLogo: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=100&h=100&fit=crop',
+          verified: true
+        },
+        isAuthenticated: true
+      }),
+      
+      logout: () => set({ user: null, isAuthenticated: false }),
+      
+      updateUser: (updates) => set((state) => ({
+        user: state.user ? { ...state.user, ...updates } : null
+      })),
+      
+      updateProfile: (updates) => set((state) => ({
+        user: state.user ? { ...state.user, ...updates } : null
+      })),
+      
+      switchRole: (role) => set((state) => {
+        if (!state.user) return state;
+        
+        // Switch between USER and MERCHANT with appropriate defaults
+        const updates: Partial<User> = { role };
+        
+        if (role === 'MERCHANT') {
+          updates.shopName = state.user.shopName || 'My Shop';
+          updates.shopLogo = state.user.shopLogo || 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=100&h=100&fit=crop';
+          updates.verified = state.user.verified ?? false;
+        } else if (role === 'USER') {
+          updates.level = state.user.level || 1;
+          updates.xp = state.user.xp || 0;
+          updates.coins = state.user.coins || 100;
+        }
+        
+        return {
+          user: { ...state.user, ...updates }
+        };
+      }),
+
+      // Gamification: Add XP and calculate level
+      addXp: (amount) => set((state) => {
+        if (!state.user || state.user.role !== 'USER') return state;
+        
+        const newXp = (state.user.xp || 0) + amount;
+        const newLevel = Math.floor(newXp / 100) + 1;
+        const oldLevel = Math.floor((state.user.xp || 0) / 100) + 1;
+        
+        // Show level up toast if applicable
+        if (newLevel > oldLevel) {
+          // We'll dispatch a custom event for the UI to show the toast
+          const event = new CustomEvent('levelUp', { detail: { level: newLevel } });
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(event);
+          }
+        }
+        
+        // Show XP gained notification
+        if (typeof window !== 'undefined') {
+          const xpEvent = new CustomEvent('xpGained', { detail: { amount, newXp } });
+          window.dispatchEvent(xpEvent);
+        }
+        
+        return {
+          user: {
+            ...state.user,
+            xp: newXp,
+            level: newLevel
+          }
+        };
+      }),
+
+      // Gamification: Add coins
+      addCoins: (amount) => set((state) => {
+        if (!state.user || state.user.role !== 'USER') return state;
+        
+        const newCoins = (state.user.coins || 0) + amount;
+        
+        // Show coins gained notification
+        if (typeof window !== 'undefined') {
+          const coinsEvent = new CustomEvent('coinsGained', { detail: { amount, newCoins } });
+          window.dispatchEvent(coinsEvent);
+        }
+        
+        return {
+          user: {
+            ...state.user,
+            coins: newCoins
+          }
+        };
+      }),
+
+      // Gamification: Redeem reward (deduct coins)
+      redeemReward: (cost) => {
+        let success = false;
+        set((state) => {
+          if (!state.user || state.user.role !== 'USER') return state;
+          
+          const currentCoins = state.user.coins || 0;
+          if (currentCoins >= cost) {
+            success = true;
+            return {
+              user: {
+                ...state.user,
+                coins: currentCoins - cost
+              }
+            };
+          }
+          
+          return state;
+        });
+        return success;
+      }
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated
+      })
+    }
+  )
+);

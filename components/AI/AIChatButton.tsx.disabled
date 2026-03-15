@@ -1,0 +1,6 @@
+'use client';
+
+// Simple fallback component when features are disabled
+export default function AIChatButton() {
+  return null; // Temporarily disabled due to TypeScript errors
+}

@@ -1,0 +1,121 @@
+{
+  "search_intent_trends": [
+    { 
+      "keyword": "นมโปรตีน", 
+      "search_volume": 4500, 
+      "growth": 85, 
+      "top_area": "อารีย์/สีลม",
+      "demographic": "25-35 ปี, ออฟฟิศ",
+      "peak_time": "07:00-09:00"
+    },
+    { 
+      "keyword": "อาหารแช่แข็ง", 
+      "search_volume": 3200, 
+      "growth": 40, 
+      "top_area": "สยาม",
+      "demographic": "30-45 ปี, ครอบครัว",
+      "peak_time": "18:00-20:00"
+    },
+    { 
+      "keyword": "ครีมกันแดด", 
+      "search_volume": 2800, 
+      "growth": 120, 
+      "top_area": "จตุจักร",
+      "demographic": "18-30 ปี, นักศึกษา",
+      "peak_time": "10:00-14:00"
+    },
+    { 
+      "keyword": "กาแฟ 1 แถม 1", 
+      "search_volume": 8900, 
+      "growth": 15, 
+      "top_area": "ทั่วกรุงเทพฯ",
+      "demographic": "ทุกช่วงวัย",
+      "peak_time": "06:00-09:00"
+    },
+    {
+      "keyword": "ข้าวกล่อง",
+      "search_volume": 6200,
+      "growth": 28,
+      "top_area": "สาทร/สีลม",
+      "demographic": "25-40 ปี, ออฟฟิศ",
+      "peak_time": "11:00-13:00"
+    },
+    {
+      "keyword": "ของว่าง",
+      "search_volume": 5400,
+      "growth": 55,
+      "top_area": "ทองหล่อ/เอกมัย",
+      "demographic": "20-35 ปี, Lifestyle",
+      "peak_time": "15:00-17:00"
+    }
+  ],
+  "peak_engagement_hours": [
+    { "hour": "06:00", "active_users": 850, "top_category": "กาแฟ/เครื่องดื่ม", "conversion_rate": 3.2 },
+    { "hour": "07:00", "active_users": 1200, "top_category": "อาหารเช้า", "conversion_rate": 4.1 },
+    { "hour": "08:00", "active_users": 1850, "top_category": "อาหารเช้า", "conversion_rate": 5.8 },
+    { "hour": "09:00", "active_users": 2100, "top_category": "กาแฟ/ขนม", "conversion_rate": 6.2 },
+    { "hour": "10:00", "active_users": 1600, "top_category": "ของใช้", "conversion_rate": 3.9 },
+    { "hour": "11:00", "active_users": 3200, "top_category": "อาหารกลางวัน", "conversion_rate": 7.5 },
+    { "hour": "12:00", "active_users": 4500, "top_category": "อาหารกลางวัน", "conversion_rate": 9.8 },
+    { "hour": "13:00", "active_users": 3800, "top_category": "อาหารกลางวัน", "conversion_rate": 8.2 },
+    { "hour": "14:00", "active_users": 2400, "top_category": "เครื่องดื่ม", "conversion_rate": 4.5 },
+    { "hour": "15:00", "active_users": 2900, "top_category": "ของว่าง", "conversion_rate": 5.1 },
+    { "hour": "16:00", "active_users": 3500, "top_category": "ของว่าง", "conversion_rate": 6.8 },
+    { "hour": "17:00", "active_users": 6800, "top_category": "ขนม/เบเกอรี่", "conversion_rate": 10.5 },
+    { "hour": "18:00", "active_users": 8200, "top_category": "อาหารเย็น", "conversion_rate": 12.3 },
+    { "hour": "19:00", "active_users": 8900, "top_category": "อาหารเย็น", "conversion_rate": 11.8 },
+    { "hour": "20:00", "active_users": 9200, "top_category": "Flash Sale", "conversion_rate": 13.5 },
+    { "hour": "21:00", "active_users": 7200, "top_category": "ของหวาน", "conversion_rate": 9.2 },
+    { "hour": "22:00", "active_users": 4100, "top_category": "ของใช้", "conversion_rate": 5.8 },
+    { "hour": "23:00", "active_users": 2200, "top_category": "ของใช้", "conversion_rate": 3.4 }
+  ],
+  "predictive_analysis": {
+    "next_week_prediction": "สินค้ากลุ่ม Ready-to-eat จะเติบโตขึ้น 35% เนื่องจากสภาพอากาศมีฝนตกหนัก คนเลือกซื้อของใกล้บ้านมากกว่าเดินทาง",
+    "recommended_promo": "Bundle Set: อาหารกล่อง + เครื่องดื่ม (เน้นร้าน 7-Eleven และ Lotus's Go Fresh)",
+    "confidence_score": 89,
+    "weather_impact": "ฝนตกหนัก 3 วันติดต่อกัน → เพิ่มยอดค้นหา Food Delivery +42%",
+    "seasonal_trend": "เข้าสู่ Valentine's Week - คำค้นหา 'ช็อกโกแลต', 'ของขวัญ' เพิ่มขึ้น 180%"
+  },
+  "seo_roi_metrics": {
+    "organic_reach": 1500,
+    "sponsored_reach": 8500,
+    "conversion_rate_organic": 2.8,
+    "conversion_rate_sponsored": 12.4,
+    "avg_revenue_per_click_organic": 45,
+    "avg_revenue_per_click_sponsored": 128,
+    "roi_multiplier": 4.4
+  },
+  "competitor_intelligence": [
+    {
+      "competitor": "7-Eleven สาขาอารีย์",
+      "top_promo": "กาแฟ 2 แก้ว 50 บาท",
+      "engagement": 1850,
+      "market_share": 28.5
+    },
+    {
+      "competitor": "Lotus's Go Fresh",
+      "top_promo": "ข้าวกล่องลด 20%",
+      "engagement": 1420,
+      "market_share": 22.3
+    },
+    {
+      "competitor": "ร้านอิสระ - คาเฟ่อารีย์",
+      "top_promo": "ชา 1 แถม 1",
+      "engagement": 680,
+      "market_share": 8.7
+    }
+  ],
+  "brand_insights": {
+    "cp_all_advantage": {
+      "total_branches": 17185,
+      "daily_footfall": 12500000,
+      "data_accuracy": 99.2,
+      "real_time_sync": true
+    },
+    "market_penetration": {
+      "bangkok": 89.5,
+      "upcountry": 76.3,
+      "rural": 45.2
+    }
+  }
+}

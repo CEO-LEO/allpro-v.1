@@ -1,0 +1,824 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
+import { motion } from 'framer-motion';
+import {
+  Store,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Clock,
+  Camera,
+  Save,
+  ArrowLeft,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+} from 'lucide-react';
+import Image from 'next/image';
+
+interface MerchantProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  description: string;
+  logo_url: string;
+  cover_image_url: string;
+  business_type: string;
+  operating_hours: string;
+  website: string;
+  line_id: string;
+  facebook_url: string;
+  notification_enabled: boolean;
+}
+
+export default function MerchantSettingsPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security'>('profile');
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+
+  const [profile, setProfile] = useState<MerchantProfile>({
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    description: '',
+    logo_url: '',
+    cover_image_url: '',
+    business_type: 'restaurant',
+    operating_hours: '',
+    website: '',
+    line_id: '',
+    facebook_url: '',
+    notification_enabled: true,
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchMerchantProfile();
+  }, []);
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  const fetchMerchantProfile = async () => {
+    try {
+      setLoading(true);
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        router.push('/login');
+        return;
+      }
+
+      // ดึงข้อมูล merchant จาก Supabase
+      const { data: merchant, error } = await supabase
+        .from('merchants')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        // ถ้ายังไม่มีข้อมูล merchant ให้ใช้ข้อมูลเริ่มต้น
+        if (error.code === 'PGRST116') {
+          setProfile((prev) => ({
+            ...prev,
+            email: user.email || '',
+          }));
+        } else {
+          console.error('Error fetching merchant:', error);
+          showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
+        }
+      } else if (merchant) {
+        setProfile({
+          id: merchant.id || '',
+          name: merchant.name || '',
+          email: merchant.email || user.email || '',
+          phone: merchant.phone || '',
+          address: merchant.address || '',
+          description: merchant.description || '',
+          logo_url: merchant.logo_url || '',
+          cover_image_url: merchant.cover_image_url || '',
+          business_type: merchant.business_type || 'restaurant',
+          operating_hours: merchant.operating_hours || '',
+          website: merchant.website || '',
+          line_id: merchant.line_id || '',
+          facebook_url: merchant.facebook_url || '',
+          notification_enabled: merchant.notification_enabled ?? true,
+        });
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ show: true, message, type });
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!profile.name.trim()) {
+      newErrors.name = 'กรุณากรอกชื่อร้าน';
+    }
+    if (!profile.phone.trim()) {
+      newErrors.phone = 'กรุณากรอกเบอร์โทรศัพท์';
+    } else if (!/^0[0-9]{8,9}$/.test(profile.phone.replace(/-/g, ''))) {
+      newErrors.phone = 'เบอร์โทรศัพท์ไม่ถูกต้อง';
+    }
+    if (profile.website && !/^https?:\/\/.+/.test(profile.website)) {
+      newErrors.website = 'URL ไม่ถูกต้อง (ต้องเริ่มด้วย http:// หรือ https://)';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      showToast('กรุณาตรวจสอบข้อมูลให้ถูกต้อง', 'error');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      const merchantData = {
+        user_id: user.id,
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        address: profile.address,
+        description: profile.description,
+        logo_url: profile.logo_url,
+        cover_image_url: profile.cover_image_url,
+        business_type: profile.business_type,
+        operating_hours: profile.operating_hours,
+        website: profile.website,
+        line_id: profile.line_id,
+        facebook_url: profile.facebook_url,
+        notification_enabled: profile.notification_enabled,
+        updated_at: new Date().toISOString(),
+      };
+
+      let error;
+
+      if (profile.id) {
+        // Update
+        const result = await supabase
+          .from('merchants')
+          .update(merchantData)
+          .eq('id', profile.id);
+        error = result.error;
+      } else {
+        // Insert
+        const result = await supabase
+          .from('merchants')
+          .insert(merchantData)
+          .select()
+          .single();
+        error = result.error;
+        if (result.data) {
+          setProfile((prev) => ({ ...prev, id: result.data.id }));
+        }
+      }
+
+      if (error) {
+        console.error('Save error:', error);
+        showToast('บันทึกข้อมูลไม่สำเร็จ: ' + error.message, 'error');
+      } else {
+        showToast('บันทึกข้อมูลสำเร็จ!', 'success');
+      }
+    } catch (err) {
+      console.error('Error saving:', err);
+      showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'logo_url' | 'cover_image_url'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // ตรวจสอบขนาดไฟล์ (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('ไฟล์ต้องมีขนาดไม่เกิน 2MB', 'error');
+      return;
+    }
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${field}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('merchant-images')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        showToast('อัปโหลดรูปไม่สำเร็จ', 'error');
+        return;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('merchant-images').getPublicUrl(fileName);
+
+      setProfile((prev) => ({ ...prev, [field]: publicUrl }));
+      showToast('อัปโหลดรูปสำเร็จ', 'success');
+    } catch (err) {
+      console.error('Upload error:', err);
+      showToast('เกิดข้อผิดพลาดในการอัปโหลด', 'error');
+    }
+  };
+
+  const handleChange = (field: keyof MerchantProfile, value: string | boolean) => {
+    setProfile((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user types
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <Loader2 className="w-10 h-10 text-orange-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 font-medium">กำลังโหลดข้อมูล...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Toast Notification */}
+      {toast.show && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${
+            toast.type === 'success'
+              ? 'bg-green-500 text-white'
+              : 'bg-red-500 text-white'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <AlertCircle className="w-5 h-5" />
+          )}
+          <span className="font-medium">{toast.message}</span>
+        </motion.div>
+      )}
+
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.back()}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">ตั้งค่าร้านค้า</h1>
+                <p className="text-sm text-gray-500">จัดการข้อมูลและการตั้งค่าร้านของคุณ</p>
+              </div>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white rounded-lg 
+                       hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed 
+                       transition-colors font-medium shadow-sm"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6">
+          {[
+            { key: 'profile' as const, label: 'ข้อมูลร้าน', icon: Store },
+            { key: 'notifications' as const, label: 'การแจ้งเตือน', icon: Bell },
+            { key: 'security' as const, label: 'ความปลอดภัย', icon: Shield },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.key
+                  ? 'bg-white text-orange-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* Cover Image */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="relative h-48 bg-gradient-to-r from-orange-400 to-orange-600">
+                {profile.cover_image_url && (
+                  <Image
+                    src={profile.cover_image_url}
+                    alt="Cover"
+                    fill
+                    className="object-cover"
+                  />
+                )}
+                <label className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-2 
+                               bg-black/50 text-white rounded-lg cursor-pointer hover:bg-black/70 
+                               transition-colors text-sm">
+                  <Camera className="w-4 h-4" />
+                  เปลี่ยนปก
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e, 'cover_image_url')}
+                  />
+                </label>
+              </div>
+
+              {/* Logo */}
+              <div className="px-6 pb-6">
+                <div className="flex items-end gap-4 -mt-10">
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-gray-200 rounded-xl border-4 border-white shadow-md 
+                                  overflow-hidden flex items-center justify-center">
+                      {profile.logo_url ? (
+                        <Image
+                          src={profile.logo_url}
+                          alt="Logo"
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Store className="w-10 h-10 text-gray-400" />
+                      )}
+                    </div>
+                    <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-orange-500 text-white 
+                                   rounded-full flex items-center justify-center cursor-pointer 
+                                   hover:bg-orange-600 transition-colors shadow-md">
+                      <Camera className="w-4 h-4" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageUpload(e, 'logo_url')}
+                      />
+                    </label>
+                  </div>
+                  <div className="pb-1">
+                    <h2 className="text-lg font-bold text-gray-900">
+                      {profile.name || 'ชื่อร้านค้า'}
+                    </h2>
+                    <p className="text-sm text-gray-500">{profile.business_type}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Basic Info */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-orange-500" />
+                ข้อมูลพื้นฐาน
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ชื่อร้าน */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ชื่อร้าน <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={profile.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      placeholder="กรอกชื่อร้าน"
+                      className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 
+                               focus:border-orange-500 outline-none transition-all ${
+                                 errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                               }`}
+                    />
+                  </div>
+                  {errors.name && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" /> {errors.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* อีเมล */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      value={profile.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      placeholder="email@example.com"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg 
+                               focus:ring-2 focus:ring-orange-500 focus:border-orange-500 
+                               outline-none transition-all bg-gray-50"
+                      readOnly
+                    />
+                  </div>
+                  <p className="text-gray-400 text-xs mt-1">อีเมลไม่สามารถเปลี่ยนได้</p>
+                </div>
+
+                {/* เบอร์โทร */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="tel"
+                      value={profile.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      placeholder="0xx-xxx-xxxx"
+                      className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 
+                               focus:border-orange-500 outline-none transition-all ${
+                                 errors.phone ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                               }`}
+                    />
+                  </div>
+                  {errors.phone && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" /> {errors.phone}
+                    </p>
+                  )}
+                </div>
+
+                {/* ที่อยู่ */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <textarea
+                      value={profile.address}
+                      onChange={(e) => handleChange('address', e.target.value)}
+                      placeholder="กรอกที่อยู่ร้านค้า"
+                      rows={3}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg 
+                               focus:ring-2 focus:ring-orange-500 focus:border-orange-500 
+                               outline-none transition-all resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* คำอธิบาย */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    คำอธิบายร้าน
+                  </label>
+                  <textarea
+                    value={profile.description}
+                    onChange={(e) => handleChange('description', e.target.value)}
+                    placeholder="บอกเล่าเกี่ยวกับร้านของคุณ..."
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                             focus:ring-2 focus:ring-orange-500 focus:border-orange-500 
+                             outline-none transition-all resize-none"
+                    maxLength={500}
+                  />
+                  <p className="text-gray-400 text-xs mt-1 text-right">
+                    {profile.description.length}/500
+                  </p>
+                </div>
+
+                {/* ประเภทธุรกิจ */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ประเภทธุรกิจ
+                  </label>
+                  <select
+                    value={profile.business_type}
+                    onChange={(e) => handleChange('business_type', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                             focus:ring-2 focus:ring-orange-500 focus:border-orange-500 
+                             outline-none transition-all"
+                  >
+                    <option value="restaurant">ร้านอาหาร</option>
+                    <option value="cafe">คาเฟ่</option>
+                    <option value="retail">ร้านค้าปลีก</option>
+                    <option value="beauty">ความงาม/สปา</option>
+                    <option value="fitness">ฟิตเนส/กีฬา</option>
+                    <option value="education">การศึกษา</option>
+                    <option value="service">บริการทั่วไป</option>
+                    <option value="other">อื่นๆ</option>
+                  </select>
+                </div>
+
+                {/* เวลาเปิด-ปิด */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    เวลาทำการ
+                  </label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={profile.operating_hours}
+                      onChange={(e) => handleChange('operating_hours', e.target.value)}
+                      placeholder="เช่น จ-ศ 09:00-18:00"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg 
+                               focus:ring-2 focus:ring-orange-500 focus:border-orange-500 
+                               outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Social & Links */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-orange-500" />
+                ช่องทางติดต่อ
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">เว็บไซต์</label>
+                  <input
+                    type="url"
+                    value={profile.website}
+                    onChange={(e) => handleChange('website', e.target.value)}
+                    placeholder="https://www.example.com"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 
+                             focus:border-orange-500 outline-none transition-all ${
+                               errors.website ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                             }`}
+                  />
+                  {errors.website && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" /> {errors.website}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">LINE ID</label>
+                  <input
+                    type="text"
+                    value={profile.line_id}
+                    onChange={(e) => handleChange('line_id', e.target.value)}
+                    placeholder="@your-line-id"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                             focus:ring-2 focus:ring-orange-500 focus:border-orange-500 
+                             outline-none transition-all"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Facebook</label>
+                  <input
+                    type="url"
+                    value={profile.facebook_url}
+                    onChange={(e) => handleChange('facebook_url', e.target.value)}
+                    placeholder="https://www.facebook.com/your-page"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                             focus:ring-2 focus:ring-orange-500 focus:border-orange-500 
+                             outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Notifications Tab */}
+        {activeTab === 'notifications' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl border border-gray-200 p-6"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <Bell className="w-5 h-5 text-orange-500" />
+              การแจ้งเตือน
+            </h3>
+
+            <div className="space-y-4">
+              {[
+                {
+                  title: 'แจ้งเตือนโปรโมชั่นใหม่',
+                  desc: 'รับการแจ้งเตือนเมื่อมีคนสนใจโปรโมชั่นของคุณ',
+                  key: 'notification_enabled',
+                },
+                {
+                  title: 'แจ้งเตือนรีวิว',
+                  desc: 'รับการแจ้งเตือนเมื่อมีรีวิวใหม่',
+                  key: 'review_notification',
+                },
+                {
+                  title: 'แจ้งเตือนข่าวสาร',
+                  desc: 'รับข่าวสารและอัพเดทจาก All Pro',
+                  key: 'news_notification',
+                },
+              ].map((item) => (
+                <div
+                  key={item.key}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{item.title}</p>
+                    <p className="text-sm text-gray-500">{item.desc}</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={profile.notification_enabled}
+                      onChange={(e) =>
+                        handleChange('notification_enabled', e.target.checked)
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer 
+                                  peer-checked:after:translate-x-full peer-checked:bg-orange-500 
+                                  after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
+                                  after:bg-white after:rounded-full after:h-5 after:w-5 
+                                  after:transition-all" />
+                  </label>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Security Tab */}
+        {activeTab === 'security' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-orange-500" />
+                ความปลอดภัย
+              </h3>
+
+              <div className="space-y-4">
+                <button
+                  onClick={async () => {
+                    const { error } = await supabase.auth.resetPasswordForEmail(
+                      profile.email,
+                      { redirectTo: `${window.location.origin}/reset-password` }
+                    );
+                    if (error) {
+                      showToast('ส่งอีเมลไม่สำเร็จ: ' + error.message, 'error');
+                    } else {
+                      showToast('ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้ว', 'success');
+                    }
+                  }}
+                  className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg 
+                           hover:bg-gray-100 transition-colors text-left"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">เปลี่ยนรหัสผ่าน</p>
+                    <p className="text-sm text-gray-500">ส่งลิงก์รีเซ็ตรหัสผ่านไปทางอีเมล</p>
+                  </div>
+                  <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+                      await supabase.auth.signOut();
+                      router.push('/');
+                    }
+                  }}
+                  className="w-full flex items-center justify-between p-4 bg-red-50 rounded-lg 
+                           hover:bg-red-100 transition-colors text-left"
+                >
+                  <div>
+                    <p className="font-medium text-red-600">ออกจากระบบ</p>
+                    <p className="text-sm text-red-400">ออกจากระบบบัญชีนี้</p>
+                  </div>
+                  <ArrowLeft className="w-5 h-5 text-red-400 rotate-180" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}# คำสั่ง Git สำหรับ Push โปรเจ็กต์
+
+# 1. เข้าไปในโฟลเดอร์โปรเจ็กต์
+cd "c:\all pro\all-promotion"
+
+# 2. กำหนดค่า Git (ครั้งแรกเท่านั้น)
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+
+# 3. สร้าง Git repository
+git init
+
+# 4. เพิ่มไฟล์ทั้งหมด
+git add .
+
+# 5. Commit
+git commit -m "🎉 Initial commit: All Promotion MVP v1.0"
+
+# 6. สร้าง repo ใหม่บน GitHub (ทำผ่าน browser):
+#    - ไปที่ https://github.com/new
+#    - ตั้งชื่อ: all-promotion
+#    - เลือก Public/Private
+#    - อย่าเลือก "Initialize with README"
+#    - คลิก "Create repository"
+
+# 7. เชื่อมต่อกับ GitHub
+git remote add origin https://github.com/[your-username]/all-promotion.git
+
+# 8. Push ขึ้น GitHub
+git branch -M main
+git push -u origin main
+
+# เสร็จแล้ว! 🚀

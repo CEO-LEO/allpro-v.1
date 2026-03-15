@@ -1,0 +1,417 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
+import { Coins, Sparkles, Gift, AlertCircle, Check, ShoppingBag, TrendingUp, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
+import Link from 'next/link';
+import LoginModal from '@/components/Auth/LoginModal';
+
+interface RewardItem {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  pointsCost: number;
+  featured?: boolean;
+  image?: string;
+}
+
+const REWARDS_CATALOG: RewardItem[] = [
+  { id: 'free-coffee', name: 'Free Coffee ☕', description: 'Get a free regular coffee at any Seven Eleven', emoji: '☕', pointsCost: 50, featured: true },
+  { id: 'free-coke', name: 'Free Coke 🥤', description: 'Get a free Coca-Cola 350ml at any 7-Eleven', emoji: '🥤', pointsCost: 40 },
+  { id: 'movie-ticket', name: 'Movie Ticket 🎬', description: 'Get one free movie ticket at major cinema chains', emoji: '🎬', pointsCost: 150, featured: true },
+  { id: '100-baht-voucher', name: '100 Baht Voucher 💳', description: 'Use 100 baht on any online shopping platform', emoji: '💳', pointsCost: 100 },
+  { id: 'pizza-voucher', name: 'Pizza Voucher 🍕', description: 'Get 200 baht off on any pizza order', emoji: '🍕', pointsCost: 80 },
+  { id: 'starbucks-drink', name: 'Starbucks Beverage ⭐', description: 'Redeem any beverage at Starbucks (up to 200 baht)', emoji: '⭐', pointsCost: 120, featured: true },
+  { id: 'massage-voucher', name: 'Massage Voucher 💆', description: '30-minute massage at any Thai spa partner', emoji: '💆', pointsCost: 200 },
+  { id: 'netflix-month', name: 'Netflix Month 🎥', description: 'One month free Netflix subscription', emoji: '🎥', pointsCost: 250, featured: true },
+  { id: 'makeup-set', name: 'Makeup Set 💄', description: 'Premium makeup set from top brands', emoji: '💄', pointsCost: 180 },
+  { id: 'phone-credit', name: 'Phone Credit 📱', description: '200 baht mobile credit for any carrier', emoji: '📱', pointsCost: 100 },
+  { id: 'hotel-voucher', name: 'Hotel Voucher 🏨', description: 'Get 500 baht off any hotel booking', emoji: '🏨', pointsCost: 300 },
+  { id: 'gaming-voucher', name: 'Game Voucher 🎮', description: '500 baht gaming credit for Steam/PSN', emoji: '🎮', pointsCost: 220 },
+];
+
+type CategoryType = 'all' | 'food-drink' | 'entertainment' | 'shopping' | 'wellness';
+
+const categories = [
+  { id: 'all', label: 'All Rewards', icon: '🎁' },
+  { id: 'food-drink', label: 'Food & Drink', icon: '🍕' },
+  { id: 'entertainment', label: 'Entertainment', icon: '🎬' },
+  { id: 'shopping', label: 'Shopping', icon: '🛍️' },
+  { id: 'wellness', label: 'Wellness', icon: '💆' },
+];
+
+export default function RewardsPage() {
+  const { user } = useAuthStore();
+  const [pointsBalance, setPointsBalance] = useState(350);
+  const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
+  const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const handleRedeemReward = async (reward: RewardItem) => {
+    if (!user) {
+      toast.error('Please login to redeem rewards');
+      return;
+    }
+
+    if (pointsBalance < reward.pointsCost) {
+      toast.error('Insufficient points');
+      return;
+    }
+
+    if (redeemedRewards.includes(reward.id)) {
+      toast.error('Already redeemed this reward');
+      return;
+    }
+
+    setRedeemingId(reward.id);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const success = Math.random() > 0.1; // 90% success rate
+
+    if (success) {
+      // Confetti celebration
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+
+      // Success toast
+      toast.success(
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <Check className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <p className="font-semibold">Reward Redeemed!</p>
+            <p className="text-body-sm text-gray-600">{reward.name} has been added to your wallet</p>
+          </div>
+        </div>
+      );
+
+      setPointsBalance(prev => prev - reward.pointsCost);
+      setRedeemedRewards(prev => [...prev, reward.id]);
+      setTimeout(() => {
+        setRedeemingId(null);
+      }, 600);
+    } else {
+      toast.error('Failed to redeem reward');
+      setRedeemingId(null);
+    }
+  };
+
+  const filteredRewards = selectedCategory === 'all' 
+    ? REWARDS_CATALOG 
+    : REWARDS_CATALOG.filter(reward => {
+        switch (selectedCategory) {
+          case 'food-drink':
+            return ['free-coffee', 'free-coke', 'pizza-voucher', 'starbucks-drink'].includes(reward.id);
+          case 'entertainment':
+            return ['movie-ticket', 'netflix-month', 'gaming-voucher'].includes(reward.id);
+          case 'shopping':
+            return ['100-baht-voucher', 'makeup-set', 'hotel-voucher'].includes(reward.id);
+          case 'wellness':
+            return ['massage-voucher', 'phone-credit'].includes(reward.id);
+          default:
+            return true;
+        }
+      });
+
+  if (!user) {
+    return (
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-12 h-12 text-orange-600" />
+            </div>
+            <h2 className="text-h2 text-gray-900 mb-2">Login Required</h2>
+            <p className="text-body text-gray-600 mb-6">Please login to access the rewards shop</p>
+            <button 
+              onClick={() => setShowLoginModal(true)}
+              className="btn-primary"
+            >
+              Login Now
+            </button>
+          </div>
+        </div>
+        <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Success Modal */}
+      <AnimatePresence>
+        {redeemedRewards.length > 0 && redeemingId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-md w-full text-center"
+            >
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Gift className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-h2 text-gray-900 mb-2">Reward Unlocked!</h3>
+              <p className="text-body text-gray-600 mb-6">Your reward has been added to your wallet</p>
+              <Link href="/profile/wallet" className="btn-primary w-full">
+                View in Wallet
+              </Link>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="text-h2 text-gray-900">
+              🎁 Rewards
+            </Link>
+            <Link 
+              href="/profile/wallet"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-button hover:from-purple-600 hover:to-pink-600 transition-all shadow-md hover:shadow-lg"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              My Wallet
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Points Balance Banner */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-6 shadow-xl relative overflow-hidden"
+        >
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-0 right-0 w-40 h-40 bg-white rounded-full blur-3xl animate-pulse delay-1000" />
+          </div>
+
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-white/80 text-body-sm font-medium mb-1">แต้มสะสมของคุณ</p>
+              <div className="flex items-center gap-3">
+                <Coins className="w-8 h-8 text-white animate-bounce" />
+                <span className="text-display-lg text-white drop-shadow-lg">
+                  {pointsBalance.toLocaleString()}
+                </span>
+                <span className="text-h2 text-white/90">Points</span>
+              </div>
+            </div>
+
+            <Link
+              href="/profile/wallet"
+              className="flex flex-col items-center gap-2 bg-white/20 backdrop-blur-sm px-6 py-4 rounded-xl hover:bg-white/30 transition-all group"
+            >
+              <TrendingUp className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+              <span className="text-white font-semibold text-body-sm">ดูประวัติ</span>
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+            <div className="text-h2 mb-1">🎁</div>
+            <p className="text-body-sm text-gray-600">แลกได้</p>
+            <p className="text-h4 text-gray-900">
+              {REWARDS_CATALOG.filter(r => r.pointsCost <= pointsBalance).length}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+            <div className="text-h2 mb-1">🔥</div>
+            <p className="text-body-sm text-gray-600">ดีลเด็ด</p>
+            <p className="text-h4 text-gray-900">
+              {REWARDS_CATALOG.filter(r => r.featured).length}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+            <div className="text-h2 mb-1">✨</div>
+            <p className="text-body-sm text-gray-600">ของรางวัล</p>
+            <p className="text-h4 text-gray-900">{REWARDS_CATALOG.length}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Category Tabs */}
+      <div className="sticky top-[73px] z-30 bg-white border-y border-gray-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id as CategoryType)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-button whitespace-nowrap transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Rewards Grid */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredRewards.map((reward, index) => {
+            const isRedeemed = redeemedRewards.includes(reward.id);
+            const canAfford = pointsBalance >= reward.pointsCost;
+            const isRedeeming = redeemingId === reward.id;
+
+            return (
+              <motion.div
+                key={reward.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`relative bg-white rounded-2xl p-6 shadow-lg border-2 transition-all ${
+                  reward.featured ? 'border-orange-400 shadow-xl' : 'border-gray-200'
+                } ${!canAfford && !isRedeemed ? 'opacity-60' : ''}`}
+              >
+                {/* Redeemed Badge */}
+                {isRedeemed && (
+                  <div className="absolute -top-2 -right-2 bg-green-500 text-white px-3 py-1 rounded-full text-caption font-bold shadow-md">
+                    ✓ Redeemed
+                  </div>
+                )}
+
+                {/* Emoji/Image */}
+                <div className="text-center mb-4">
+                  <div className="text-6xl mb-2">{reward.emoji}</div>
+                </div>
+
+                {/* Content */}
+                <div className="text-center">
+                  {/* Title */}
+                  <h3 className="text-h3 text-gray-900 mb-2 line-clamp-2">
+                    {reward.name}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-body text-gray-600 mb-4 line-clamp-3">
+                    {reward.description}
+                  </p>
+
+                  {/* Cost */}
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <Coins className="w-5 h-5 text-amber-500" />
+                    <span className="text-h2 text-gray-900">
+                      {reward.pointsCost}
+                    </span>
+                    <span className="text-body text-gray-600">points</span>
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    onClick={() => handleRedeemReward(reward)}
+                    disabled={!canAfford || isRedeemed || isRedeeming}
+                    className={`w-full py-3 rounded-xl text-button transition-all ${
+                      isRedeemed
+                        ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                        : !canAfford
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : isRedeeming
+                        ? 'bg-orange-100 text-orange-600'
+                        : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg active:scale-95'
+                    }`}
+                  >
+                    {isRedeeming ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                        Redeeming...
+                      </div>
+                    ) : isRedeemed ? (
+                      'Already Redeemed'
+                    ) : !canAfford ? (
+                      `Need ${(reward.pointsCost - pointsBalance).toLocaleString()} more points`
+                    ) : (
+                      'Redeem Now'
+                    )}
+                  </button>
+                </div>
+
+                {/* Featured Badge */}
+                {reward.featured && (
+                  <div className="absolute top-4 left-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-2 py-1 rounded-full text-caption font-bold">
+                    ⭐ Featured
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Tips Section */}
+        <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-h4 text-gray-900 mb-2">💡 How to Earn More Points</h3>
+              <ul className="text-body text-gray-600 space-y-1">
+                <li>• Complete daily check-ins (+10 points)</li>
+                <li>• Share promotions with friends (+5 points each)</li>
+                <li>• Write reviews for stores (+15 points each)</li>
+                <li>• Participate in community discussions (+20 points)</li>
+                <li>• Refer new users to the platform (+50 points)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Redeemed Count */}
+        <div className="mt-8 text-center">
+          <p className="text-body text-gray-600">
+            You have redeemed <span className="font-bold text-gray-900">{redeemedRewards.length}</span> reward{redeemedRewards.length !== 1 ? 's' : ''} so far! 🎉
+          </p>
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white py-8">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4">
+          <div>
+            <h3 className="text-h2 mb-2">Want More Points?</h3>
+            <p className="text-body text-white/90">Hunt for more promotions and earn points!</p>
+          </div>
+          <Link
+            href="/"
+            className="flex items-center gap-2 bg-white text-orange-600 px-6 py-3 rounded-full text-button hover:bg-gray-100 transition-colors"
+          >
+            ล่าโปรเลย
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+    </div>
+  );
+}

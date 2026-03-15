@@ -1,0 +1,17 @@
+node_modules
+.next
+.env.local
+.env*.local
+.DS_Store
+*.log
+.vscode
+.idea
+coverage
+*.md
+!README.md
+docs/
+test/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
