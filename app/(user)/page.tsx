@@ -50,27 +50,13 @@ function NearbyGemsLoader() {
   );
 }
 
-const CATEGORIES = [
-  'All', 
-  'อาหาร', 
-  'เครื่องดื่ม',
-  'แฟชั่นผู้ชาย', 
-  'แฟชั่นผู้หญิง',
-  'ความงาม',
-  'สุขภาพ',
-  'เครื่องใช้ไฟฟ้า',
-  'ท่องเที่ยว',
-  'บ้านและสวน',
-  'หนังสือ',
-  'บันเทิง',
-];
+const NAVBAR_CATEGORIES = ['All', 'Food', 'Fashion', 'Travel', 'Gadget', 'Beauty'];
 
 const ITEMS_PER_PAGE = 6;
 
 export default function Home() {
-  const { user, checkAuth } = useAppStore();
+  const { user, checkAuth, selectedCategory, setSelectedCategory } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
