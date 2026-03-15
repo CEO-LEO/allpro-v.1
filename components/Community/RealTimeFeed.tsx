@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   MessageCircle,
   Repeat2,
@@ -20,8 +20,13 @@ import {
   Check,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useLoadScript } from '@react-google-maps/api';
+import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { mockBrandPosts, mockUserPosts } from '@/data/communityPosts';
 import type { BrandPost, UserPost } from '@/data/communityPosts';
+
+// ─── Google Maps libraries ──────────────────────────────────────────────────
+const GOOGLE_MAPS_LIBS: ('places')[] = ['places'];
 
 // ─── Unified feed item ──────────────────────────────────────────────────────
 interface FeedItem {
@@ -34,6 +39,9 @@ interface FeedItem {
   content: string;
   imageUrl?: string;
   location?: string;
+  placeId?: string;
+  lat?: number;
+  lng?: number;
   discount?: string;
   category?: string;
   likes: number;
@@ -370,6 +378,120 @@ function PostRow({ item }: { item: FeedItem }) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+//  Google Places Autocomplete Input (Location Tagging)
+// ═════════════════════════════════════════════════════════════════════════════
+
+interface PlacesAutocompleteInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  onSelect: (description: string, placeId: string, coords: { lat: number; lng: number }) => void;
+  onClear: () => void;
+  isTagged: boolean;
+}
+
+function PlacesAutocompleteInput({ value, onChange, onSelect, onClear, isTagged }: PlacesAutocompleteInputProps) {
+  const {
+    ready,
+    suggestions: { status, data },
+    setValue: setAutocompleteValue,
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: { componentRestrictions: { country: 'th' } },
+    debounce: 300,
+  });
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    onChange(val);
+    setAutocompleteValue(val);
+    setShowDropdown(true);
+  };
+
+  const handleSelect = async (description: string, placeId: string) => {
+    setAutocompleteValue(description, false);
+    clearSuggestions();
+    setShowDropdown(false);
+
+    try {
+      const results = await getGeocode({ placeId });
+      const { lat, lng } = getLatLng(results[0]);
+      onSelect(description, placeId, { lat, lng });
+    } catch {
+      // If geocode fails, still tag with just the name
+      onSelect(description, placeId, { lat: 0, lng: 0 });
+    }
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 z-10 pointer-events-none" />
+      <input
+        type="text"
+        value={value}
+        onChange={handleInput}
+        disabled={!ready}
+        placeholder="ระบุสถานที่ร้านค้า เช่น Starbucks Siam Paragon"
+        className={`w-full bg-gray-50 border rounded-xl pl-10 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent transition-colors ${
+          isTagged ? 'border-green-300 bg-green-50/50 pr-10' : 'border-gray-200 pr-4'
+        }`}
+      />
+      {/* Clear tag button */}
+      {isTagged && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
+          title="ลบแท็กสถานที่"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {/* Suggestions dropdown */}
+      {showDropdown && status === 'OK' && data.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+          {data.map(({ place_id, structured_formatting }) => (
+            <li key={place_id}>
+              <button
+                type="button"
+                onClick={() => handleSelect(structured_formatting.main_text + (structured_formatting.secondary_text ? ', ' + structured_formatting.secondary_text : ''), place_id)}
+                className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors flex items-start gap-3 border-b border-gray-50 last:border-0"
+              >
+                <MapPin className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {structured_formatting.main_text}
+                  </p>
+                  {structured_formatting.secondary_text && (
+                    <p className="text-xs text-gray-400 truncate">
+                      {structured_formatting.secondary_text}
+                    </p>
+                  )}
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -387,8 +509,17 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
   const [modalText, setModalText] = useState('');
   const [modalImagePreview, setModalImagePreview] = useState<string | null>(null);
   const [modalLocation, setModalLocation] = useState('');
+  // ── Google Places Autocomplete state ──
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Google Maps loader ──
+  const { isLoaded: isMapsLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
+    libraries: GOOGLE_MAPS_LIBS,
+  });
 
   // — Mutable feed arrays —
   const [extraBrandItems, setExtraBrandItems] = useState<FeedItem[]>([]);
@@ -426,6 +557,8 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
     setModalText('');
     removeImage();
     setModalLocation('');
+    setSelectedPlaceId(null);
+    setSelectedCoords(null);
   };
 
   const handleModalSubmit = async () => {
@@ -443,6 +576,9 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
       content: modalText.trim(),
       imageUrl: modalImagePreview,
       location: modalLocation.trim() || undefined,
+      placeId: selectedPlaceId ?? undefined,
+      lat: selectedCoords?.lat,
+      lng: selectedCoords?.lng,
       likes: 0,
       comments: 0,
       reposts: 0,
@@ -629,29 +765,40 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                 )}
               </div>
 
-              {/* Location input */}
-              <div className="relative">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-red-400" />
-                <input
-                  type="text"
+              {/* ── Google Places Autocomplete Location Tagging ── */}
+              {isMapsLoaded ? (
+                <PlacesAutocompleteInput
                   value={modalLocation}
-                  onChange={(e) => setModalLocation(e.target.value)}
-                  placeholder="ระบุสถานที่ร้านค้า เช่น Starbucks Siam Paragon"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                  onChange={setModalLocation}
+                  onSelect={(description, placeId, coords) => {
+                    setModalLocation(description);
+                    setSelectedPlaceId(placeId);
+                    setSelectedCoords(coords);
+                  }}
+                  onClear={() => {
+                    setModalLocation('');
+                    setSelectedPlaceId(null);
+                    setSelectedCoords(null);
+                  }}
+                  isTagged={!!selectedPlaceId}
                 />
-              </div>
+              ) : (
+                /* Fallback while Google Maps loads */
+                <div className="relative">
+                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
+                  <input
+                    type="text"
+                    value={modalLocation}
+                    onChange={(e) => setModalLocation(e.target.value)}
+                    placeholder="ระบุสถานที่ร้านค้า เช่น Starbucks Siam Paragon"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/50">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2.5 rounded-full text-orange-400 hover:bg-orange-100 transition-colors"
-                title="เพิ่มรูปภาพ"
-              >
-                <ImageIcon className="w-5 h-5" />
-              </button>
+            {/* Footer — image icon removed per design requirement */}
+            <div className="flex items-center justify-end px-5 py-4 border-t border-gray-100 bg-gray-50/50">
               <button
                 type="button"
                 onClick={handleModalSubmit}
