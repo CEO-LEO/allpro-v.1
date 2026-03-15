@@ -7,7 +7,7 @@ import { MapPin, TrendingUp } from 'lucide-react';
 import FilterBar, { FilterCategory } from '@/components/Map/FilterBar';
 import StoreSheet from '@/components/Map/StoreSheet';
 
-// Dynamic import with SSR disabled for Leaflet
+// Dynamic import – Google Maps uses browser APIs
 const PromoMap = dynamic(
   () => import('@/components/Map/PromoMap'),
   { 
@@ -26,7 +26,7 @@ const PromoMap = dynamic(
 
 export default function MapPage() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
+  const [activeFilters, setActiveFilters] = useState<FilterCategory[]>(['all']);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -60,13 +60,13 @@ export default function MapPage() {
       <div className="flex-1 relative" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Filter Bar */}
         <FilterBar 
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
+          activeFilters={activeFilters}
+          onFilterChange={setActiveFilters}
         />
         
         <PromoMap 
           stores={mockStores} 
-          activeFilter={activeFilter}
+          activeFilters={activeFilters}
           onStoreClick={(store) => {
             setSelectedStore(store);
           }}

@@ -7,8 +7,8 @@ import { ReactNode } from 'react';
 export type FilterCategory = 'all' | '7-Eleven' | 'Lotus' | 'coffee' | 'food' | 'fashion';
 
 interface FilterBarProps {
-  activeFilter: FilterCategory;
-  onFilterChange: (filter: FilterCategory) => void;
+  activeFilters: FilterCategory[];
+  onFilterChange: (filters: FilterCategory[]) => void;
 }
 
 const filters: { id: FilterCategory; label: string; icon: ReactNode }[] = [
@@ -20,17 +20,34 @@ const filters: { id: FilterCategory; label: string; icon: ReactNode }[] = [
   { id: 'fashion', label: 'Fashion', icon: <Shirt className="w-4 h-4" /> },
 ];
 
-export default function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
+export default function FilterBar({ activeFilters, onFilterChange }: FilterBarProps) {
+  const handleToggle = (id: FilterCategory) => {
+    if (id === 'all') {
+      onFilterChange(['all']);
+      return;
+    }
+
+    let next = activeFilters.filter(f => f !== 'all');
+
+    if (next.includes(id)) {
+      next = next.filter(f => f !== id);
+    } else {
+      next = [...next, id];
+    }
+
+    onFilterChange(next.length === 0 ? ['all'] : next);
+  };
+
   return (
     <div className="absolute top-4 left-0 right-0 z-[1000] px-4">
       <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-lg p-2 max-w-full overflow-x-auto scrollbar-hide">
         <div className="flex gap-2 min-w-max">
           {filters.map((filter) => {
-            const isActive = activeFilter === filter.id;
+            const isActive = activeFilters.includes(filter.id);
             return (
               <motion.button
                 key={filter.id}
-                onClick={() => onFilterChange(filter.id)}
+                onClick={() => handleToggle(filter.id)}
                 className={`
                   flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
                   transition-all duration-200 whitespace-nowrap
