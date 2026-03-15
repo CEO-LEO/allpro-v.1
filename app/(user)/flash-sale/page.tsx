@@ -3,11 +3,27 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowLeftIcon, ClockIcon, FireIcon, BoltIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ClockIcon, FireIcon, BoltIcon, XMarkIcon, ShoppingCartIcon, TicketIcon } from '@heroicons/react/24/solid';
 import { MapPinIcon, HeartIcon } from '@heroicons/react/24/outline';
 
+// Flash sale item type
+interface FlashSaleItem {
+  id: number;
+  title: string;
+  merchant: string;
+  discount: number;
+  originalPrice: number;
+  salePrice: number;
+  image: string;
+  endTime: Date;
+  claimed: number;
+  total: number;
+  location: string;
+  category: string;
+}
+
 // Mock flash sale data
-const FLASH_SALES = [
+const FLASH_SALES: FlashSaleItem[] = [
   {
     id: 1,
     title: 'ลดสูงสุด 70% ทุกเมนูกาแฟ',
@@ -128,9 +144,107 @@ function TimeDisplay({ endTime }: { endTime: Date }) {
   );
 }
 
+/* ── Deal Detail Modal ──────────────────────────────────────────────── */
+function DealDetailModal({
+  deal,
+  isFav,
+  onToggleFav,
+  onClose,
+}: {
+  deal: FlashSaleItem;
+  isFav: boolean;
+  onToggleFav: () => void;
+  onClose: () => void;
+}) {
+  const pct = Math.round((deal.claimed / deal.total) * 100);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal card */}
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full transition-colors"
+        >
+          <XMarkIcon className="w-5 h-5" />
+        </button>
+
+        {/* Image */}
+        <div className="relative aspect-[4/3] flex-shrink-0">
+          <img src={deal.image} alt={deal.title} className="w-full h-full object-cover" />
+          {/* Discount badge */}
+          <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-lg">
+            -{deal.discount}%
+          </div>
+          {/* Fav */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFav(); }}
+            className="absolute top-3 right-14 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:scale-110 transition-transform"
+          >
+            <HeartIcon className={`w-5 h-5 ${isFav ? 'fill-red-600 text-red-600' : 'text-gray-400'}`} />
+          </button>
+          {/* Timer overlay */}
+          <div className="absolute bottom-3 left-3">
+            <TimeDisplay endTime={deal.endTime} />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-5 overflow-y-auto flex-1">
+          {/* Title & merchant */}
+          <h2 className="text-lg font-bold text-gray-900 mb-1">{deal.title}</h2>
+          <p className="text-sm font-semibold text-orange-600 mb-2">{deal.merchant}</p>
+          <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">
+            <MapPinIcon className="w-4 h-4" />
+            <span>{deal.location}</span>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-baseline gap-3 mb-5">
+            <span className="text-3xl font-bold text-orange-600">฿{deal.salePrice.toLocaleString()}</span>
+            <span className="text-base text-gray-400 line-through">฿{deal.originalPrice.toLocaleString()}</span>
+            <span className="ml-auto text-sm font-bold text-white bg-red-500 px-2.5 py-0.5 rounded-full">ประหยัด ฿{(deal.originalPrice - deal.salePrice).toLocaleString()}</span>
+          </div>
+
+          {/* Progress */}
+          <div className="mb-5">
+            <div className="flex justify-between text-xs text-gray-600 mb-1.5">
+              <span>ขายแล้ว {deal.claimed}/{deal.total}</span>
+              <span className="font-semibold">{pct}%</span>
+            </div>
+            <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-700"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Action footer */}
+        <div className="flex gap-3 px-5 py-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
+          <button className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-orange-500 text-orange-600 font-bold py-3 rounded-xl hover:bg-orange-50 transition-colors">
+            <TicketIcon className="w-5 h-5" />
+            เก็บโค้ดส่วนลด
+          </button>
+          <button className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition-all">
+            <ShoppingCartIcon className="w-5 h-5" />
+            ซื้อเลย
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FlashSalePage() {
   const [filter, setFilter] = useState('ทั้งหมด');
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [selectedDeal, setSelectedDeal] = useState<FlashSaleItem | null>(null);
 
   const categories = ['ทั้งหมด', 'อาหาร', 'เครื่องดื่ม', 'แฟชั่น', 'ความงาม'];
 
@@ -146,8 +260,8 @@ export default function FlashSalePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 text-white sticky top-0 z-50 shadow-lg">
+      {/* Header — z-30 so it sits below the global Navbar (z-50) */}
+      <div className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="hover:bg-white/10 p-2 rounded-lg transition-colors">
@@ -182,8 +296,8 @@ export default function FlashSalePage() {
         </div>
       </div>
 
-      {/* Category Filter */}
-      <div className="sticky top-[72px] z-40 bg-white border-b shadow-sm">
+      {/* Category Filter — sticky below global navbar */}
+      <div className="sticky top-0 z-30 bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {categories.map(cat => (
@@ -214,7 +328,8 @@ export default function FlashSalePage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: index * 0.05 }}
-                className="group"
+                className="group cursor-pointer"
+                onClick={() => setSelectedDeal(sale)}
               >
                 <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
                   {/* Image */}
@@ -232,7 +347,7 @@ export default function FlashSalePage() {
 
                     {/* Favorite Button */}
                     <button
-                      onClick={() => toggleFavorite(sale.id)}
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(sale.id); }}
                       className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:scale-110 transition-transform"
                     >
                       <HeartIcon
@@ -292,12 +407,11 @@ export default function FlashSalePage() {
                     </div>
 
                     {/* Action Button */}
-                    <Link
-                      href={`/promo/${sale.id}`}
+                    <button
                       className="block w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white text-center py-2.5 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
                     >
                       ซื้อเลย
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -313,6 +427,16 @@ export default function FlashSalePage() {
           </div>
         )}
       </div>
+
+      {/* Deal Detail Modal */}
+      {selectedDeal && (
+        <DealDetailModal
+          deal={selectedDeal}
+          isFav={favorites.includes(selectedDeal.id)}
+          onToggleFav={() => toggleFavorite(selectedDeal.id)}
+          onClose={() => setSelectedDeal(null)}
+        />
+      )}
     </div>
   );
 }
