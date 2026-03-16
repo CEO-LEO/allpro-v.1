@@ -7,10 +7,9 @@ import { ArrowRight, Store, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { getPromotions } from '@/lib/getPromotions';
-import QuickServices from '@/components/QuickServices';
 import TrendingTags from '@/components/TrendingTags';
 import EnhancedPromoCard from '@/components/Home/EnhancedPromoCard';
-import HomeCategoryGrid from '@/components/Home/HomeCategoryGrid';
+import CategoryGrid from '@/components/Home/CategoryGrid';
 import ServiceGrid from '@/components/Home/ServiceGrid';
 import Infographic from '@/components/Home/Infographic';
 
@@ -163,33 +162,23 @@ export default function Home() {
       )}
 
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-4">
-        
-        {/* Quick Services */}
+
+        {/* Trending Tags — แถบแท็กค้นหาแนะนำ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="mb-6"
         >
-          <QuickServices />
+          <TrendingTags />
         </motion.div>
 
-        {/* Trending Tags */}
+        {/* Search Bar — ช่องค้นหากลางหน้าจอ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mb-6"
-        >
-          <TrendingTags />
-        </motion.div>
-
-        {/* Search Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="relative mb-6 max-w-2xl mx-auto"
+          className="relative mb-8 max-w-2xl mx-auto"
         >
           <input
             type="text"
@@ -211,21 +200,24 @@ export default function Home() {
           )}
         </motion.div>
 
-        {/* Category Grid — แบบใหม่แยกกลุ่ม (แฟชั่นผู้หญิง, แฟชั่นผู้ชาย, กระเป๋า ฯลฯ) */}
+        {/* Category Grid — หมวดหมู่แถวเดียว (Single Row) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8"
+        >
+          <CategoryGrid 
+            onSelectCategory={setSelectedCategory}
+            selectedCategory={selectedCategory}
+          />
+        </motion.div>
+
+        {/* Service Grid — บริการทั้งหมด */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mb-8"
-        >
-          <HomeCategoryGrid />
-        </motion.div>
-
-        {/* Service Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
           className="mb-8"
         >
           <ServiceGrid />
