@@ -256,10 +256,10 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white sticky top-[152px] md:top-[112px] z-30">
+      <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white relative z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/" className="hover:bg-white/10 p-2 rounded-lg transition-colors">
+            <Link href="/" className="hover:bg-white/20 p-2 rounded-lg transition-colors">
               <ArrowLeftIcon className="w-6 h-6" />
             </Link>
             <h1 className="text-h3">All Pro</h1>
@@ -268,7 +268,7 @@ export default function CategoriesPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white border-b sticky top-[224px] md:top-[184px] z-20">
+      <div className="bg-white border-b sticky top-[64px] z-20">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-8">
             <button
@@ -351,7 +351,7 @@ export default function CategoriesPage() {
                       transition={{ delay: (groupIndex * 0.05) + (index * 0.02) }}
                     >
                       <Link
-                        href={`/category/${encodeURIComponent(GROUP_ROUTE_MAP[group.id] || 'all')}`}
+                        href={`/categories/${encodeURIComponent(subcat.id)}?group=${encodeURIComponent(group.id)}`}
                         className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all group"
                       >
                         <div className={`w-14 h-14 rounded-lg bg-gray-100 group-hover:bg-gradient-to-br group-hover:${group.color} flex items-center justify-center transition-all shadow-sm`}>
@@ -371,7 +371,7 @@ export default function CategoriesPage() {
                   transition={{ delay: (groupIndex * 0.05) + (group.subcategories.length * 0.02) }}
                 >
                   <Link
-                    href={`/category/${encodeURIComponent(GROUP_ROUTE_MAP[group.id] || 'all')}`}
+                    href={`/categories/${encodeURIComponent(group.id)}?group=${encodeURIComponent(group.id)}`}
                     className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all group"
                   >
                     <div className="w-14 h-14 rounded-lg bg-red-50 group-hover:bg-gradient-to-br group-hover:from-red-100 group-hover:to-pink-100 flex items-center justify-center transition-all">
