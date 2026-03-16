@@ -10,7 +10,7 @@ import { getPromotions } from '@/lib/getPromotions';
 import QuickServices from '@/components/QuickServices';
 import TrendingTags from '@/components/TrendingTags';
 import EnhancedPromoCard from '@/components/Home/EnhancedPromoCard';
-import CategoryGrid from '@/components/Home/CategoryGrid';
+import HomeCategoryGrid from '@/components/Home/HomeCategoryGrid';
 import ServiceGrid from '@/components/Home/ServiceGrid';
 import Infographic from '@/components/Home/Infographic';
 
@@ -211,17 +211,14 @@ export default function Home() {
           )}
         </motion.div>
 
-        {/* Category Grid */}
+        {/* Category Grid — แบบใหม่แยกกลุ่ม (แฟชั่นผู้หญิง, แฟชั่นผู้ชาย, กระเป๋า ฯลฯ) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="mb-8"
         >
-          <CategoryGrid 
-            onSelectCategory={setSelectedCategory}
-            selectedCategory={selectedCategory}
-          />
+          <HomeCategoryGrid />
         </motion.div>
 
         {/* Service Grid */}
