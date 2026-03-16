@@ -26,6 +26,15 @@ import LoginModal from "@/components/Auth/LoginModal";
 
 const CATEGORIES = ['All', 'Food', 'Fashion', 'Travel', 'Gadget', 'Beauty'];
 
+const CATEGORY_ROUTE_MAP: Record<string, string> = {
+  All: 'all',
+  Food: 'Food',
+  Fashion: 'Fashion',
+  Travel: 'Travel',
+  Gadget: 'Gadget',
+  Beauty: 'Beauty',
+};
+
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -44,6 +53,12 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(category);
+    const categoryPath = CATEGORY_ROUTE_MAP[category] ?? category;
+    router.push(`/category/${encodeURIComponent(categoryPath)}`);
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +80,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <nav className="sticky top-0 z-[70] bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Top Bar */}
           <div className="flex items-center justify-between h-16">
@@ -270,7 +285,7 @@ export default function Navbar() {
             {CATEGORIES.map((category) => (
               <button
                 key={category}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => handleCategoryClick(category)}
                 className={`px-4 py-2 rounded-full font-medium whitespace-nowrap transition-all ${
                   selectedCategory === category
                     ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md'
@@ -302,7 +317,7 @@ export default function Navbar() {
           {CATEGORIES.map((category) => (
             <button
               key={category}
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => handleCategoryClick(category)}
               className={`px-4 py-2 rounded-full whitespace-nowrap transition-all text-body-sm ${
                 selectedCategory === category
                   ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md'

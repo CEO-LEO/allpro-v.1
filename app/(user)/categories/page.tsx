@@ -231,6 +231,17 @@ const BRANDS: Brand[] = [
   { id: 'watsons', name: 'Watsons', logo: 'https://logo.clearbit.com/watsons.com', category: 'สุขภาพ', promoCount: 18, rating: 4.5, isHot: true, discount: 'ลดสูงสุด 50%', color: 'bg-green-600' },
 ];
 
+const GROUP_ROUTE_MAP: Record<string, string> = {
+  'แฟชั่นผู้หญิง': 'Fashion',
+  'แฟชั่นผู้ชาย': 'Fashion',
+  'กระเป๋า': 'Fashion',
+  'อาหาร': 'Food',
+  'เครื่องดื่ม': 'Food',
+  'ท่องเที่ยว': 'Travel',
+  'ความงาม': 'Beauty',
+  'สุขภาพ': 'Beauty',
+};
+
 export default function CategoriesPage() {
   const [selectedTab, setSelectedTab] = useState('สินค้า');
   const [brandFilter, setBrandFilter] = useState<BrandCategory | 'ทั้งหมด'>('ทั้งหมด');
@@ -245,7 +256,7 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white sticky top-0 z-50">
+      <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white sticky top-[152px] md:top-[112px] z-30">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="hover:bg-white/10 p-2 rounded-lg transition-colors">
@@ -257,7 +268,7 @@ export default function CategoriesPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white border-b sticky top-[72px] z-40">
+      <div className="bg-white border-b sticky top-[224px] md:top-[184px] z-20">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-8">
             <button
@@ -321,7 +332,7 @@ export default function CategoriesPage() {
                   <h3 className="text-h3 text-gray-800">{group.name}</h3>
                 </div>
                 <Link
-                  href={`/category/${group.id}`}
+                  href={`/category/${encodeURIComponent(GROUP_ROUTE_MAP[group.id] || 'all')}`}
                   className="text-body-sm text-red-600 hover:text-red-700 transition-colors flex items-center gap-1"
                 >
                   ดูทั้งหมด →
@@ -340,7 +351,7 @@ export default function CategoriesPage() {
                       transition={{ delay: (groupIndex * 0.05) + (index * 0.02) }}
                     >
                       <Link
-                        href={`/search?category=${subcat.id}`}
+                        href={`/category/${encodeURIComponent(GROUP_ROUTE_MAP[group.id] || 'all')}`}
                         className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all group"
                       >
                         <div className={`w-14 h-14 rounded-lg bg-gray-100 group-hover:bg-gradient-to-br group-hover:${group.color} flex items-center justify-center transition-all shadow-sm`}>
@@ -360,7 +371,7 @@ export default function CategoriesPage() {
                   transition={{ delay: (groupIndex * 0.05) + (group.subcategories.length * 0.02) }}
                 >
                   <Link
-                    href={`/category/${group.id}`}
+                    href={`/category/${encodeURIComponent(GROUP_ROUTE_MAP[group.id] || 'all')}`}
                     className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all group"
                   >
                     <div className="w-14 h-14 rounded-lg bg-red-50 group-hover:bg-gradient-to-br group-hover:from-red-100 group-hover:to-pink-100 flex items-center justify-center transition-all">
