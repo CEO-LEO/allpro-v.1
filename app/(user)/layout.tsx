@@ -2,6 +2,7 @@
 
 import Navbar from '@/components/Layout/Navbar';
 import BottomNav from '@/components/Layout/BottomNav';
+import Footer from '@/components/Footer';
 import AIChatbot from '@/components/AIChatbot';
 import QRScanner from '@/components/QRScanner';
 import { Toaster } from 'sonner';
@@ -25,6 +26,9 @@ export default function UserLayout({
       <main id="main-content" className="min-h-screen pb-20 md:pb-0">
         {children}
       </main>
+
+      {/* Footer */}
+      <Footer />
       
       {/* Bottom Navigation - Mobile Only */}
       <BottomNav />
