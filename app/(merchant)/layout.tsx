@@ -43,29 +43,29 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
   };
 
   return (
-    <aside className="hidden lg:block fixed left-0 top-0 bottom-0 w-64 h-screen z-50 overflow-y-auto bg-white border-r border-gray-200 shadow-sm">
-      <div className="flex flex-col h-full p-6">
+    <aside className="hidden lg:block fixed left-0 top-0 bottom-0 w-64 h-screen z-50 overflow-y-auto bg-slate-900">
+      <div className="flex flex-col h-full p-5">
         {/* Logo & Brand */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
               <Store className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">All Pro</h1>
-              <p className="text-xs text-blue-600">Business Portal</p>
+              <h1 className="text-xl font-bold text-white">All Pro</h1>
+              <p className="text-xs text-blue-400">Merchant</p>
             </div>
           </div>
           {user && (
-            <div className="mt-3 px-3 py-2 bg-blue-50 rounded-lg border border-blue-100">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
-              <p className="text-xs text-gray-500">{user.email}</p>
+            <div className="mt-3 px-3 py-2.5 bg-slate-800 rounded-lg border border-slate-700">
+              <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+              <p className="text-xs text-slate-400">{user.email}</p>
             </div>
           )}
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 space-y-2">
+        <nav className="flex-1 space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.activePaths);
@@ -76,8 +76,8 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative ${
                   active
-                    ? 'bg-blue-50 text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 <Icon className={`w-5 h-5 ${active ? 'scale-110' : ''} transition-transform`} />
@@ -86,7 +86,7 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
                 {active && (
                   <motion.div
                     layoutId="merchant-nav-indicator"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -96,10 +96,10 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
         </nav>
 
         {/* FAB Button - Create Flash Sale */}
-        <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
+        <div className="mt-6 pt-6 border-t border-slate-700 space-y-3">
           <button
             onClick={onCreateDeal}
-            className="w-full py-4 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold shadow-xl hover:shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
           >
             <Zap className="w-5 h-5" />
             <span>Create Flash Sale</span>
@@ -107,7 +107,7 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
 
           <button
             onClick={handleLogout}
-            className="w-full py-3 rounded-xl bg-gray-50 text-gray-500 font-medium hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-slate-800 text-slate-400 font-medium hover:bg-red-900/30 hover:text-red-400 transition-all flex items-center justify-center gap-2 border border-slate-700"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>
@@ -127,7 +127,7 @@ export default function MerchantLayout({
 
   return (
     <AuthGuard requiredRole="merchant">
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-white">
         {/* Merchant Sidebar - Desktop Only */}
         <MerchantSidebar onCreateDeal={() => setShowCreateDeal(true)} />
         

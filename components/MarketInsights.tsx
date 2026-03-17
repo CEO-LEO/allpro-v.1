@@ -152,9 +152,9 @@ export default function MarketInsights() {
 
             {/* Trending Keywords Table */}
             <div className="card overflow-hidden">
-              <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4">
-                <h3 className="font-bold text-white text-lg">Trending Search Keywords</h3>
-                <p className="text-gray-300 text-sm">อัปเดตทุก 15 นาที จาก Search Behavior Analytics</p>
+              <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 border-b border-gray-200">
+                <h3 className="font-bold text-gray-900 text-lg">Trending Search Keywords</h3>
+                <p className="text-gray-500 text-sm">อัปเดตทุก 15 นาที จาก Search Behavior Analytics</p>
               </div>
               
               <div className="overflow-x-auto">
@@ -414,21 +414,21 @@ export default function MarketInsights() {
                 </div>
 
                 {/* Value Proposition for Brands */}
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-6 text-white">
-                  <h4 className="text-xl font-bold mb-4">💎 Premium Data Package สำหรับแบรนด์ใหญ่</h4>
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                  <h4 className="text-xl font-bold text-gray-900 mb-4">💎 Premium Data Package สำหรับแบรนด์ใหญ่</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-gray-300 text-sm mb-2">Package: Market Intelligence</p>
+                      <p className="text-gray-500 text-sm mb-2">Package: Market Intelligence</p>
                       <p className="text-3xl font-bold text-[#FF5722]">4,999฿<span className="text-lg">/เดือน</span></p>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <p className="text-gray-300">✓ Weekly Trend Report</p>
-                      <p className="text-gray-300">✓ Predictive Analytics</p>
-                      <p className="text-gray-300">✓ Consumer Behavior Data</p>
-                      <p className="text-gray-300">✓ Competitor Intelligence</p>
+                      <p className="text-gray-600">✓ Weekly Trend Report</p>
+                      <p className="text-gray-600">✓ Predictive Analytics</p>
+                      <p className="text-gray-600">✓ Consumer Behavior Data</p>
+                      <p className="text-gray-600">✓ Competitor Intelligence</p>
                     </div>
                   </div>
-                  <button className="mt-4 w-full bg-gradient-to-r from-[#FF5722] to-[#FF7043] text-white font-bold py-3 rounded-lg hover:shadow-lg transition-all">
+                  <button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-sm transition-all">
                     สอบถามแพ็กเกจ Enterprise
                   </button>
                 </div>

@@ -146,11 +146,11 @@ export default function MerchantDashboard() {
       ) : (
         <>
           {/* Header */}
-          <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
               <div className="flex items-center justify-between">
-                <Link href="/" className="text-base sm:text-xl font-bold text-blue-600 hover:text-blue-500 transition-colors">
-                  ← <span className="hidden xs:inline">Pro Hunter</span>
+                <Link href="/" className="text-sm sm:text-base font-semibold text-blue-600 hover:text-blue-500 transition-colors flex items-center gap-1">
+                  ← <span className="hidden sm:inline">Pro Hunter</span>
                 </Link>
                 <h1 className="text-sm sm:text-lg font-semibold text-gray-900">
                   <span className="hidden sm:inline">Merchant Dashboard</span>
@@ -164,28 +164,30 @@ export default function MerchantDashboard() {
           {/* Upgrade Banner for Free Merchants */}
           <UpgradeBanner />
 
-          <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 pb-24">
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24">
+          {/* Main Content Card Container */}
+          <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 md:p-8">
         {/* Create Deal Widget - TOP PRIORITY */}
         <div className="mb-8">
           <CreateDealWidget />
         </div>
 
         {/* My Active Deals Section */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <PresentationChartLineIcon className="w-6 h-6" />
                 โปรโมชั่นที่ใช้งานอยู่
               </h2>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-gray-500 mt-1">
                 {myProducts.length} รายการ
               </p>
             </div>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-4 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="newest">ใหม่ล่าสุด</option>
               <option value="popular">ยอดนิยม</option>
@@ -194,7 +196,7 @@ export default function MerchantDashboard() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 border-b border-slate-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 border-b border-gray-200">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
               <div className="flex items-center justify-between">
                 <div>
@@ -235,20 +237,20 @@ export default function MerchantDashboard() {
           {/* Empty State */}
           {myProducts.length === 0 ? (
             <div className="px-6 py-16 text-center">
-              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-4xl">📦</span>
               </div>
-              <p className="text-slate-500 font-medium mb-2">
+              <p className="text-gray-500 font-medium mb-2">
                 ยังไม่มีโปรโมชั่นที่ใช้งานอยู่
               </p>
-              <p className="text-slate-400 text-sm">
+              <p className="text-gray-400 text-sm">
                 ลงประกาศโปรโมชั่นของคุณด้านบนเพื่อเริ่มต้น
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-gray-200">
               {/* Table Header - Desktop */}
-              <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 font-bold text-sm text-slate-600">
+              <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 font-bold text-sm text-gray-600">
                 <div className="col-span-4">สินค้า</div>
                 <div className="col-span-2 text-center">ราคา</div>
                 <div className="col-span-2 text-center">ลดราคา</div>
@@ -265,7 +267,7 @@ export default function MerchantDashboard() {
                 return (
                   <div
                     key={product.id}
-                    className="grid md:grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-50 transition-colors items-center"
+                    className="grid md:grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors items-center"
                   >
                     {/* Product Info */}
                     <div className="md:col-span-4 flex gap-3">
@@ -275,10 +277,10 @@ export default function MerchantDashboard() {
                         className="w-12 h-12 rounded-lg object-cover"
                       />
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-800 truncate">
+                        <p className="font-medium text-gray-800 truncate">
                           {product.title}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-gray-500">
                           {product.category}
                         </p>
                       </div>
@@ -286,18 +288,18 @@ export default function MerchantDashboard() {
 
                     {/* Price */}
                     <div className="md:col-span-2 md:text-center">
-                      <p className="text-sm text-slate-500 md:hidden">ราคา:</p>
-                      <p className="font-bold text-slate-800">
+                      <p className="text-sm text-gray-500 md:hidden">ราคา:</p>
+                      <p className="font-bold text-gray-800">
                         ฿{product.promoPrice}
                       </p>
-                      <p className="text-xs text-slate-400 line-through">
+                      <p className="text-xs text-gray-400 line-through">
                         ฿{product.originalPrice}
                       </p>
                     </div>
 
                     {/* Discount */}
                     <div className="md:col-span-2 md:text-center">
-                      <p className="text-sm text-slate-500 md:hidden">ลดราคา:</p>
+                      <p className="text-sm text-gray-500 md:hidden">ลดราคา:</p>
                       <p className="font-bold text-red-600 text-lg">
                         -{discountPercent}%
                       </p>
@@ -305,11 +307,11 @@ export default function MerchantDashboard() {
 
                     {/* Views */}
                     <div className="md:col-span-2 md:text-center">
-                      <p className="text-sm text-slate-500 md:hidden">ยอดคน:</p>
-                      <p className="font-medium text-slate-800">
+                      <p className="text-sm text-gray-500 md:hidden">ยอดคน:</p>
+                      <p className="font-medium text-gray-800">
                         {(product.likes || 0).toLocaleString()}
                       </p>
-                      <p className="text-xs text-slate-500">ผู้เข้าชม (ไลค์)</p>
+                      <p className="text-xs text-gray-500">ผู้เข้าชม (ไลค์)</p>
                     </div>
 
                     {/* Actions */}
@@ -603,7 +605,7 @@ export default function MerchantDashboard() {
         })()}
 
         {/* Info Banner */}
-        <div className="bg-white rounded-2xl p-6 border border-blue-200 shadow-sm">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h4 className="text-lg font-bold text-blue-700 mb-2">
             🚀 Unfair Advantage: ทำไมต้อง Pro Hunter?
           </h4>
@@ -615,6 +617,7 @@ export default function MerchantDashboard() {
             <li>✅ ระบบตรวจสอบ Verified - สร้างความน่าเชื่อถือ</li>
           </ul>
         </div>
+      </div>{/* End Content Card Container */}
       </main>
 
       {/* Floating CP ALL Sync Display */}
