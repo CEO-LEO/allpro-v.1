@@ -32,8 +32,8 @@ const MAIN_CATEGORIES = [
 export default function CategoryGrid({ onSelectCategory, selectedCategory }: CategoryGridProps) {
   const router = useRouter();
 
-  const handleCategoryClick = (categoryId: string, route: string) => {
-    onSelectCategory(route);
+  const handleCategoryClick = (route: string) => {
+    onSelectCategory?.(route);
     router.push(`/category/${encodeURIComponent(route)}`);
   };
 
@@ -61,7 +61,7 @@ export default function CategoryGrid({ onSelectCategory, selectedCategory }: Cat
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.03 }}
-              onClick={() => handleCategoryClick(category.id, category.route)}
+              onClick={() => handleCategoryClick(category.route)}
               className="flex-shrink-0 group flex flex-col items-center gap-2 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-orange-200 hover:shadow-sm transition-all w-[100px]"
             >
               <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center transition-all">

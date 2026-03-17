@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 
 const PROMO_LINKS = [
@@ -50,6 +51,65 @@ const SOCIALS = [
     ),
   },
 ];
+
+// ─── Add to Home Screen Button ──────────────────────────────────────────────
+function AddToHomeScreenButton() {
+  const [showGuide, setShowGuide] = useState(false);
+
+  return (
+    <div>
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-95"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        เพิ่มลงหน้าจอหลัก
+      </button>
+
+      {showGuide && (
+        <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          {/* iOS */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+              </svg>
+              <span className="text-xs font-bold text-gray-300">iPhone / iPad</span>
+            </div>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              กดไอคอน <span className="inline-flex items-center gap-0.5 text-white font-medium">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
+                </svg>
+                แชร์
+              </span> ด้านล่างจอ → เลื่อนหา <span className="text-white font-medium">&quot;เพิ่มไปยังหน้าจอโฮม&quot;</span>
+            </p>
+          </div>
+
+          {/* Android */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.523 2.793l1.163-2.112a.382.382 0 00-.674-.372l-1.178 2.14a7.607 7.607 0 00-3.322-.77c-1.2 0-2.325.28-3.321.77L8.013.31a.382.382 0 00-.674.372l1.163 2.112C6.169 4.193 4.613 6.662 4.613 9.573h14.798c0-2.911-1.556-5.38-3.888-6.78zM9.06 7.412a.73.73 0 110-1.46.73.73 0 010 1.46zm5.88 0a.73.73 0 110-1.46.73.73 0 010 1.46zM4.613 21.258c0 .754.61 1.365 1.365 1.365h1.024v3.012c0 .84.68 1.52 1.52 1.52.84 0 1.52-.68 1.52-1.52v-3.012h1.94v3.012c0 .84.68 1.52 1.52 1.52s1.52-.68 1.52-1.52v-3.012h1.024a1.365 1.365 0 001.365-1.365V10.28H4.613v10.978z" />
+              </svg>
+              <span className="text-xs font-bold text-gray-300">Android</span>
+            </div>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              กดเมนู <span className="inline-flex items-center gap-0.5 text-white font-medium">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" />
+                </svg>
+                จุด 3 จุด
+              </span> มุมขวาบน → เลือก <span className="text-white font-medium">&quot;เพิ่มลงในหน้าจอหลัก&quot;</span>
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Footer() {
   return (
@@ -119,41 +179,13 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 4: Download App */}
+          {/* Column 4: Add to Home Screen */}
           <div>
-            <h3 className="text-base font-bold text-orange-500 mb-5">ดาวน์โหลดแอปของเราได้ฟรี!</h3>
+            <h3 className="text-base font-bold text-orange-500 mb-3">เข้าใช้งาน All Pro ได้ง่ายๆ</h3>
             <p className="text-sm text-gray-400 mb-5">
-              ไม่พลาดทุกโปรโมชัน ดาวน์โหลดเลยวันนี้
+              เพิ่มเว็บไซต์เราลงบนหน้าจอมือถือของคุณ เพื่อการเข้าถึงที่รวดเร็วเสมือนแอปฯ
             </p>
-            <div className="flex flex-col gap-3">
-              {/* App Store */}
-              <a
-                href="#"
-                className="flex items-center gap-3 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-200 group"
-              >
-                <svg className="w-8 h-8 text-white flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                </svg>
-                <div>
-                  <div className="text-[10px] text-gray-400 leading-none group-hover:text-gray-300">Download on the</div>
-                  <div className="text-sm font-semibold text-white leading-tight">App Store</div>
-                </div>
-              </a>
-
-              {/* Google Play */}
-              <a
-                href="#"
-                className="flex items-center gap-3 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-200 group"
-              >
-                <svg className="w-8 h-8 text-white flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.144 1.24a1 1 0 010 1.732l-2.144 1.24-2.53-2.53 2.53-2.53v.848zm-4.106-4.106L4.864 11.735l10.937 6.333-2.302 2.302z" />
-                </svg>
-                <div>
-                  <div className="text-[10px] text-gray-400 leading-none group-hover:text-gray-300">GET IT ON</div>
-                  <div className="text-sm font-semibold text-white leading-tight">Google Play</div>
-                </div>
-              </a>
-            </div>
+            <AddToHomeScreenButton />
           </div>
         </div>
       </div>

@@ -134,26 +134,25 @@ export default function MerchantDashboard() {
 
   return (
     <div>
-      <StockControl merchantId={user?.id || ""} merchantName={user?.name || ""} />
       <DynamicNavbar />
       {/* Show access denied if not merchant */}
       {(!user || user.role !== "MERCHANT") ? (
         <div className="min-h-screen flex items-center justify-center">
-          <div className="text-white text-center">
+          <div className="text-gray-900 text-center">
             <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-            <p className="text-gray-400">This page is for merchants only.</p>
+            <p className="text-gray-500">This page is for merchants only.</p>
           </div>
         </div>
       ) : (
         <>
           {/* Header */}
-          <header className="bg-slate-800/50 backdrop-blur-sm border-b-2 border-blue-500/30 shadow-xl sticky top-0 z-50">
+          <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
               <div className="flex items-center justify-between">
-                <Link href="/" className="text-base sm:text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">
+                <Link href="/" className="text-base sm:text-xl font-bold text-blue-600 hover:text-blue-500 transition-colors">
                   ← <span className="hidden xs:inline">Pro Hunter</span>
                 </Link>
-                <h1 className="text-sm sm:text-lg font-semibold text-white">
+                <h1 className="text-sm sm:text-lg font-semibold text-gray-900">
                   <span className="hidden sm:inline">Merchant Dashboard</span>
                   <span className="sm:hidden">Dashboard</span>
                 </h1>
@@ -544,38 +543,71 @@ export default function MerchantDashboard() {
         </div>
 
         {/* Activity Log */}
-        <div className="mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">📊 Activity Log - กิจกรรมล่าสุด</h3>
-          <div className="card divide-y">
-            {[
-              { icon: '👁️', action: 'มีผู้เข้าชม', detail: 'โปรโมชั่น "กาแฟ 2 แก้ว 50 บาท"', count: '142 ครั้ง', time: '2 ชม. ที่แล้ว' },
-              { icon: '❤️', action: 'บันทึกโปรโมชั่น', detail: 'โปรโมชั่น "ข้าวกล่อง ลด 10 บาท"', count: '28 ครั้ง', time: '5 ชม. ที่แล้ว' },
-              { icon: '📍', action: 'กดดูพิกัดร้าน', detail: 'โปรโมชั่น "นมโปรตีน ซื้อ 2 แถม 1"', count: '67 ครั้ง', time: '1 วัน ที่แล้ว' },
-              { icon: '🔍', action: 'ปรากฏในการค้นหา', detail: 'คำค้นหา "กาแฟ"', count: '1,250 ครั้ง', time: '1 วัน ที่แล้ว' }
-            ].map((activity, idx) => (
-              <div key={idx} className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start gap-4">
-                  <span className="text-3xl">{activity.icon}</span>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">{activity.action}</p>
-                    <p className="text-sm text-gray-600">{activity.detail}</p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="text-sm font-medium text-[#FF5722]">{activity.count}</span>
-                      <span className="text-xs text-gray-400">{activity.time}</span>
-                    </div>
-                  </div>
+        {(() => {
+          type ActivityType = "view" | "save" | "location" | "search";
+
+          interface ActivityItem {
+            id: string;
+            type: ActivityType;
+            title: string;
+            subtitle: string;
+            count: number;
+            timestamp: string;
+          }
+
+          // TODO: Replace with API response — e.g. const { data: activityData } = useSWR('/api/merchant/activity');
+          const activityData: ActivityItem[] = [
+            { id: "act-1", type: "view",     title: "มีผู้เข้าชม",       subtitle: 'โปรโมชั่น "กาแฟ 2 แก้ว 50 บาท"',    count: 142,  timestamp: "2 ชม. ที่แล้ว" },
+            { id: "act-2", type: "save",     title: "บันทึกโปรโมชั่น",   subtitle: 'โปรโมชั่น "ข้าวกล่อง ลด 10 บาท"',    count: 28,   timestamp: "5 ชม. ที่แล้ว" },
+            { id: "act-3", type: "location", title: "กดดูพิกัดร้าน",     subtitle: 'โปรโมชั่น "นมโปรตีน ซื้อ 2 แถม 1"',  count: 67,   timestamp: "1 วัน ที่แล้ว" },
+            { id: "act-4", type: "search",   title: "ปรากฏในการค้นหา",   subtitle: 'คำค้นหา "กาแฟ"',                      count: 1250, timestamp: "1 วัน ที่แล้ว" },
+          ];
+
+          const iconMap: Record<ActivityType, string> = {
+            view: "👁️",
+            save: "❤️",
+            location: "📍",
+            search: "🔍",
+          };
+
+          return (
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">📊 Activity Log - กิจกรรมล่าสุด</h3>
+
+              {activityData.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
+                  <p className="text-2xl font-semibold text-gray-900 mb-2">📭 ยังไม่มีกิจกรรมล่าสุด</p>
+                  <p className="text-sm text-gray-500">กิจกรรมและการเคลื่อนไหวของร้านค้าจะแสดงที่นี่</p>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              ) : (
+                <div className="card divide-y divide-gray-200">
+                  {activityData.map((activity) => (
+                    <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start gap-4">
+                        <span className="text-3xl">{iconMap[activity.type]}</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">{activity.title}</p>
+                          <p className="text-sm text-gray-600">{activity.subtitle}</p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <span className="text-sm font-medium text-[#FF5722]">{activity.count.toLocaleString()} ครั้ง</span>
+                            <span className="text-xs text-gray-400">{activity.timestamp}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Info Banner */}
-        <div className="card p-6 bg-gradient-to-r from-blue-900/50 to-indigo-900/50 border-2 border-blue-500/30 backdrop-blur-sm">
-          <h4 className="text-lg font-bold text-blue-300 mb-2">
+        <div className="bg-white rounded-2xl p-6 border border-blue-200 shadow-sm">
+          <h4 className="text-lg font-bold text-blue-700 mb-2">
             🚀 Unfair Advantage: ทำไมต้อง Pro Hunter?
           </h4>
-          <ul className="space-y-2 text-sm text-blue-200">
+          <ul className="space-y-2 text-sm text-gray-600">
             <li>✅ ข้อมูลจริงจากเครือ CP ALL (7-11, Lotus, Makro) - ไม่มีใครทำได้</li>
             <li>✅ Data Insights แบบเรียลไทม์ - รู้ว่าลูกค้าต้องการอะไร</li>
             <li>✅ Predictive Analytics ด้วย AI - ทำนายเทรนด์ล่วงหน้า</li>

@@ -71,7 +71,7 @@ export const createDealSchema = z.object({
   valid_from:     z.string().datetime().optional(),
   valid_until:    z.string().datetime().optional(),
   promo_rules:    promoRulesSchema.optional().default({}),
-  metadata:       z.record(z.unknown()).optional().default({}),
+  metadata:       z.record(z.string(), z.unknown()).optional().default({}),
   image_url:      z.string().url().optional().or(z.literal('')),
   tags:           z.array(z.string().max(50)).max(20).optional().default([]),
   quota_total:    z.number().int().min(1).optional(),

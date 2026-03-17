@@ -57,18 +57,18 @@ export default function MarketInsights() {
   return (
     <div className="space-y-8">
       {/* Header with AI Badge */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white border-2 border-[#FF5722] shadow-2xl">
+      <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="bg-gradient-to-br from-[#FF5722] to-[#FF7043] p-2 sm:p-3 rounded-lg sm:rounded-xl">
               <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-2xl font-bold">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
                 <span className="hidden sm:inline">All Pro AI Intelligence</span>
                 <span className="sm:hidden">AI Intelligence</span>
               </h2>
-              <p className="text-gray-300 text-xs sm:text-sm">
+              <p className="text-gray-500 text-xs sm:text-sm">
                 <span className="hidden md:inline">Real-time Consumer Behavior Analytics</span>
                 <span className="md:hidden">Real-time Analytics</span>
               </p>
@@ -92,12 +92,12 @@ export default function MarketInsights() {
             { label: 'Data Accuracy', value: consumerData.brand_insights.cp_all_advantage.data_accuracy + '%', icon: Target },
             { label: 'Market Penetration', value: consumerData.brand_insights.market_penetration.bangkok + '%', icon: Activity }
           ].map((stat, idx) => (
-            <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/20">
+            <div key={idx} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
               <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
                 <stat.icon className="w-3 h-3 sm:w-4 sm:h-4 text-[#FF5722]" />
-                <p className="text-xs text-gray-300 truncate">{stat.label}</p>
+                <p className="text-xs text-gray-500 truncate">{stat.label}</p>
               </div>
-              <p className="text-lg sm:text-2xl font-bold text-white">{stat.value}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{stat.value}</p>
             </div>
           ))}
         </div>

@@ -9,6 +9,106 @@ import dynamic from 'next/dynamic';
 
 const BranchAvailability = dynamic(() => import('@/components/BranchAvailability'), { ssr: false });
 
+// Mock data สำหรับ Trending Searches — fallback เมื่อไม่พบสินค้าในฐานข้อมูลหลัก
+const TRENDING_PRODUCTS: Record<string, any> = {
+  'p-starbucks-b1g1': {
+    id: 'p-starbucks-b1g1',
+    title: 'Starbucks Buy 1 Get 1 Free ☕',
+    shopName: 'Starbucks Thailand',
+    category: 'Beverages',
+    image: 'https://images.unsplash.com/photo-1504630083234-14187a9df0f5?w=800&q=80',
+    price: 125,
+    originalPrice: 250,
+    promoPrice: 125,
+    description: 'โปรโมชั่นสุดพิเศษ! ซื้อ 1 แถม 1 เครื่องดื่มทุกแก้ว ทุกขนาด ทุกสาขา ตั้งแต่วันนี้ – สิ้นเดือนนี้เท่านั้น ไม่ว่าจะเป็น Frappuccino, Latte หรือ Cold Brew ซื้อแก้วแรกราคาเต็ม แถมแก้วที่สองฟรีทันที!',
+    tags: ['ซื้อ 1 แถม 1', 'เครื่องดื่ม', 'จำกัดเวลา'],
+  },
+  'p-buffet-500': {
+    id: 'p-buffet-500',
+    title: 'บุฟเฟ่ต์ Under 500 บาท 🍽️',
+    shopName: 'Sukishi / Bar B Q Plaza',
+    category: 'Dining',
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=80',
+    price: 399,
+    originalPrice: 699,
+    promoPrice: 399,
+    description: 'รวมดีลบุฟเฟ่ต์ราคาไม่เกิน 500 บาท จากร้านดังทั่วกรุงเทพ! ทั้งปิ้งย่าง ชาบู ซูชิ ทานไม่อั้น จ่ายราคาเบาๆ พร้อมเครื่องดื่มฟรีไม่จำกัด',
+    tags: ['บุฟเฟ่ต์', 'ลดราคา', 'ทานไม่อั้น'],
+  },
+  'p-iphone15pro': {
+    id: 'p-iphone15pro',
+    title: 'iPhone 15 Pro 256GB ราคาพิเศษ 📱',
+    shopName: 'Apple Authorized Reseller',
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&q=80',
+    price: 38900,
+    originalPrice: 48900,
+    promoPrice: 38900,
+    description: 'iPhone 15 Pro 256GB สีไทเทเนียม ราคาพิเศษเฉพาะช่วงนี้! ชิป A17 Pro กล้อง 48MP ระบบ ProRes จอ Super Retina XDR 6.1 นิ้ว ของแท้จาก Apple พร้อมประกันศูนย์ 1 ปี',
+    tags: ['ลด 20%', 'ส่งฟรี', 'ผ่อน 0%'],
+  },
+  'p-7eleven-50off': {
+    id: 'p-7eleven-50off',
+    title: '7-Eleven ลด 50% ทุกสินค้า 🏪',
+    shopName: '7-Eleven Thailand',
+    category: 'Retail',
+    image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&q=80',
+    price: 50,
+    originalPrice: 100,
+    promoPrice: 50,
+    description: 'โปรสุดแรง! 7-Eleven จัดหนักลด 50% สินค้าอาหาร เครื่องดื่ม และขนมขบเคี้ยว ทุกสาขาทั่วประเทศ เฉพาะสมาชิก All Member เท่านั้น สแกน QR Code ที่เคาน์เตอร์',
+    tags: ['ลด 50%', 'ทุกสาขา', 'สมาชิกเท่านั้น'],
+  },
+  'p-free-shipping': {
+    id: 'p-free-shipping',
+    title: 'ส่งฟรีทั่วไทย! 📦 E-commerce Mega Sale',
+    shopName: 'Shopee / Lazada',
+    category: 'E-commerce',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
+    price: 0,
+    originalPrice: 60,
+    promoPrice: 0,
+    description: 'โค้ดส่งฟรีทั่วไทย ไม่มีขั้นต่ำ! ใช้ได้กับทุกร้านค้าบน Shopee และ Lazada รวมสินค้ากว่า 100,000 รายการ กรอกโค้ด ALLPROFREE ก่อนชำระเงิน',
+    tags: ['ส่งฟรี', 'ไม่มีขั้นต่ำ', 'ทุกร้านค้า'],
+  },
+  'p-flash-sale': {
+    id: 'p-flash-sale',
+    title: 'Flash Sale ⚡ ลดสูงสุด 90%',
+    shopName: 'All Pro Official',
+    category: 'Limited Time',
+    image: 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=800&q=80',
+    price: 99,
+    originalPrice: 990,
+    promoPrice: 99,
+    description: 'Flash Sale สุดโหด! สินค้าแบรนด์ดังลดสูงสุด 90% มีทุกหมวดตั้งแต่แฟชั่น อิเล็กทรอนิกส์ ของใช้ in บ้าน เหลือเวลาอีกเพียง 24 ชั่วโมงเท่านั้น! จำนวนจำกัด',
+    tags: ['ลด 90%', 'จำกัดเวลา', '24 ชม.'],
+  },
+  'p-lotus-hotdeal': {
+    id: 'p-lotus-hotdeal',
+    title: "Lotus's ดีลสุดร้อน 🔥 ลดแหลก!",
+    shopName: "Lotus's / Makro",
+    category: 'Supermarket',
+    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80',
+    price: 299,
+    originalPrice: 599,
+    promoPrice: 299,
+    description: "Lotus's จัดหนัก! สินค้าอุปโภคบริโภคลดราคาสูงสุด 50% ทุกหมวด ทั้งอาหารสด ของใช้ในบ้าน เครื่องสำอาง ของใช้เด็ก พร้อมแจกคูปองส่วนลดเพิ่มอีก 100 บาท",
+    tags: ['ลด 50%', 'สินค้าอุปโภค', 'คูปอง'],
+  },
+  'p-travel-pkg': {
+    id: 'p-travel-pkg',
+    title: 'แพ็กเกจท่องเที่ยว 3 วัน 2 คืน ✈️',
+    shopName: 'Agoda / Klook',
+    category: 'Travel',
+    image: 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=800&q=80',
+    price: 2990,
+    originalPrice: 5990,
+    promoPrice: 2990,
+    description: 'แพ็กเกจท่องเที่ยวสุดคุ้ม 3 วัน 2 คืน รวมที่พัก 4 ดาว + อาหารเช้า + รถรับส่ง + กิจกรรมท่องเที่ยว เลือกได้ทั้งเชียงใหม่ กระบี่ ภูเก็ต และเกาะสมุย จองวันนี้รับส่วนลดเพิ่มอีก 500 บาท!',
+    tags: ['แพ็กเกจ', 'ลด 50%', 'รวมทุกอย่าง'],
+  },
+};
+
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -16,11 +116,17 @@ export default function ProductDetailPage() {
   
   const [product, setProduct] = useState<any | null>(null);
 
-  // ดึงสินค้าจาก Store
+  // ดึงสินค้าจาก Store หรือ fallback เป็น Trending Mock Data
   useEffect(() => {
     fetchProducts().then(() => {
       const foundProduct = getProductById(id as string);
-      setProduct(foundProduct || null);
+      if (foundProduct) {
+        setProduct(foundProduct);
+      } else if (TRENDING_PRODUCTS[id as string]) {
+        setProduct(TRENDING_PRODUCTS[id as string]);
+      } else {
+        setProduct(null);
+      }
     });
   }, [id, fetchProducts, getProductById]);
 
@@ -141,13 +247,24 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Pricing */}
-        <div className="flex items-baseline gap-3 mb-8 border-b border-gray-100 pb-6">
+        <div className="flex items-baseline gap-3 mb-4 border-b border-gray-100 pb-6">
             <span className="text-4xl font-black text-red-600">฿{promoPrice.toLocaleString()}</span>
             <div className="flex flex-col">
                 <span className="text-sm text-gray-400 line-through">ปกติ ฿{originalPrice.toLocaleString()}</span>
                 <span className="text-xs text-red-500 font-bold">ประหยัด ฿{savings.toLocaleString()}</span>
             </div>
         </div>
+
+        {/* Tags */}
+        {product.tags && product.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            {product.tags.map((tag: string, idx: number) => (
+              <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-200">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* 👇 Price History Graph */}
         <div className="mb-8 p-5 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-blue-100">

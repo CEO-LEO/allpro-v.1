@@ -1,18 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, Filter, X } from 'lucide-react';
 
 const trendingTags = [
-  { text: 'Starbucks Buy 1 Free 1', category: 'Beverages', count: '2.4k' },
-  { text: 'Buffet Under 500', category: 'Dining', count: '1.8k' },
-  { text: 'iPhone 15 Pro', category: 'Electronics', count: '3.2k' },
-  { text: '7-Eleven 50% Off', category: 'Retail', count: '5.1k' },
-  { text: 'Free Shipping', category: 'E-commerce', count: '4.3k' },
-  { text: 'Flash Sale', category: 'Limited Time', count: '6.7k' },
-  { text: 'Lotus Hot Deal', category: 'Supermarket', count: '2.9k' },
-  { text: 'Travel Packages', category: 'Tourism', count: '1.5k' },
+  { id: 1, text: 'Starbucks Buy 1 Free 1', category: 'Beverages', count: '2.4k', productId: 'p-starbucks-b1g1' },
+  { id: 2, text: 'Buffet Under 500', category: 'Dining', count: '1.8k', productId: 'p-buffet-500' },
+  { id: 3, text: 'iPhone 15 Pro', category: 'Electronics', count: '3.2k', productId: 'p-iphone15pro' },
+  { id: 4, text: '7-Eleven 50% Off', category: 'Retail', count: '5.1k', productId: 'p-7eleven-50off' },
+  { id: 5, text: 'Free Shipping', category: 'E-commerce', count: '4.3k', productId: 'p-free-shipping' },
+  { id: 6, text: 'Flash Sale', category: 'Limited Time', count: '6.7k', productId: 'p-flash-sale' },
+  { id: 7, text: 'Lotus Hot Deal', category: 'Supermarket', count: '2.9k', productId: 'p-lotus-hotdeal' },
+  { id: 8, text: 'Travel Packages', category: 'Tourism', count: '1.5k', productId: 'p-travel-pkg' },
 ];
 
 const categories = [
@@ -28,6 +29,7 @@ const categories = [
 ];
 
 export default function TrendingTags() {
+  const router = useRouter();
   const [showFilter, setShowFilter] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -117,10 +119,11 @@ export default function TrendingTags() {
         >
           {duplicatedTags.map((tag, index) => (
             <motion.button
-              key={index}
+              key={`${tag.id}-${index}`}
+              onClick={() => router.push(`/product/${tag.productId}`)}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
-              className="flex-shrink-0 px-4 py-2.5 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-300 rounded-lg transition-all flex items-center gap-3 whitespace-nowrap group"
+              className="flex-shrink-0 px-4 py-2.5 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-300 rounded-lg transition-all flex items-center gap-3 whitespace-nowrap group cursor-pointer"
             >
               <div>
                 <div className="text-body-sm text-gray-900 group-hover:text-red-600 transition-colors">

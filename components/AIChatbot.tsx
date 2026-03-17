@@ -1,11 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { MessageCircle, X, Send, Bot, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-
-// ใช้ API Key จาก environment variable
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
 
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,18 +29,29 @@ export default function AIChatbot() {
     setLoading(true);
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      const result = await model.generateContent(userMessage);
-      const response = await result.response;
-      const text = response.text();
-      
-      setMessages((prev) => [...prev, { role: "model", text: text }]);
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage,
+          history: messages.filter((m) => m.text !== "สวัสดีครับ! ผมคือ PromoBot 🤖 มีอะไรให้ช่วยหาโปรโมชั่นไหมครับ?"),
+        }),
+      });
+
+      if (!res.ok) throw new Error("API request failed");
+
+      const data = await res.json();
+      setMessages((prev) => [...prev, { role: "model", text: data.text }]);
     } catch (error) {
       console.error(error);
-      setMessages((prev) => [...prev, { role: "model", text: "ขอโทษครับ ระบบ AI ขัดข้องชั่วคราว หรือ API Key ไม่ถูกต้อง กรุณาตั้งค่า NEXT_PUBLIC_GEMINI_API_KEY ใน .env.local" }]);
+      setMessages((prev) => [...prev, { role: "model", text: "ขอโทษครับ ระบบ AI ขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง 🙏" }]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
   };
 
   return (
@@ -70,8 +77,8 @@ export default function AIChatbot() {
               <span className="font-bold">PromoBot AI</span>
             </div>
             <button 
-              onClick={() => setIsOpen(false)} 
-              className="hover:bg-purple-500 p-1 rounded transition"
+              onClick={handleClose} 
+              className="hover:bg-purple-500 p-1.5 rounded-lg transition"
               aria-label="Close chat"
             >
               <X size={20} />

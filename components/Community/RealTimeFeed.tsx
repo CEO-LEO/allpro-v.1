@@ -28,6 +28,20 @@ import type { BrandPost, UserPost } from '@/data/communityPosts';
 // ─── Google Maps libraries ──────────────────────────────────────────────────
 const GOOGLE_MAPS_LIBS: ('places')[] = ['places'];
 
+// ─── Category tags for filtering ────────────────────────────────────────────
+const CATEGORY_TAGS = ['ของกิน', 'เสื้อผ้า', 'การท่องเที่ยว', 'โปรพิเศษ'] as const;
+type CategoryTag = (typeof CATEGORY_TAGS)[number];
+
+// Map existing category names from mock data → Thai tag
+function mapCategoryToTag(category?: string): CategoryTag {
+  if (!category) return 'โปรพิเศษ';
+  const lower = category.toLowerCase();
+  if (['food', 'drinks', 'groceries', 'dining', 'café', 'cafe', 'restaurant', 'ของกิน'].includes(lower)) return 'ของกิน';
+  if (['fashion', 'clothing', 'apparel', 'เสื้อผ้า'].includes(lower)) return 'เสื้อผ้า';
+  if (['travel', 'hotel', 'tourism', 'การท่องเที่ยว'].includes(lower)) return 'การท่องเที่ยว';
+  return 'โปรพิเศษ';
+}
+
 // ─── Unified feed item ──────────────────────────────────────────────────────
 interface FeedItem {
   id: string;
@@ -44,6 +58,7 @@ interface FeedItem {
   lng?: number;
   discount?: string;
   category?: string;
+  tag: CategoryTag;
   likes: number;
   comments: number;
   reposts: number;
@@ -72,12 +87,22 @@ function brandToFeed(p: BrandPost): FeedItem {
     location: p.location,
     discount: p.discount,
     category: p.category,
+    tag: mapCategoryToTag(p.category),
     likes: p.likes,
     comments: Math.floor(Math.random() * 30) + 5,
     reposts: Math.floor(p.shares * 0.6),
     shares: p.shares,
     isBrand: true,
   };
+}
+
+// Map user post content to a tag based on keywords
+function guessUserTag(caption: string): CategoryTag {
+  const lower = caption.toLowerCase();
+  if (/coffee|café|food|lunch|ramen|pizza|snack|milk|chicken|meal|drink|อาหาร|กาแฟ/.test(lower)) return 'ของกิน';
+  if (/fashion|clothes|shirt|เสื้อ|skincare|beauty|boots/.test(lower)) return 'เสื้อผ้า';
+  if (/travel|hotel|flight|ท่องเที่ยว|gym|fitness/.test(lower)) return 'การท่องเที่ยว';
+  return 'โปรพิเศษ';
 }
 
 function userToFeed(p: UserPost): FeedItem {
@@ -91,6 +116,7 @@ function userToFeed(p: UserPost): FeedItem {
     content: p.caption,
     imageUrl: p.imageUrl,
     location: p.location,
+    tag: guessUserTag(p.caption),
     likes: p.helpful,
     comments: p.comments,
     reposts: Math.floor(p.helpful * 0.3),
@@ -224,8 +250,13 @@ function PostRow({ item }: { item: FeedItem }) {
           </div>
 
           {/* Badges */}
-          {(item.discount || item.location || item.category) && (
+          {(item.discount || item.location || item.category || item.tag) && (
             <div className="flex flex-wrap items-center gap-2 mt-2.5">
+              {item.tag && (
+                <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-600 ring-1 ring-purple-200">
+                  {item.tag}
+                </span>
+              )}
               {item.discount && (
                 <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-600 ring-1 ring-red-200">
                   <TrendingUp className="w-3 h-3" />
@@ -504,9 +535,11 @@ interface RealTimeFeedProps {
 
 export default function RealTimeFeed({ showCreateModal = false, setShowCreateModal }: RealTimeFeedProps) {
   const [activeTab, setActiveTab] = useState<FeedTab>('brands');
+  const [selectedTag, setSelectedTag] = useState<CategoryTag | 'ทั้งหมด'>('ทั้งหมด');
 
   // — Create-post modal state —
   const [modalText, setModalText] = useState('');
+  const [modalTag, setModalTag] = useState<CategoryTag | null>(null);
   const [modalImagePreview, setModalImagePreview] = useState<string | null>(null);
   const [modalLocation, setModalLocation] = useState('');
   // ── Google Places Autocomplete state ──
@@ -533,7 +566,8 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
     ...extraUserItems,
     ...mockUserPosts.map(userToFeed),
   ];
-  const feed = activeTab === 'brands' ? brandFeed : userFeed;
+  const rawFeed = activeTab === 'brands' ? brandFeed : userFeed;
+  const feed = selectedTag === 'ทั้งหมด' ? rawFeed : rawFeed.filter((item) => item.tag === selectedTag);
 
   // — Modal handlers —
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -555,6 +589,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
   const closeModal = () => {
     setShowCreateModal?.(false);
     setModalText('');
+    setModalTag(null);
     removeImage();
     setModalLocation('');
     setSelectedPlaceId(null);
@@ -562,7 +597,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
   };
 
   const handleModalSubmit = async () => {
-    if (!modalText.trim() || !modalImagePreview || isSubmitting) return;
+    if (!modalText.trim() || !modalImagePreview || !modalTag || isSubmitting) return;
     setIsSubmitting(true);
     await new Promise((r) => setTimeout(r, 800));
 
@@ -579,6 +614,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
       placeId: selectedPlaceId ?? undefined,
       lat: selectedCoords?.lat,
       lng: selectedCoords?.lng,
+      tag: modalTag,
       likes: 0,
       comments: 0,
       reposts: 0,
@@ -642,6 +678,29 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                 activeTab === 'users' ? 'bg-white/20' : 'bg-gray-200'
               }`}>{userFeed.length}</span>
             </button>
+          </div>
+
+          {/* Category Tag Filters */}
+          <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
+            {(['ทั้งหมด', ...CATEGORY_TAGS] as const).map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setSelectedTag(tag)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                  selectedTag === tag
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25 scale-105'
+                    : 'bg-white text-gray-500 hover:bg-purple-50 hover:text-purple-600 shadow-sm border border-gray-200'
+                }`}
+              >
+                {tag === 'ทั้งหมด' && '🏷️ '}
+                {tag === 'ของกิน' && '🍜 '}
+                {tag === 'เสื้อผ้า' && '👗 '}
+                {tag === 'การท่องเที่ยว' && '✈️ '}
+                {tag === 'โปรพิเศษ' && '🔥 '}
+                {tag}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -728,6 +787,36 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                 autoFocus
               />
 
+              {/* Tag selector */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  🏷️ เลือกหมวดหมู่ <span className="text-red-500">*</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setModalTag(tag)}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                        modalTag === tag
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md scale-105'
+                          : 'bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600 border border-gray-200'
+                      }`}
+                    >
+                      {tag === 'ของกิน' && '🍜 '}
+                      {tag === 'เสื้อผ้า' && '👗 '}
+                      {tag === 'การท่องเที่ยว' && '✈️ '}
+                      {tag === 'โปรพิเศษ' && '🔥 '}
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                {!modalTag && modalText.trim() && (
+                  <p className="text-xs text-red-400 mt-1.5">กรุณาเลือกหมวดหมู่ก่อนโพสต์</p>
+                )}
+              </div>
+
               {/* Image upload */}
               <div>
                 <input
@@ -802,9 +891,9 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
               <button
                 type="button"
                 onClick={handleModalSubmit}
-                disabled={!modalText.trim() || !modalImagePreview || isSubmitting}
+                disabled={!modalText.trim() || !modalImagePreview || !modalTag || isSubmitting}
                 className={`px-7 py-2.5 rounded-full text-sm font-bold transition-all ${
-                  modalText.trim() && modalImagePreview && !isSubmitting
+                  modalText.trim() && modalImagePreview && modalTag && !isSubmitting
                     ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:shadow-lg hover:shadow-orange-500/25 hover:scale-105'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
