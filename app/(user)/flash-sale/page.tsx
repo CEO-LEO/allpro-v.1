@@ -7,7 +7,26 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, ClockIcon, FireIcon, BoltIcon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/solid';
 import { MapPinIcon, HeartIcon } from '@heroicons/react/24/outline';
 
-// Flash sale item type
+/*
+ * Expected API Response: GET /api/flash-sales
+ * Response: { sales: FlashSaleItem[], categories: string[] }
+ *
+ * interface FlashSaleItem {
+ *   id: number;
+ *   title: string;
+ *   merchant: string;
+ *   discount: number;         // percent
+ *   originalPrice: number;
+ *   salePrice: number;
+ *   image: string;
+ *   endTime: string;          // ISO date — will be converted to Date
+ *   claimed: number;
+ *   total: number;
+ *   location: string;
+ *   category: string;
+ * }
+ */
+
 interface FlashSaleItem {
   id: number;
   title: string;
@@ -23,93 +42,7 @@ interface FlashSaleItem {
   category: string;
 }
 
-// Mock flash sale data
-const FLASH_SALES: FlashSaleItem[] = [
-  {
-    id: 1,
-    title: 'ลดสูงสุด 70% ทุกเมนูกาแฟ',
-    merchant: 'Starbucks Thailand',
-    discount: 70,
-    originalPrice: 150,
-    salePrice: 45,
-    image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500',
-    endTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-    claimed: 234,
-    total: 500,
-    location: 'สาขาเซ็นทรัลเวิลด์',
-    category: 'เครื่องดื่ม'
-  },
-  {
-    id: 2,
-    title: 'ซื้อ 1 แถม 1 ทุกเมนู',
-    merchant: 'KFC Thailand',
-    discount: 50,
-    originalPrice: 299,
-    salePrice: 149,
-    image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500',
-    endTime: new Date(Date.now() + 1.5 * 60 * 60 * 1000),
-    claimed: 567,
-    total: 1000,
-    location: 'ทุกสาขา',
-    category: 'อาหาร'
-  },
-  {
-    id: 3,
-    title: 'Flash Sale รองเท้าผ้าใบ',
-    merchant: 'Nike Store',
-    discount: 60,
-    originalPrice: 3990,
-    salePrice: 1596,
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500',
-    endTime: new Date(Date.now() + 3 * 60 * 60 * 1000),
-    claimed: 89,
-    total: 200,
-    location: 'สาขาสยามพารากอน',
-    category: 'แฟชั่น'
-  },
-  {
-    id: 4,
-    title: 'ลด 80% ครีมบำรุงผิว',
-    merchant: "L'Oréal Paris",
-    discount: 80,
-    originalPrice: 890,
-    salePrice: 178,
-    image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=500',
-    endTime: new Date(Date.now() + 0.5 * 60 * 60 * 1000),
-    claimed: 445,
-    total: 500,
-    location: 'ออนไลน์',
-    category: 'ความงาม'
-  },
-  {
-    id: 5,
-    title: 'โปรโมชั่นบุฟเฟ่ต์',
-    merchant: 'Shabu Shi',
-    discount: 45,
-    originalPrice: 599,
-    salePrice: 329,
-    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500',
-    endTime: new Date(Date.now() + 4 * 60 * 60 * 1000),
-    claimed: 123,
-    total: 300,
-    location: 'สาขาเทอมินอล 21',
-    category: 'อาหาร'
-  },
-  {
-    id: 6,
-    title: 'ลด 55% ทุกเมนูชา',
-    merchant: 'ChaTraMue',
-    discount: 55,
-    originalPrice: 65,
-    salePrice: 29,
-    image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500',
-    endTime: new Date(Date.now() + 1 * 60 * 60 * 1000),
-    claimed: 678,
-    total: 1000,
-    location: 'ทุกสาขา',
-    category: 'เครื่องดื่ม'
-  },
-];
+// Flash sale data is loaded from API (see state in FlashSalePage component)
 
 function TimeDisplay({ endTime }: { endTime: Date }) {
   const [timeLeft, setTimeLeft] = useState('');
@@ -247,11 +180,41 @@ export default function FlashSalePage() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<FlashSaleItem | null>(null);
 
-  const categories = ['ทั้งหมด', 'อาหาร', 'เครื่องดื่ม', 'แฟชั่น', 'ความงาม'];
+  // ── API-Ready State ──
+  const [flashSales, setFlashSales] = useState<FlashSaleItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+
+  // TODO: Replace with actual API call
+  // useEffect(() => {
+  //   const fetchFlashSales = async () => {
+  //     setIsLoading(true);
+  //     setIsError(false);
+  //     try {
+  //       const res = await fetch('/api/flash-sales');
+  //       if (!res.ok) throw new Error('Failed to fetch');
+  //       const data = await res.json();
+  //       // Convert endTime strings to Date objects
+  //       setFlashSales(data.sales.map((s: any) => ({ ...s, endTime: new Date(s.endTime) })));
+  //     } catch {
+  //       setIsError(true);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   fetchFlashSales();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const categories = ['ทั้งหมด', ...Array.from(new Set(flashSales.map(s => s.category)))];
 
   const filteredSales = filter === 'ทั้งหมด' 
-    ? FLASH_SALES 
-    : FLASH_SALES.filter(sale => sale.category === filter);
+    ? flashSales 
+    : flashSales.filter(sale => sale.category === filter);
 
   const toggleFavorite = (id: number) => {
     setFavorites(prev => 
@@ -290,7 +253,7 @@ export default function FlashSalePage() {
             <div className="hidden md:block">
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/20">
                 <p className="text-body-sm text-white/80 mb-1">ดีลที่กำลังเป็นฮิต</p>
-                <p className="text-display font-bold">{FLASH_SALES.length}</p>
+                <p className="text-display font-bold">{flashSales.length}</p>
               </div>
             </div>
           </div>
@@ -320,6 +283,42 @@ export default function FlashSalePage() {
 
       {/* Flash Sales Grid */}
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
+                <div className="aspect-[4/3] bg-gray-200" />
+                <div className="p-4 space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  <div className="flex gap-2">
+                    <div className="h-6 bg-gray-200 rounded w-20" />
+                    <div className="h-6 bg-gray-200 rounded w-16" />
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full" />
+                  <div className="h-10 bg-gray-200 rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h3 className="text-h3 text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
+            <p className="text-gray-600 mb-6">ไม่สามารถโหลด Flash Sale ได้</p>
+            <button onClick={() => window.location.reload()} className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg font-semibold">ลองใหม่</button>
+          </div>
+        ) : flashSales.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
+            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BoltIcon className="w-10 h-10 text-orange-300" />
+            </div>
+            <h3 className="text-h3 text-gray-800 mb-2">ยังไม่มี Flash Sale ในขณะนี้</h3>
+            <p className="text-gray-500">กลับมาตรวจสอบอีกครั้งเร็วๆ นี้</p>
+          </div>
+        ) : (
         <AnimatePresence mode="popLayout">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredSales.map((sale, index) => (
@@ -419,8 +418,9 @@ export default function FlashSalePage() {
             ))}
           </div>
         </AnimatePresence>
+        )}
 
-        {filteredSales.length === 0 && (
+        {!isLoading && filteredSales.length === 0 && flashSales.length > 0 && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🔥</div>
             <h3 className="text-h3 text-gray-800 mb-2">ไม่พบ Flash Sale</h3>

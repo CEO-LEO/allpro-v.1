@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   UtensilsCrossed, 
@@ -20,62 +21,45 @@ interface CategorySliderProps {
 interface Category {
   id: string;
   name: string;
-  icon: React.ReactNode;
+  iconName: string;
   color: string;
 }
 
-const categories: Category[] = [
-  {
-    id: 'all',
-    name: 'ทั้งหมด',
-    icon: <ShoppingBag className="w-5 h-5" />,
-    color: 'bg-gray-600'
-  },
-  {
-    id: 'อาหาร',
-    name: 'อาหาร',
-    icon: <UtensilsCrossed className="w-5 h-5" />,
-    color: 'bg-orange-600'
-  },
-  {
-    id: 'เครื่องดื่ม',
-    name: 'เครื่องดื่ม',
-    icon: <Coffee className="w-5 h-5" />,
-    color: 'bg-amber-700'
-  },
-  {
-    id: 'แฟชั่น',
-    name: 'แฟชั่น',
-    icon: <Shirt className="w-5 h-5" />,
-    color: 'bg-purple-600'
-  },
-  {
-    id: 'ของใช้',
-    name: 'ของใช้',
-    icon: <Home className="w-5 h-5" />,
-    color: 'bg-blue-600'
-  },
-  {
-    id: 'ไอที',
-    name: 'ไอที',
-    icon: <Smartphone className="w-5 h-5" />,
-    color: 'bg-indigo-600'
-  },
-  {
-    id: 'ขนม',
-    name: 'ขนม',
-    icon: <Sparkles className="w-5 h-5" />,
-    color: 'bg-pink-600'
-  },
-  {
-    id: 'ของหวาน',
-    name: 'ของหวาน',
-    icon: <Heart className="w-5 h-5" />,
-    color: 'bg-rose-600'
-  }
-];
+// Map สำหรับ resolve icon จากชื่อ string (API)
+const ICON_MAP: Record<string, React.ReactNode> = {
+  ShoppingBag: <ShoppingBag className="w-5 h-5" />,
+  UtensilsCrossed: <UtensilsCrossed className="w-5 h-5" />,
+  Coffee: <Coffee className="w-5 h-5" />,
+  Shirt: <Shirt className="w-5 h-5" />,
+  Home: <Home className="w-5 h-5" />,
+  Smartphone: <Smartphone className="w-5 h-5" />,
+  Sparkles: <Sparkles className="w-5 h-5" />,
+  Heart: <Heart className="w-5 h-5" />,
+};
 
 export default function CategorySlider({ activeCategory, onCategoryChange }: CategorySliderProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // TODO: เชื่อมต่อ API จริง
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const res = await fetch('/api/categories/slider');
+  //       const data = await res.json();
+  //       setCategories(data.categories);
+  //     } catch (err) { console.error(err); }
+  //     finally { setIsLoading(false); }
+  //   };
+  //   fetchCategories();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="bg-white border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 py-4">
@@ -84,7 +68,17 @@ export default function CategorySlider({ activeCategory, onCategoryChange }: Cat
         {/* Scrollable Categories */}
         <div className="overflow-x-auto hide-scrollbar">
           <div className="flex gap-3 pb-1">
-            {categories.map((category) => {
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-2 p-3 min-w-[80px] animate-pulse">
+                  <div className="w-12 h-12 rounded-full bg-gray-200" />
+                  <div className="w-10 h-3 bg-gray-200 rounded" />
+                </div>
+              ))
+            ) : categories.length === 0 ? (
+              <p className="text-sm text-gray-500 py-4 text-center w-full">ไม่มีหมวดหมู่</p>
+            ) : (
+            categories.map((category) => {
               const isActive = activeCategory === category.id;
               
               return (
@@ -106,12 +100,13 @@ export default function CategorySlider({ activeCategory, onCategoryChange }: Cat
                     w-12 h-12 rounded-full flex items-center justify-center
                     ${isActive ? 'bg-white/20' : 'bg-white'}
                   `}>
-                    {category.icon}
+                    {ICON_MAP[category.iconName] || <ShoppingBag className="w-5 h-5" />}
                   </div>
                   <span className="text-xs font-medium">{category.name}</span>
                 </motion.button>
               );
-            })}
+            })
+            )}
           </div>
         </div>
       </div>

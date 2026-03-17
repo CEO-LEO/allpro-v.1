@@ -1,56 +1,68 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { TicketIcon, ClockIcon, CheckCircleIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
-const coupons = [
-  {
-    id: 1,
-    code: 'CPALL100',
-    title: 'ส่วนลด 100 บาท สำหรับ CP ALL',
-    description: 'ใช้ได้กับโปรโมชั่นจาก 7-Eleven, Lotus, Makro',
-    discount: '100฿',
-    minPurchase: '500฿',
-    validUntil: '2026-02-28',
-    usage: '245/1000',
-    type: 'verified'
-  },
-  {
-    id: 2,
-    code: 'WELCOME50',
-    title: 'ต้อนรับสมาชิกใหม่ ลด 50 บาท',
-    description: 'สำหรับสมาชิกใหม่ทุกคน ใช้ได้ทันทีเมื่อสมัคร',
-    discount: '50฿',
-    minPurchase: '200฿',
-    validUntil: '2026-12-31',
-    usage: '1,234/5,000',
-    type: 'new'
-  },
-  {
-    id: 3,
-    code: 'WEEKEND20',
-    title: 'Weekend Special ลด 20%',
-    description: 'ใช้ได้ทุกวันเสาร์-อาทิตย์ สูงสุด 200 บาท',
-    discount: '20%',
-    minPurchase: '300฿',
-    validUntil: '2026-02-28',
-    usage: '567/2,000',
-    type: 'special'
-  },
-  {
-    id: 4,
-    code: 'MERCHANT99',
-    title: 'สำหรับเจ้าของร้าน - SEO Package ลด 99฿',
-    description: 'ซื้อ SEO Ranking Package รับส่วนลดทันที',
-    discount: '99฿',
-    minPurchase: '299฿',
-    validUntil: '2026-01-31',
-    usage: '89/500',
-    type: 'merchant'
-  }
-];
+/*
+ * Expected API Response: GET /api/coupons
+ * Response: { coupons: CouponItem[] }
+ *
+ * interface CouponItem {
+ *   id: number;
+ *   code: string;
+ *   title: string;
+ *   description: string;
+ *   discount: string;        // e.g. "100฿", "20%"
+ *   minPurchase: string;     // e.g. "500฿"
+ *   validUntil: string;      // ISO date
+ *   usage: string;           // e.g. "245/1000"
+ *   type: 'verified' | 'new' | 'special' | 'merchant';
+ * }
+ */
+
+interface CouponItem {
+  id: number;
+  code: string;
+  title: string;
+  description: string;
+  discount: string;
+  minPurchase: string;
+  validUntil: string;
+  usage: string;
+  type: 'verified' | 'new' | 'special' | 'merchant';
+}
 
 export default function CouponsPage() {
+  // ── API-Ready State ──
+  const [coupons, setCoupons] = useState<CouponItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+
+  // TODO: Replace with actual API call
+  // useEffect(() => {
+  //   const fetchCoupons = async () => {
+  //     setIsLoading(true);
+  //     setIsError(false);
+  //     try {
+  //       const res = await fetch('/api/coupons');
+  //       if (!res.ok) throw new Error('Failed to fetch');
+  //       const data = await res.json();
+  //       setCoupons(data.coupons);
+  //     } catch {
+  //       setIsError(true);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   fetchCoupons();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleCopy = (code: string) => {
     navigator.clipboard.writeText(code);
     alert(`คัดลอกโค้ด ${code} แล้ว!`);
@@ -84,6 +96,40 @@ export default function CouponsPage() {
         </div>
 
         {/* Coupons Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200 animate-pulse">
+                <div className="p-5 space-y-3">
+                  <div className="h-5 bg-gray-200 rounded w-2/3" />
+                  <div className="h-4 bg-gray-200 rounded w-full" />
+                  <div className="h-12 bg-gray-100 rounded-lg" />
+                </div>
+                <div className="p-5 space-y-3 border-t">
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  <div className="h-3 bg-gray-200 rounded w-1/3" />
+                  <div className="h-2 bg-gray-200 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
+            <p className="text-sm text-gray-600">ไม่สามารถโหลดคูปองได้ กรุณาลองใหม่</p>
+          </div>
+        ) : coupons.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <TicketIcon className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีคูปองในขณะนี้</h3>
+            <p className="text-sm text-gray-500">กลับมาตรวจสอบใหม่เร็วๆ นี้</p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {coupons.map((coupon) => (
             <div 
@@ -193,6 +239,7 @@ export default function CouponsPage() {
             </div>
           ))}
         </div>
+        )}
 
         {/* CTA */}
         <div className="mt-12 text-center bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-8">

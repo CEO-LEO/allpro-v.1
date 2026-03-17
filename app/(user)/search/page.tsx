@@ -9,111 +9,29 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import PromoCard from '@/components/PromoCard';
 import { Promotion } from '@/lib/types';
 
-// Mock promotions data
-const MOCK_PROMOTIONS: Promotion[] = [
-  {
-    id: '1',
-    shop_name: 'Starbucks Thailand',
-    title: 'ลดสูงสุด 50% ทุกเมนู',
-    description: 'ลดสูงสุด 50% ทุกเมนู เฉพาะสมาชิก',
-    price: 150,
-    discount_rate: 50,
-    image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500',
-    category: 'เครื่องดื่ม',
-    location: 'สาขาเซ็นทรัลเวิลด์',
-    is_verified: true,
-    is_sponsored: false,
-    search_volume: 1250,
-    valid_until: '2026-03-31',
-    views: 2340,
-    saves: 456,
-  },
-  {
-    id: '2',
-    shop_name: 'KFC Thailand',
-    title: 'ซื้อ 1 แถม 1',
-    description: 'ซื้อ 1 แถม 1 ทุกเมนู',
-    price: 299,
-    discount_rate: 50,
-    image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500',
-    category: 'อาหาร',
-    location: 'ทุกสาขา',
-    is_verified: true,
-    is_sponsored: true,
-    search_volume: 3450,
-    valid_until: '2026-04-15',
-    views: 5670,
-    saves: 890,
-  },
-  {
-    id: '3',
-    shop_name: 'Nike Store',
-    title: 'Sale สูงสุด 60%',
-    description: 'Sale สูงสุด 60% รองเท้าผ้าใบ',
-    price: 3990,
-    discount_rate: 60,
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500',
-    category: 'แฟชั่น',
-    location: 'สาขาสยามพารากอน',
-    is_verified: true,
-    is_sponsored: false,
-    search_volume: 2100,
-    valid_until: '2026-03-20',
-    views: 4200,
-    saves: 678,
-  },
-  {
-    id: '4',
-    shop_name: "L'Oréal Paris",
-    title: 'ลด 80% ครีมบำรุงผิว',
-    description: 'ส่วนลดสูงสุด 80% สำหรับผลิตภัณฑ์ดูแลผิว',
-    price: 890,
-    discount_rate: 80,
-    image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=500',
-    category: 'ความงาม',
-    location: 'ออนไลน์',
-    is_verified: true,
-    is_sponsored: false,
-    search_volume: 1890,
-    valid_until: '2026-03-25',
-    views: 3450,
-    saves: 567,
-  },
-  {
-    id: '5',
-    shop_name: 'Central Department Store',
-    title: 'Flash Sale รองเท้าผู้ชาย',
-    description: 'Flash Sale รองเท้าผู้ชาย ลดสูงสุด 70%',
-    price: 2990,
-    discount_rate: 70,
-    image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500',
-    category: 'แฟชั่นผู้ชาย',
-    location: 'ทุกสาขา',
-    is_verified: true,
-    is_sponsored: true,
-    search_volume: 2890,
-    valid_until: '2026-03-18',
-    views: 6780,
-    saves: 1234,
-  },
-  {
-    id: '6',
-    shop_name: 'Bootsnall',
-    title: 'ลดสูงสุด 55% รองเท้าแตะ',
-    description: 'ส่วนลดพิเศษ รองเท้าแตะทุกรุ่น',
-    price: 399,
-    discount_rate: 55,
-    image: 'https://images.unsplash.com/photo-1603487742131-4160ec999306?w=500',
-    category: 'แฟชั่นผู้ชาย',
-    location: 'สาขาเซ็นทรัล',
-    is_verified: true,
-    is_sponsored: false,
-    search_volume: 890,
-    valid_until: '2026-04-01',
-    views: 1234,
-    saves: 234,
-  },
-];
+/*
+ * Expected API Response: GET /api/promotions/search?q=xxx&category=xxx
+ * Response: { promotions: Promotion[], total: number }
+ *
+ * Promotion interface (from @/lib/types):
+ * {
+ *   id: string;
+ *   shop_name: string;
+ *   title: string;
+ *   description: string;
+ *   price: number;
+ *   discount_rate: number;
+ *   image: string;
+ *   category: string;
+ *   location: string;
+ *   is_verified: boolean;
+ *   is_sponsored: boolean;
+ *   search_volume: number;
+ *   valid_until: string;       // ISO date
+ *   views: number;
+ *   saves: number;
+ * }
+ */
 
 const SORT_OPTIONS = [
   { value: 'popular', label: 'ยอดนิยม' },
@@ -139,8 +57,41 @@ export default function SearchPage() {
   const [filterBy, setFilterBy] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
+  // ── API-Ready State ──
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+
+  // TODO: Replace with actual API call
+  // useEffect(() => {
+  //   const fetchPromotions = async () => {
+  //     setIsLoading(true);
+  //     setIsError(false);
+  //     try {
+  //       const params = new URLSearchParams();
+  //       if (searchText) params.set('q', searchText);
+  //       if (category) params.set('category', category);
+  //       const res = await fetch(`/api/promotions/search?${params}`);
+  //       if (!res.ok) throw new Error('Failed to fetch');
+  //       const data = await res.json();
+  //       setPromotions(data.promotions);
+  //     } catch {
+  //       setIsError(true);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   fetchPromotions();
+  // }, [searchText, category]);
+
+  useEffect(() => {
+    // Simulate loading delay — remove when connecting real API
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Filter promotions based on category or search query
-  const filteredPromotions = MOCK_PROMOTIONS.filter(promo => {
+  const filteredPromotions = promotions.filter(promo => {
     if (category) {
       return promo.category.includes(category) || 
              promo.title.includes(category) ||
@@ -211,7 +162,11 @@ export default function SearchPage() {
           <div className="flex items-center justify-between gap-4">
             {/* Results Count */}
             <p className="text-body-sm text-gray-600">
-              พบ <span className="font-bold text-orange-600">{sortedPromotions.length}</span> รายการ
+              {isLoading ? (
+                <span className="inline-block h-4 w-20 bg-gray-200 rounded animate-pulse" />
+              ) : (
+                <>พบ <span className="font-bold text-orange-600">{sortedPromotions.length}</span> รายการ</>
+              )}
             </p>
 
             {/* Controls */}
@@ -276,7 +231,36 @@ export default function SearchPage() {
 
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {sortedPromotions.length > 0 ? (
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
+                <div className="aspect-[4/3] bg-gray-200" />
+                <div className="p-4 space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  <div className="h-3 bg-gray-200 rounded w-full" />
+                  <div className="h-8 bg-gray-200 rounded w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h3 className="text-h3 text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
+            <p className="text-gray-600 mb-6">ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-block px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
+            >
+              ลองใหม่
+            </button>
+          </div>
+        ) : sortedPromotions.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {sortedPromotions.map((promo, index) => (
               <motion.div

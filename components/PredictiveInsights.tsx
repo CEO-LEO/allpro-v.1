@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   Clock, 
@@ -21,53 +21,24 @@ import {
   Line 
 } from 'recharts';
 
-// Mock data for peak search hours
-const peakHoursData = [
-  { hour: '00:00', searches: 120 },
-  { hour: '03:00', searches: 80 },
-  { hour: '06:00', searches: 250 },
-  { hour: '09:00', searches: 820 },
-  { hour: '12:00', searches: 1450 },
-  { hour: '15:00', searches: 980 },
-  { hour: '18:00', searches: 1680 },
-  { hour: '21:00', searches: 1200 },
-];
+// Interfaces สำหรับข้อมูลจาก API
+interface PeakHourData {
+  hour: string;
+  searches: number;
+}
 
-// Mock data for trending products
-const trendingProducts = [
-  { 
-    name: 'นมโปรตีน', 
-    currentVolume: 1250,
-    predictedGrowth: 30,
-    reason: 'New Year Resolution - คนหันมาใส่ใจสุขภาพ',
-    confidence: 92
-  },
-  { 
-    name: 'ข้าวกล่อง', 
-    currentVolume: 2100,
-    predictedGrowth: 15,
-    reason: 'กลับเข้าออฟฟิศหลังวันหยุดยาว',
-    confidence: 85
-  },
-  { 
-    name: 'กาแฟ', 
-    currentVolume: 3500,
-    predictedGrowth: -5,
-    reason: 'ตลาดอิ่มตัว - ควรมีโปรโมชั่นเพื่อรักษาส่วนแบ่ง',
-    confidence: 78
-  },
-];
+interface TrendingProduct {
+  name: string;
+  currentVolume: number;
+  predictedGrowth: number;
+  reason: string;
+  confidence: number;
+}
 
-// Mock data for weekly trend
-const weeklyTrendData = [
-  { day: 'จันทร์', volume: 15000 },
-  { day: 'อังคาร', volume: 18000 },
-  { day: 'พุธ', volume: 22000 },
-  { day: 'พฤหัสฯ', volume: 25000 },
-  { day: 'ศุกร์', volume: 32000 },
-  { day: 'เสาร์', volume: 38000 },
-  { day: 'อาทิตย์', volume: 35000 },
-];
+interface WeeklyTrendData {
+  day: string;
+  volume: number;
+}
 
 interface PredictiveInsightsProps {
   location: string;
@@ -75,6 +46,31 @@ interface PredictiveInsightsProps {
 
 export default function PredictiveInsights({ location }: PredictiveInsightsProps) {
   const [activeTab, setActiveTab] = useState<'peak' | 'trend' | 'advice'>('peak');
+  const [peakHoursData, setPeakHoursData] = useState<PeakHourData[]>([]);
+  const [trendingProducts, setTrendingProducts] = useState<TrendingProduct[]>([]);
+  const [weeklyTrendData, setWeeklyTrendData] = useState<WeeklyTrendData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // TODO: เชื่อมต่อ API จริง
+  // useEffect(() => {
+  //   const fetchInsights = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const res = await fetch(`/api/insights/predictive?location=${encodeURIComponent(location)}`);
+  //       const data = await res.json();
+  //       setPeakHoursData(data.peakHours);
+  //       setTrendingProducts(data.trendingProducts);
+  //       setWeeklyTrendData(data.weeklyTrend);
+  //     } catch (err) { console.error(err); }
+  //     finally { setIsLoading(false); }
+  //   };
+  //   fetchInsights();
+  // }, [location]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -138,6 +134,19 @@ export default function PredictiveInsights({ location }: PredictiveInsightsProps
 
       {/* Content */}
       <div className="card p-6">
+        {isLoading ? (
+          <div className="space-y-4 animate-pulse">
+            <div className="h-16 bg-gray-100 rounded-lg" />
+            <div className="h-64 bg-gray-100 rounded-lg" />
+            <div className="grid grid-cols-3 gap-4">
+              <div className="h-24 bg-gray-100 rounded-lg" />
+              <div className="h-24 bg-gray-100 rounded-lg" />
+              <div className="h-24 bg-gray-100 rounded-lg" />
+            </div>
+            <div className="h-20 bg-gray-100 rounded-lg" />
+          </div>
+        ) : (
+        <>
         {/* Peak Hours Tab */}
         {activeTab === 'peak' && (
           <div className="space-y-6">
@@ -150,6 +159,13 @@ export default function PredictiveInsights({ location }: PredictiveInsightsProps
               </p>
             </div>
 
+            {peakHoursData.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">ยังไม่มีข้อมูล Peak Hours</p>
+              </div>
+            ) : (
+            <>
             {/* Heatmap Chart */}
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -196,6 +212,8 @@ export default function PredictiveInsights({ location }: PredictiveInsightsProps
                 หรือซื้อ SEO Boost ในช่วงเวลาดังกล่าวเพื่อ ROI ที่ดีที่สุด
               </p>
             </div>
+            </>
+            )}
           </div>
         )}
 
@@ -211,7 +229,15 @@ export default function PredictiveInsights({ location }: PredictiveInsightsProps
               </p>
             </div>
 
+            {weeklyTrendData.length === 0 && trendingProducts.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <TrendingUp className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">ยังไม่มีข้อมูล Trend</p>
+              </div>
+            ) : (
+            <>
             {/* Weekly Trend Chart */}
+            {weeklyTrendData.length > 0 && (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weeklyTrendData}>
@@ -229,6 +255,7 @@ export default function PredictiveInsights({ location }: PredictiveInsightsProps
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            )}
 
             {/* Trending Products */}
             <div className="space-y-4">
@@ -300,6 +327,8 @@ export default function PredictiveInsights({ location }: PredictiveInsightsProps
                 ควรสร้างโปรโมชั่นตอนนี้เลย!
               </p>
             </div>
+            </>
+            )}
           </div>
         )}
 
@@ -435,6 +464,8 @@ export default function PredictiveInsights({ location }: PredictiveInsightsProps
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

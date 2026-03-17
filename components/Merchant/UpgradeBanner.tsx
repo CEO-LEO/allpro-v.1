@@ -48,7 +48,7 @@ export default function UpgradeBanner() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 flex-1">
                 {/* Icon */}
-                <div className="hidden sm:block w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex-shrink-0 flex items-center justify-center">
+                <div className="hidden sm:flex w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex-shrink-0 items-center justify-center">
                   <RocketLaunchIcon className="w-6 h-6 text-white" />
                 </div>
                 

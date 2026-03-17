@@ -1,20 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useProductStore } from "@/store/useProductStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Upload, X, Zap } from "lucide-react";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1505252585461-04db1267ae5b?w=500&q=80";
 
 export default function CreateDealWidget() {
   const addProduct = useProductStore((s) => s.addProduct);
+  const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [useImageUrl, setUseImageUrl] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
+
+  // Cleanup object URL to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
 
   const [formData, setFormData] = useState({
     productName: "",
@@ -85,7 +94,7 @@ export default function CreateDealWidget() {
         discount: calculateDiscount(),
         image: finalImage,
         category: "Food",
-        shopName: "My Shop",
+        shopName: user?.shopName || user?.name || "My Shop",
         shopLogo: "",
         verified: true,
         tags: formData.isFlashSale ? ["Flash Sale", "Limited Time"] : ["Special Offer"],

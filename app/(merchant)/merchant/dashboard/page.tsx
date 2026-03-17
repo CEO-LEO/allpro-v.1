@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -31,6 +31,77 @@ const MarketInsights = dynamic(() => import("@/components/MarketInsights"), { ss
 const SEOBidManager = dynamic(() => import("@/components/SEOBidManager"), { ssr: false });
 const StockControl = dynamic(() => import("@/components/Merchant/StockControl"), { ssr: false });
 
+// Static SEO packages — extracted to module level to avoid re-creation each render
+const seoPackages = [
+  {
+    id: "basic",
+    name: "Basic Ranking",
+    price: 299,
+    duration: "30 วัน",
+    features: [
+      "อันดับ 4-10 ในหมวดหมู่",
+      "เพิ่มการมองเห็น 2x",
+      "รายงานสถิติรายวัน",
+    ],
+    color: "from-blue-500 to-blue-600",
+  },
+  {
+    id: "pro",
+    name: "Pro Ranking",
+    price: 899,
+    duration: "30 วัน",
+    features: [
+      "อันดับ 1-3 ในหมวดหมู่",
+      "เพิ่มการมองเห็น 5x",
+      "รายงานสถิติเรียลไทม์",
+      "Data Insights ขั้นสูง",
+    ],
+    color: "from-blue-700 to-blue-900",
+    popular: true,
+  },
+  {
+    id: "premium",
+    name: "Premium Featured",
+    price: 2499,
+    duration: "30 วัน",
+    features: [
+      "อันดับ 1 การันตี",
+      "เพิ่มการมองเห็น 10x",
+      "แสดงในหน้าแรก",
+      'Badge "แนะนำ"',
+      "รายงาน AI ขั้นสูง",
+    ],
+    color: "from-purple-500 to-pink-500",
+  },
+];
+
+// Static activity data — extracted to module level (will be replaced by API)
+type ActivityType = "view" | "save" | "location" | "search";
+
+interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  title: string;
+  subtitle: string;
+  count: number;
+  timestamp: string;
+}
+
+// TODO: Replace with API response — e.g. const { data: activityData } = useSWR('/api/merchant/activity');
+const activityData: ActivityItem[] = [
+  { id: "act-1", type: "view",     title: "มีผู้เข้าชม",       subtitle: 'โปรโมชั่น "กาแฟ 2 แก้ว 50 บาท"',    count: 142,  timestamp: "2 ชม. ที่แล้ว" },
+  { id: "act-2", type: "save",     title: "บันทึกโปรโมชั่น",   subtitle: 'โปรโมชั่น "ข้าวกล่อง ลด 10 บาท"',    count: 28,   timestamp: "5 ชม. ที่แล้ว" },
+  { id: "act-3", type: "location", title: "กดดูพิกัดร้าน",     subtitle: 'โปรโมชั่น "นมโปรตีน ซื้อ 2 แถม 1"',  count: 67,   timestamp: "1 วัน ที่แล้ว" },
+  { id: "act-4", type: "search",   title: "ปรากฏในการค้นหา",   subtitle: 'คำค้นหา "กาแฟ"',                      count: 1250, timestamp: "1 วัน ที่แล้ว" },
+];
+
+const ACTIVITY_ICON_MAP: Record<ActivityType, string> = {
+  view: "👁️",
+  save: "❤️",
+  location: "📍",
+  search: "🔍",
+};
+
 export default function MerchantDashboard() {
   const { user } = useAuthStore();
   
@@ -49,19 +120,17 @@ export default function MerchantDashboard() {
   const myProducts = products.filter((p) => p.shopName === shopName);
 
   // Sort products
-  const sortedProducts = [...myProducts].sort((a: any, b: any) => {
+  const sortedProducts = [...myProducts].sort((a, b) => {
     switch (sortBy) {
       case "popular":
-        // Use likes/reviews as proxy for views if views not available
         return (b.likes || 0) - (a.likes || 0);
       case "discount": {
-        const discountA = ((a.originalPrice - (a.promoPrice || a.price || 0)) / a.originalPrice) * 100;
-        const discountB = ((b.originalPrice - (b.promoPrice || b.price || 0)) / b.originalPrice) * 100;
+        const discountA = ((a.originalPrice - (a.promoPrice || 0)) / a.originalPrice) * 100;
+        const discountB = ((b.originalPrice - (b.promoPrice || 0)) / b.originalPrice) * 100;
         return discountB - discountA;
       }
       case "newest":
       default:
-        // Fallback to 0 if createdAt is missing
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     }
   });
@@ -80,7 +149,7 @@ export default function MerchantDashboard() {
       )
     : 0;
 
-  const insights = getSearchInsights(selectedLocation);
+  const insights = useMemo(() => getSearchInsights(selectedLocation), [selectedLocation]);
 
   const handleDelete = (id: string, name: string) => {
     if (confirm(`คุณต้องการลบ "${name}" ใช่หรือไม่?`)) {
@@ -88,49 +157,6 @@ export default function MerchantDashboard() {
       toast.success(`ลบ "${name}" แล้ว`);
     }
   };
-
-  const seoPackages = [
-    {
-      id: "basic",
-      name: "Basic Ranking",
-      price: 299,
-      duration: "30 วัน",
-      features: [
-        "อันดับ 4-10 ในหมวดหมู่",
-        "เพิ่มการมองเห็น 2x",
-        "รายงานสถิติรายวัน",
-      ],
-      color: "from-blue-500 to-blue-600",
-    },
-    {
-      id: "pro",
-      name: "Pro Ranking",
-      price: 899,
-      duration: "30 วัน",
-      features: [
-        "อันดับ 1-3 ในหมวดหมู่",
-        "เพิ่มการมองเห็น 5x",
-        "รายงานสถิติเรียลไทม์",
-        "Data Insights ขั้นสูง",
-      ],
-      color: "from-blue-700 to-blue-900",
-      popular: true,
-    },
-    {
-      id: "premium",
-      name: "Premium Featured",
-      price: 2499,
-      duration: "30 วัน",
-      features: [
-        "อันดับ 1 การันตี",
-        "เพิ่มการมองเห็น 10x",
-        "แสดงในหน้าแรก",
-        'Badge "แนะนำ"',
-        "รายงาน AI ขั้นสูง",
-      ],
-      color: "from-purple-500 to-pink-500",
-    },
-  ];
 
   return (
     <div>
@@ -186,7 +212,7 @@ export default function MerchantDashboard() {
             </div>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => setSortBy(e.target.value as "newest" | "popular" | "discount")}
               className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="newest">ใหม่ล่าสุด</option>
@@ -545,64 +571,34 @@ export default function MerchantDashboard() {
         </div>
 
         {/* Activity Log */}
-        {(() => {
-          type ActivityType = "view" | "save" | "location" | "search";
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">📊 Activity Log - กิจกรรมล่าสุด</h3>
 
-          interface ActivityItem {
-            id: string;
-            type: ActivityType;
-            title: string;
-            subtitle: string;
-            count: number;
-            timestamp: string;
-          }
-
-          // TODO: Replace with API response — e.g. const { data: activityData } = useSWR('/api/merchant/activity');
-          const activityData: ActivityItem[] = [
-            { id: "act-1", type: "view",     title: "มีผู้เข้าชม",       subtitle: 'โปรโมชั่น "กาแฟ 2 แก้ว 50 บาท"',    count: 142,  timestamp: "2 ชม. ที่แล้ว" },
-            { id: "act-2", type: "save",     title: "บันทึกโปรโมชั่น",   subtitle: 'โปรโมชั่น "ข้าวกล่อง ลด 10 บาท"',    count: 28,   timestamp: "5 ชม. ที่แล้ว" },
-            { id: "act-3", type: "location", title: "กดดูพิกัดร้าน",     subtitle: 'โปรโมชั่น "นมโปรตีน ซื้อ 2 แถม 1"',  count: 67,   timestamp: "1 วัน ที่แล้ว" },
-            { id: "act-4", type: "search",   title: "ปรากฏในการค้นหา",   subtitle: 'คำค้นหา "กาแฟ"',                      count: 1250, timestamp: "1 วัน ที่แล้ว" },
-          ];
-
-          const iconMap: Record<ActivityType, string> = {
-            view: "👁️",
-            save: "❤️",
-            location: "📍",
-            search: "🔍",
-          };
-
-          return (
-            <div className="mb-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">📊 Activity Log - กิจกรรมล่าสุด</h3>
-
-              {activityData.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
-                  <p className="text-2xl font-semibold text-gray-900 mb-2">📭 ยังไม่มีกิจกรรมล่าสุด</p>
-                  <p className="text-sm text-gray-500">กิจกรรมและการเคลื่อนไหวของร้านค้าจะแสดงที่นี่</p>
-                </div>
-              ) : (
-                <div className="card divide-y divide-gray-200">
-                  {activityData.map((activity) => (
-                    <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-start gap-4">
-                        <span className="text-3xl">{iconMap[activity.type]}</span>
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{activity.title}</p>
-                          <p className="text-sm text-gray-600">{activity.subtitle}</p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <span className="text-sm font-medium text-[#FF5722]">{activity.count.toLocaleString()} ครั้ง</span>
-                            <span className="text-xs text-gray-400">{activity.timestamp}</span>
-                          </div>
-                        </div>
+          {activityData.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
+              <p className="text-2xl font-semibold text-gray-900 mb-2">📭 ยังไม่มีกิจกรรมล่าสุด</p>
+              <p className="text-sm text-gray-500">กิจกรรมและการเคลื่อนไหวของร้านค้าจะแสดงที่นี่</p>
+            </div>
+          ) : (
+            <div className="card divide-y divide-gray-200">
+              {activityData.map((activity) => (
+                <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-4">
+                    <span className="text-3xl">{ACTIVITY_ICON_MAP[activity.type]}</span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900">{activity.title}</p>
+                      <p className="text-sm text-gray-600">{activity.subtitle}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <span className="text-sm font-medium text-[#FF5722]">{activity.count.toLocaleString()} ครั้ง</span>
+                        <span className="text-xs text-gray-400">{activity.timestamp}</span>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
-          );
-        })()}
+          )}
+        </div>
 
         {/* Info Banner */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">

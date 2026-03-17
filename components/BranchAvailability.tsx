@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation, Clock, CheckCircle, XCircle, TrendingUp, AlertCircle } from 'lucide-react';
 import { Store } from '@/data/stores';
@@ -13,84 +13,41 @@ interface BranchAvailabilityProps {
   userLocation?: { lat: number; lng: number };
 }
 
-// Mock branch data with stock status
-const mockBranchData: (Store & { stockStatus: 'available' | 'out_of_stock'; lastUpdate: string })[] = [
-  {
-    id: '1',
-    name: '7-Eleven Siam Square',
-    brand: '7-Eleven',
-    category: 'convenience',
-    lat: 13.7455,
-    lng: 100.5335,
-    brandLogo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/7-eleven_logo.svg/200px-7-eleven_logo.svg.png',
-    activePromos: 12,
-    address: 'Siam Square, Pathum Wan',
-    distance: 0.2,
-    stockStatus: 'available',
-    lastUpdate: '5 mins ago'
-  },
-  {
-    id: '2',
-    name: '7-Eleven Asoke',
-    brand: '7-Eleven',
-    category: 'convenience',
-    lat: 13.7365,
-    lng: 100.5605,
-    brandLogo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/7-eleven_logo.svg/200px-7-eleven_logo.svg.png',
-    activePromos: 8,
-    address: 'Sukhumvit 21, Asoke',
-    distance: 2.8,
-    stockStatus: 'out_of_stock',
-    lastUpdate: '10 mins ago'
-  },
-  {
-    id: '3',
-    name: '7-Eleven Chit Lom',
-    brand: '7-Eleven',
-    category: 'convenience',
-    lat: 13.7442,
-    lng: 100.5442,
-    brandLogo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/7-eleven_logo.svg/200px-7-eleven_logo.svg.png',
-    activePromos: 10,
-    address: 'Chit Lom BTS Station',
-    distance: 0.8,
-    stockStatus: 'available',
-    lastUpdate: '2 mins ago'
-  },
-  {
-    id: '4',
-    name: '7-Eleven Ratchadamri',
-    brand: '7-Eleven',
-    category: 'convenience',
-    lat: 13.7433,
-    lng: 100.5388,
-    brandLogo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/7-eleven_logo.svg/200px-7-eleven_logo.svg.png',
-    activePromos: 9,
-    address: 'Ratchadamri Road',
-    distance: 1.5,
-    stockStatus: 'available',
-    lastUpdate: '1 hour ago'
-  },
-  {
-    id: '5',
-    name: '7-Eleven Pratunam',
-    brand: '7-Eleven',
-    category: 'convenience',
-    lat: 13.7520,
-    lng: 100.5390,
-    brandLogo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/7-eleven_logo.svg/200px-7-eleven_logo.svg.png',
-    activePromos: 7,
-    address: 'Pratunam Market Area',
-    distance: 4.2,
-    stockStatus: 'out_of_stock',
-    lastUpdate: '30 mins ago'
-  }
-];
+// Interface สำหรับข้อมูลสาขา
+// interface BranchData extends Store {
+//   stockStatus: 'available' | 'out_of_stock';
+//   lastUpdate: string;
+// }
+
+type BranchData = Store & { stockStatus: 'available' | 'out_of_stock'; lastUpdate: string };
 
 export default function BranchAvailability({ productId, productTitle }: BranchAvailabilityProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [branches] = useState(mockBranchData);
+  const [branches, setBranches] = useState<BranchData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [reportedBranches, setReportedBranches] = useState<Set<string>>(new Set());
+
+  // TODO: เชื่อมต่อ API จริง
+  // useEffect(() => {
+  //   if (!isOpen) return;
+  //   const fetchBranches = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const res = await fetch(`/api/branches/stock?productId=${productId}`);
+  //       const data = await res.json();
+  //       setBranches(data.branches);
+  //     } catch (err) { console.error(err); }
+  //     finally { setIsLoading(false); }
+  //   };
+  //   fetchBranches();
+  // }, [isOpen, productId]);
+
+  useEffect(() => {
+    if (!isOpen || branches.length > 0) return;
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, [isOpen, branches.length]);
 
   // Filter branches within 5km and sort by distance
   const nearbyBranches = branches
@@ -166,6 +123,30 @@ export default function BranchAvailability({ productId, productTitle }: BranchAv
           </div>
 
           {/* Branch Cards */}
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border-2 border-gray-200 p-4 animate-pulse">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-5 bg-gray-200 rounded w-2/3" />
+                      <div className="h-4 bg-gray-100 rounded w-1/2" />
+                      <div className="h-4 bg-gray-100 rounded w-1/3 mt-3" />
+                    </div>
+                    <div className="h-9 w-24 bg-gray-200 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : nearbyBranches.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-gray-200">
+              <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600 font-medium">ไม่พบสาขาภายในระยะ 5 กม.</p>
+              <p className="text-sm text-gray-500 mt-1">ลองขยายรัศมีการค้นหา</p>
+            </div>
+          ) : (
+          <>
           {nearbyBranches.map((branch, index) => {
             const isAvailable = branch.stockStatus === 'available';
             
@@ -261,22 +242,17 @@ export default function BranchAvailability({ productId, productTitle }: BranchAv
             );
           })}
 
-          {/* No branches message */}
-          {nearbyBranches.length === 0 && (
-            <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-gray-200">
-              <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">No branches found within 5km</p>
-              <p className="text-sm text-gray-500 mt-1">Try expanding your search radius</p>
-            </div>
-          )}
-
           {/* Summary */}
+          {nearbyBranches.length > 0 && (
           <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
             <p className="text-sm text-gray-600">
               <span className="font-bold text-green-600">{availableCount}</span> out of{' '}
               <span className="font-bold text-gray-900">{totalCount}</span> nearby branches have this item in stock
             </p>
           </div>
+          )}
+          </>
+          )}
         </motion.div>
       )}
     </div>

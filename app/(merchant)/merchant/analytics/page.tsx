@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChartBarIcon, ArrowLeftIcon, DownloadIcon, RefreshCw } from 'lucide-react';
+import { BarChart3, ArrowLeft, Download, RefreshCw } from 'lucide-react';
 import StatCards, { StatData } from '@/components/Merchant/Analytics/StatCards';
 import EngagementChart from '@/components/Merchant/Analytics/EngagementChart';
 import AudienceLocation from '@/components/Merchant/Analytics/AudienceLocation';
@@ -71,7 +71,7 @@ export default function AnalyticsDashboard() {
                 href="/merchant/dashboard"
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
               >
-                <ArrowLeftIcon className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
                 <span className="font-semibold">Back</span>
               </Link>
               
@@ -79,7 +79,7 @@ export default function AnalyticsDashboard() {
               
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <ChartBarIcon className="w-5 h-5 text-white" />
+                  <BarChart3 className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">
@@ -98,7 +98,7 @@ export default function AnalyticsDashboard() {
                 <span className="hidden sm:inline">Refresh</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all shadow-sm">
-                <DownloadIcon className="w-4 h-4" />
+                <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">Export Report</span>
               </button>
             </div>

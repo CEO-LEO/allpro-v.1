@@ -1,10 +1,25 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Copy, Check, Tag, Clock, AlertCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import clsx from 'clsx';
+
+/*
+ * Expected API Response: GET /api/coupons/active
+ * Response: { coupons: Coupon[] }
+ *
+ * interface Coupon {
+ *   id: string;
+ *   code: string;
+ *   discount: string;       // e.g. "50%", "฿100", "Free Shipping"
+ *   description: string;
+ *   expiresIn: string;      // e.g. "2 days", "5 hours"
+ *   store: string;
+ *   color: 'red' | 'blue' | 'green';
+ * }
+ */
 
 interface Coupon {
   id: string;
@@ -16,38 +31,30 @@ interface Coupon {
   color: string;
 }
 
-const mockCoupons: Coupon[] = [
-  {
-    id: '1',
-    code: 'SAVE50NOW',
-    discount: '50%',
-    description: 'Maximum discount ฿500',
-    expiresIn: '2 days',
-    store: '7-Eleven',
-    color: 'red'
-  },
-  {
-    id: '2',
-    code: 'FLASH100',
-    discount: '฿100',
-    description: 'Minimum spend ฿300',
-    expiresIn: '5 hours',
-    store: "Lotus's",
-    color: 'blue'
-  },
-  {
-    id: '3',
-    code: 'FREESHIP',
-    discount: 'Free Shipping',
-    description: 'No minimum',
-    expiresIn: '1 day',
-    store: 'Shopee',
-    color: 'green'
-  },
-];
-
 export default function CouponSection() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // ── API-Ready State ──
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // TODO: Replace with actual API call
+  // useEffect(() => {
+  //   const fetchCoupons = async () => {
+  //     try {
+  //       const res = await fetch('/api/coupons/active');
+  //       const data = await res.json();
+  //       setCoupons(data.coupons);
+  //     } catch { }
+  //     finally { setIsLoading(false); }
+  //   };
+  //   fetchCoupons();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleCopyCode = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
@@ -98,8 +105,30 @@ export default function CouponSection() {
       </div>
 
       {/* Coupons Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden animate-pulse">
+              <div className="p-4 bg-gray-200 h-28" />
+              <div className="h-4 bg-gray-100" />
+              <div className="p-4 space-y-3">
+                <div className="h-12 bg-gray-100 rounded-lg" />
+                <div className="h-10 bg-gray-200 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : coupons.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Tag className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีคูปองในขณะนี้</h3>
+          <p className="text-sm text-gray-500">กลับมาตรวจสอบใหม่เร็วๆ นี้</p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {mockCoupons.map((coupon, index) => {
+        {coupons.map((coupon, index) => {
           const colorClasses = {
             red: 'bg-red-600',
             blue: 'bg-blue-600',
@@ -201,6 +230,7 @@ export default function CouponSection() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

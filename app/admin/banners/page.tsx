@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/Admin/AdminLayout';
 import { 
@@ -29,71 +29,28 @@ interface Banner {
   clicks: number;
 }
 
-const initialBanners: Banner[] = [
-  {
-    id: 'banner-001',
-    title: 'NIVEA Cream 50% Off',
-    subtitle: 'Buy 2 Get 1 Free - Limited Time!',
-    imageUrl: 'https://images.unsplash.com/photo-1556229010-aa5835fe0e13?w=800',
-    promotionId: 'promo-001',
-    isPinned: true,
-    isActive: true,
-    priority: 1,
-    impressions: 45200,
-    clicks: 3850
-  },
-  {
-    id: 'banner-002',
-    title: '7-Eleven Energy Drink Deal',
-    subtitle: 'Buy 3 Get 20% Off',
-    imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=800',
-    promotionId: 'promo-002',
-    isPinned: false,
-    isActive: true,
-    priority: 2,
-    impressions: 32100,
-    clicks: 2450
-  },
-  {
-    id: 'banner-003',
-    title: 'Fresh Snacks at Makro',
-    subtitle: 'Special Weekend Promo',
-    imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=800',
-    promotionId: 'promo-003',
-    isPinned: false,
-    isActive: true,
-    priority: 3,
-    impressions: 28500,
-    clicks: 1890
-  },
-  {
-    id: 'banner-004',
-    title: 'CP Fresh Mart Sale',
-    subtitle: 'Up to 40% Off on Groceries',
-    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800',
-    promotionId: 'promo-004',
-    isPinned: false,
-    isActive: false,
-    priority: 4,
-    impressions: 15200,
-    clicks: 890
-  },
-  {
-    id: 'banner-005',
-    title: 'Coffee Lovers Special',
-    subtitle: '2 for 1 on All Coffee Drinks',
-    imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800',
-    promotionId: 'promo-005',
-    isPinned: false,
-    isActive: false,
-    priority: 5,
-    impressions: 8900,
-    clicks: 450
-  }
-];
-
 export default function BannerManager() {
-  const [banners, setBanners] = useState<Banner[]>(initialBanners);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // TODO: เชื่อมต่อ API จริง
+  // useEffect(() => {
+  //   const fetchBanners = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const res = await fetch('/api/admin/banners');
+  //       const data = await res.json();
+  //       setBanners(data.banners);
+  //     } catch (err) { console.error(err); }
+  //     finally { setIsLoading(false); }
+  //   };
+  //   fetchBanners();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const moveUp = (index: number) => {
     if (index === 0) return;
@@ -258,7 +215,37 @@ export default function BannerManager() {
 
           {/* Banner List */}
           <div className="space-y-3">
-            {banners.map((banner, index) => (
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-gray-950 rounded-xl border-2 border-gray-800 p-4 animate-pulse">
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-10 h-10 rounded-lg bg-gray-700" />
+                    </div>
+                    <div className="w-32 h-20 rounded-lg bg-gray-800 flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-5 bg-gray-800 rounded w-2/3" />
+                      <div className="h-4 bg-gray-800 rounded w-1/2" />
+                      <div className="h-4 bg-gray-800 rounded w-1/3" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-12 h-12 rounded-lg bg-gray-800" />
+                      <div className="w-24 h-12 rounded-lg bg-gray-800" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : banners.length === 0 ? (
+              <div className="text-center py-16 bg-gray-950 rounded-xl border-2 border-dashed border-gray-700">
+                <ImageIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-400 mb-2">ยังไม่มี Banner</h3>
+                <p className="text-sm text-gray-500 mb-4">เพิ่ม Banner เพื่อแสดงบนหน้าแรก</p>
+                <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all">
+                  + สร้าง Banner ใหม่
+                </button>
+              </div>
+            ) : (
+            banners.map((banner, index) => (
               <motion.div
                 key={banner.id}
                 layout
@@ -397,7 +384,8 @@ export default function BannerManager() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            ))
+            )}
           </div>
 
           {/* Info Box */}

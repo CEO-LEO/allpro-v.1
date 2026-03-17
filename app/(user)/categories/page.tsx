@@ -21,130 +21,54 @@ import {
   TagIcon,
 } from '@heroicons/react/24/outline';
 import { ArrowLeftIcon, StarIcon } from '@heroicons/react/24/solid';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
-// Category structure with subcategories
-const CATEGORY_GROUPS = [
-  {
-    id: 'แฟชั่นผู้หญิง',
-    name: 'แฟชั่นผู้หญิง',
-    icon: SparklesIcon,
-    color: 'from-purple-500 to-pink-500',
-    subcategories: [
-      { id: 'รองเท้าผู้หญิง', name: 'รองเท้าผู้หญิง', icon: ShoppingBagIcon },
-      { id: 'รองเท้าแตะ', name: 'รองเท้าแตะ', icon: ShoppingBagIcon },
-      { id: 'รองเท้าบูท', name: 'รองเท้าบูท', icon: ShoppingBagIcon },
-      { id: 'เสื้อผ้าผู้หญิง', name: 'เสื้อผ้า', icon: SparklesIcon },
-      { id: 'เสื้อ', name: 'เสื้อ', icon: SparklesIcon },
-      { id: 'เสื้ออก', name: 'เสื้ออก', icon: ShoppingBagIcon },
-      { id: 'กางเกง', name: 'กางเกง', icon: ShoppingBagIcon },
-      { id: 'กระโปรง', name: 'กระโปรง', icon: SparklesIcon },
-      { id: 'ชุดเดรส', name: 'ชุดเดรส', icon: SparklesIcon },
-      { id: 'เครื่องแต่งกาย', name: 'เครื่องแต่งกาย', icon: ShoppingBagIcon },
-      { id: 'ชุดโม่ง', name: 'ชุดโม่ง', icon: ShoppingBagIcon },
-      { id: 'ชุดชั้นใน', name: 'ชุดชั้นใน', icon: HeartIcon },
-    ]
-  },
-  {
-    id: 'แฟชั่นผู้ชาย',
-    name: 'แฟชั่นผู้ชาย',
-    icon: ShoppingBagIcon,
-    color: 'from-indigo-500 to-purple-500',
-    subcategories: [
-      { id: 'รองเท้าผู้ชาย', name: 'รองเท้าผู้ชาย', icon: ShoppingBagIcon },
-      { id: 'แตะผู้ชาย', name: 'รองเท้าแตะ', icon: ShoppingBagIcon },
-      { id: 'รองเท้าบูทชาย', name: 'รองเท้าบูท', icon: ShoppingBagIcon },
-      { id: 'เสื้อผ้าชาย', name: 'เสื้อผ้า', icon: ShoppingBagIcon },
-      { id: 'เสื้อชาย', name: 'เสื้อ', icon: ShoppingBagIcon },
-      { id: 'เสื้ออกชาย', name: 'เสื้ออก', icon: ShoppingBagIcon },
-      { id: 'กางเกงชาย', name: 'กางเกง', icon: ShoppingBagIcon },
-      { id: 'เครื่องแต่งกายชาย', name: 'เครื่องแต่งกาย', icon: ShoppingBagIcon },
-      { id: 'ชุดโม่งชาย', name: 'ชุดโม่ง', icon: ShoppingBagIcon },
-      { id: 'ชุดชั้นในชาย', name: 'ชุดชั้นใน', icon: ShoppingBagIcon },
-    ]
-  },
-  {
-    id: 'กระเป๋า',
-    name: 'กระเป๋า',
-    icon: ShoppingBagIcon,
-    color: 'from-amber-500 to-orange-600',
-    subcategories: [
-      { id: 'กระเป๋าสตางค์', name: 'กระเป๋าสตางค์', icon: CurrencyDollarIcon },
-      { id: 'กระเป๋าถือ', name: 'กระเป๋าถือ', icon: ShoppingBagIcon },
-      { id: 'กระเป๋าเป้', name: 'กระเป๋าเป้', icon: ShoppingBagIcon },
-      { id: 'กระเป๋านักเรียน', name: 'กระเป๋านักเรียน', icon: ShoppingBagIcon },
-      { id: 'กระเป๋าเดินทาง', name: 'กระเป๋าเดินทาง', icon: TruckIcon },
-      { id: 'กระเป๋าสะพาย', name: 'กระเป๋าสะพาย', icon: ShoppingBagIcon },
-      { id: 'กระเป๋าคาดเอว', name: 'กระเป๋าคาดเอว', icon: ShoppingBagIcon },
-    ]
-  },
-  {
-    id: 'อาหาร',
-    name: 'อาหาร',
-    icon: CakeIcon,
-    color: 'from-pink-500 to-rose-500',
-    subcategories: [
-      { id: 'อาหารญี่ปุ่น', name: 'อาหารญี่ปุ่น', icon: CakeIcon },
-      { id: 'อาหารไทย', name: 'อาหารไทย', icon: CakeIcon },
-      { id: 'บุฟเฟ่ต์', name: 'บุฟเฟ่ต์', icon: ClipboardDocumentListIcon },
-      { id: 'ฟาสต์ฟู้ด', name: 'ฟาสต์ฟู้ด', icon: CakeIcon },
-      { id: 'อาหารทะเล', name: 'อาหารทะเล', icon: CakeIcon },
-    ]
-  },
-  {
-    id: 'เครื่องดื่ม',
-    name: 'เครื่องดื่ม',
-    icon: BeakerIcon,
-    color: 'from-blue-500 to-cyan-500',
-    subcategories: [
-      { id: 'กาแฟ', name: 'กาแฟ', icon: BeakerIcon },
-      { id: 'ชา', name: 'ชา', icon: BeakerIcon },
-      { id: 'น้ำผลไม้', name: 'น้ำผลไม้', icon: BeakerIcon },
-      { id: 'นม', name: 'นม', icon: BeakerIcon },
-    ]
-  },
-  {
-    id: 'ท่องเที่ยว',
-    name: 'ท่องเที่ยว',
-    icon: GlobeAltIcon,
-    color: 'from-sky-500 to-blue-600',
-    subcategories: [
-      { id: 'โรงแรม', name: 'โรงแรม', icon: BuildingStorefrontIcon },
-      { id: 'ตั๋วเครื่องบิน', name: 'ตั๋วเครื่องบิน', icon: PaperAirplaneIcon },
-      { id: 'แพ็คเกจทัวร์', name: 'แพ็คเกจทัวร์', icon: GlobeAltIcon },
-      { id: 'รถเช่า', name: 'รถเช่า', icon: TruckIcon },
-    ]
-  },
-  {
-    id: 'ความงาม',
-    name: 'ความงาม',
-    icon: HeartIcon,
-    color: 'from-pink-500 to-fuchsia-500',
-    subcategories: [
-      { id: 'เครื่องสำอาง', name: 'เครื่องสำอาง', icon: SparklesIcon },
-      { id: 'ผลิตภัณฑ์ผิว', name: 'ผลิตภัณฑ์ผิว', icon: HeartIcon },
-      { id: 'ผลิตภัณฑ์ผม', name: 'ผลิตภัณฑ์ผม', icon: ScissorsIcon },
-      { id: 'สปา', name: 'สปา', icon: HomeIcon },
-    ]
-  },
-  {
-    id: 'สุขภาพ',
-    name: 'สุขภาพ',
-    icon: ShieldCheckIcon,
-    color: 'from-green-500 to-emerald-500',
-    subcategories: [
-      { id: 'อาหารเสริม', name: 'อาหารเสริม', icon: ShieldCheckIcon },
-      { id: 'ฟิตเนส', name: 'ฟิตเนส', icon: ShieldCheckIcon },
-      { id: 'โยคะ', name: 'โยคะ', icon: ShieldCheckIcon },
-    ]
-  },
-];
+/*
+ * Expected API Response: GET /api/categories
+ * Response: {
+ *   categoryGroups: CategoryGroup[],
+ *   brands: Brand[],
+ *   brandCategories: { id: string; label: string }[]
+ * }
+ *
+ * interface CategoryGroup {
+ *   id: string;
+ *   name: string;
+ *   iconName: string;          // mapped to icon component client-side
+ *   color: string;             // Tailwind gradient e.g. "from-purple-500 to-pink-500"
+ *   subcategories: { id: string; name: string; iconName: string }[];
+ * }
+ *
+ * interface Brand {
+ *   id: string;
+ *   name: string;
+ *   logo: string;
+ *   category: string;
+ *   promoCount: number;
+ *   rating: number;
+ *   isHot?: boolean;
+ *   discount?: string;
+ *   color: string;             // Tailwind bg class e.g. "bg-black"
+ * }
+ */
 
-// ============================================
-// BRAND DATA
-// ============================================
+// Icon mapping for dynamic icon resolution from API
+const ICON_MAP: Record<string, any> = {
+  SparklesIcon, ShoppingBagIcon, CakeIcon, HeartIcon, BeakerIcon,
+  GlobeAltIcon, ShieldCheckIcon, BuildingStorefrontIcon, PaperAirplaneIcon,
+  TruckIcon, HomeIcon, CurrencyDollarIcon, ScissorsIcon,
+  ClipboardDocumentListIcon, DevicePhoneMobileIcon: ShoppingBagIcon,
+};
 
-type BrandCategory = 'แฟชั่น' | 'อาหาร' | 'เครื่องดื่ม' | 'อิเล็กทรอนิกส์' | 'ความงาม' | 'ซูเปอร์มาร์เก็ต' | 'ท่องเที่ยว' | 'สุขภาพ';
+interface CategoryGroup {
+  id: string;
+  name: string;
+  icon: any;
+  color: string;
+  subcategories: { id: string; name: string; icon: any }[];
+}
+
+type BrandCategory = string;
 
 interface Brand {
   id: string;
@@ -158,100 +82,112 @@ interface Brand {
   color: string;
 }
 
-const BRAND_CATEGORIES: { id: BrandCategory; label: string; icon: any }[] = [
-  { id: 'แฟชั่น', label: 'แฟชั่น', icon: SparklesIcon },
-  { id: 'อาหาร', label: 'อาหาร', icon: CakeIcon },
-  { id: 'เครื่องดื่ม', label: 'เครื่องดื่ม', icon: BeakerIcon },
-  { id: 'อิเล็กทรอนิกส์', label: 'อิเล็กทรอนิกส์', icon: ShieldCheckIcon },
-  { id: 'ความงาม', label: 'ความงาม', icon: HeartIcon },
-  { id: 'ซูเปอร์มาร์เก็ต', label: 'ซูเปอร์มาร์เก็ต', icon: BuildingStorefrontIcon },
-  { id: 'ท่องเที่ยว', label: 'ท่องเที่ยว', icon: GlobeAltIcon },
-  { id: 'สุขภาพ', label: 'สุขภาพ', icon: ShieldCheckIcon },
-];
-
-const BRANDS: Brand[] = [
-  // แฟชั่น
-  { id: 'nike', name: 'Nike', logo: 'https://logo.clearbit.com/nike.com', category: 'แฟชั่น', promoCount: 24, rating: 4.9, isHot: true, discount: 'สูงสุด 50%', color: 'bg-black' },
-  { id: 'adidas', name: 'Adidas', logo: 'https://logo.clearbit.com/adidas.com', category: 'แฟชั่น', promoCount: 18, rating: 4.8, isHot: true, discount: 'สูงสุด 40%', color: 'bg-black' },
-  { id: 'uniqlo', name: 'UNIQLO', logo: 'https://logo.clearbit.com/uniqlo.com', category: 'แฟชั่น', promoCount: 15, rating: 4.7, discount: 'สูงสุด 30%', color: 'bg-red-600' },
-  { id: 'hm', name: 'H&M', logo: 'https://logo.clearbit.com/hm.com', category: 'แฟชั่น', promoCount: 12, rating: 4.5, discount: 'สูงสุด 60%', color: 'bg-red-700' },
-  { id: 'zara', name: 'ZARA', logo: 'https://logo.clearbit.com/zara.com', category: 'แฟชั่น', promoCount: 8, rating: 4.6, color: 'bg-black' },
-  { id: 'converse', name: 'Converse', logo: 'https://logo.clearbit.com/converse.com', category: 'แฟชั่น', promoCount: 10, rating: 4.7, discount: 'สูงสุด 35%', color: 'bg-black' },
-  { id: 'levis', name: "Levi's", logo: 'https://logo.clearbit.com/levi.com', category: 'แฟชั่น', promoCount: 7, rating: 4.6, color: 'bg-red-600' },
-  { id: 'newbalance', name: 'New Balance', logo: 'https://logo.clearbit.com/newbalance.com', category: 'แฟชั่น', promoCount: 9, rating: 4.7, discount: 'สูงสุด 25%', color: 'bg-gray-800' },
-
-  // อาหาร
-  { id: 'mcdonalds', name: "McDonald's", logo: 'https://logo.clearbit.com/mcdonalds.com', category: 'อาหาร', promoCount: 32, rating: 4.5, isHot: true, discount: '1 แถม 1', color: 'bg-red-600' },
-  { id: 'kfc', name: 'KFC', logo: 'https://logo.clearbit.com/kfc.com', category: 'อาหาร', promoCount: 28, rating: 4.4, isHot: true, discount: 'เริ่มต้น 59 บาท', color: 'bg-red-700' },
-  { id: 'pizzahut', name: 'Pizza Hut', logo: 'https://logo.clearbit.com/pizzahut.com', category: 'อาหาร', promoCount: 15, rating: 4.3, discount: 'สูงสุด 50%', color: 'bg-red-600' },
-  { id: 'burgerking', name: 'Burger King', logo: 'https://logo.clearbit.com/burgerking.com', category: 'อาหาร', promoCount: 12, rating: 4.2, discount: 'ลด 30%', color: 'bg-orange-600' },
-  { id: 'mkrestaurant', name: 'MK Restaurant', logo: 'https://logo.clearbit.com/mkrestaurant.com', category: 'อาหาร', promoCount: 10, rating: 4.6, color: 'bg-red-600' },
-  { id: 'sizzler', name: 'Sizzler', logo: 'https://logo.clearbit.com/sizzler.com', category: 'อาหาร', promoCount: 8, rating: 4.5, discount: 'ลด 20%', color: 'bg-green-700' },
-  { id: 'bonchon', name: 'Bonchon', logo: 'https://logo.clearbit.com/bonchon.com', category: 'อาหาร', promoCount: 6, rating: 4.4, color: 'bg-yellow-600' },
-  { id: 'shabushi', name: 'Shabushi', logo: 'https://ui-avatars.com/api/?name=SB&background=E11D48&color=fff&size=128', category: 'อาหาร', promoCount: 9, rating: 4.5, discount: 'บุฟเฟ่ต์ 299', color: 'bg-red-500' },
-
-  // เครื่องดื่ม
-  { id: 'starbucks', name: 'Starbucks', logo: 'https://logo.clearbit.com/starbucks.com', category: 'เครื่องดื่ม', promoCount: 20, rating: 4.8, isHot: true, discount: '1 แถม 1', color: 'bg-green-700' },
-  { id: 'cafe-amazon', name: 'Cafe Amazon', logo: 'https://ui-avatars.com/api/?name=CA&background=2D5016&color=fff&size=128', category: 'เครื่องดื่ม', promoCount: 16, rating: 4.5, discount: 'ลด 20%', color: 'bg-green-800' },
-  { id: 'inthanin', name: 'Inthanin', logo: 'https://ui-avatars.com/api/?name=IN&background=7C3AED&color=fff&size=128', category: 'เครื่องดื่ม', promoCount: 10, rating: 4.3, color: 'bg-purple-600' },
-  { id: 'bluecup', name: 'Blue Cup', logo: 'https://ui-avatars.com/api/?name=BC&background=2563EB&color=fff&size=128', category: 'เครื่องดื่ม', promoCount: 8, rating: 4.2, discount: 'แก้วที่ 2 ครึ่งราคา', color: 'bg-blue-600' },
-  { id: 'chatramu', name: 'ชาตรามือ', logo: 'https://ui-avatars.com/api/?name=CT&background=DC2626&color=fff&size=128', category: 'เครื่องดื่ม', promoCount: 7, rating: 4.4, color: 'bg-red-600' },
-
-  // อิเล็กทรอนิกส์
-  { id: 'apple', name: 'Apple', logo: 'https://logo.clearbit.com/apple.com', category: 'อิเล็กทรอนิกส์', promoCount: 12, rating: 4.9, isHot: true, discount: 'ลดสูงสุด 15%', color: 'bg-gray-900' },
-  { id: 'samsung', name: 'Samsung', logo: 'https://logo.clearbit.com/samsung.com', category: 'อิเล็กทรอนิกส์', promoCount: 22, rating: 4.7, isHot: true, discount: 'ลดสูงสุด 40%', color: 'bg-blue-900' },
-  { id: 'sony', name: 'Sony', logo: 'https://logo.clearbit.com/sony.com', category: 'อิเล็กทรอนิกส์', promoCount: 10, rating: 4.6, discount: 'ลด 25%', color: 'bg-black' },
-  { id: 'xiaomi', name: 'Xiaomi', logo: 'https://logo.clearbit.com/xiaomi.com', category: 'อิเล็กทรอนิกส์', promoCount: 18, rating: 4.5, discount: 'ลดสูงสุด 50%', color: 'bg-orange-500' },
-  { id: 'dyson', name: 'Dyson', logo: 'https://logo.clearbit.com/dyson.com', category: 'อิเล็กทรอนิกส์', promoCount: 6, rating: 4.8, color: 'bg-purple-900' },
-
-  // ความงาม
-  { id: 'loreal', name: "L'Oréal", logo: 'https://logo.clearbit.com/loreal.com', category: 'ความงาม', promoCount: 14, rating: 4.7, discount: 'ลด 30%', color: 'bg-black' },
-  { id: 'maybelline', name: 'Maybelline', logo: 'https://logo.clearbit.com/maybelline.com', category: 'ความงาม', promoCount: 11, rating: 4.5, discount: 'ลด 40%', color: 'bg-pink-600' },
-  { id: 'innisfree', name: 'Innisfree', logo: 'https://logo.clearbit.com/innisfree.com', category: 'ความงาม', promoCount: 9, rating: 4.6, color: 'bg-green-600' },
-  { id: 'clinique', name: 'Clinique', logo: 'https://logo.clearbit.com/clinique.com', category: 'ความงาม', promoCount: 7, rating: 4.7, discount: 'ลด 20%', color: 'bg-gray-800' },
-  { id: 'mac', name: 'MAC', logo: 'https://logo.clearbit.com/maccosmetics.com', category: 'ความงาม', promoCount: 8, rating: 4.8, isHot: true, color: 'bg-black' },
-
-  // ซูเปอร์มาร์เก็ต
-  { id: '7eleven', name: '7-Eleven', logo: 'https://logo.clearbit.com/7-eleven.com', category: 'ซูเปอร์มาร์เก็ต', promoCount: 45, rating: 4.3, isHot: true, discount: 'ลดทุกวัน', color: 'bg-green-600' },
-  { id: 'lotuss', name: "Lotus's", logo: 'https://ui-avatars.com/api/?name=LT&background=0EA5E9&color=fff&size=128', category: 'ซูเปอร์มาร์เก็ต', promoCount: 38, rating: 4.4, discount: 'ลดสูงสุด 50%', color: 'bg-sky-600' },
-  { id: 'bigc', name: 'Big C', logo: 'https://ui-avatars.com/api/?name=BC&background=DC2626&color=fff&size=128', category: 'ซูเปอร์มาร์เก็ต', promoCount: 30, rating: 4.3, discount: 'ลดกระหน่ำ', color: 'bg-red-600' },
-  { id: 'tops', name: 'Tops', logo: 'https://ui-avatars.com/api/?name=TP&background=16A34A&color=fff&size=128', category: 'ซูเปอร์มาร์เก็ต', promoCount: 20, rating: 4.5, color: 'bg-green-600' },
-  { id: 'makro', name: 'Makro', logo: 'https://ui-avatars.com/api/?name=MK&background=1D4ED8&color=fff&size=128', category: 'ซูเปอร์มาร์เก็ต', promoCount: 15, rating: 4.2, discount: 'ราคาส่ง', color: 'bg-blue-700' },
-
-  // ท่องเที่ยว
-  { id: 'agoda', name: 'Agoda', logo: 'https://logo.clearbit.com/agoda.com', category: 'ท่องเที่ยว', promoCount: 20, rating: 4.6, isHot: true, discount: 'ลดสูงสุด 75%', color: 'bg-blue-700' },
-  { id: 'airasia', name: 'AirAsia', logo: 'https://logo.clearbit.com/airasia.com', category: 'ท่องเที่ยว', promoCount: 15, rating: 4.4, discount: 'เริ่มต้น 0 บาท', color: 'bg-red-600' },
-  { id: 'klook', name: 'Klook', logo: 'https://logo.clearbit.com/klook.com', category: 'ท่องเที่ยว', promoCount: 12, rating: 4.5, discount: 'ลด 10%', color: 'bg-orange-500' },
-  { id: 'booking', name: 'Booking.com', logo: 'https://logo.clearbit.com/booking.com', category: 'ท่องเที่ยว', promoCount: 18, rating: 4.7, color: 'bg-blue-800' },
-
-  // สุขภาพ
-  { id: 'fitnessfirst', name: 'Fitness First', logo: 'https://logo.clearbit.com/fitnessfirst.com', category: 'สุขภาพ', promoCount: 8, rating: 4.6, discount: 'ลด 40%', color: 'bg-blue-600' },
-  { id: 'anytime', name: 'Anytime Fitness', logo: 'https://logo.clearbit.com/anytimefitness.com', category: 'สุขภาพ', promoCount: 6, rating: 4.5, color: 'bg-purple-600' },
-  { id: 'boots', name: 'Boots', logo: 'https://logo.clearbit.com/boots.com', category: 'สุขภาพ', promoCount: 12, rating: 4.4, discount: '1 แถม 1', color: 'bg-blue-700' },
-  { id: 'watsons', name: 'Watsons', logo: 'https://logo.clearbit.com/watsons.com', category: 'สุขภาพ', promoCount: 18, rating: 4.5, isHot: true, discount: 'ลดสูงสุด 50%', color: 'bg-green-600' },
-];
-
-const GROUP_ROUTE_MAP: Record<string, string> = {
-  'แฟชั่นผู้หญิง': 'Fashion',
-  'แฟชั่นผู้ชาย': 'Fashion',
-  'กระเป๋า': 'Fashion',
-  'อาหาร': 'Food',
-  'เครื่องดื่ม': 'Food',
-  'ท่องเที่ยว': 'Travel',
-  'ความงาม': 'Beauty',
-  'สุขภาพ': 'Beauty',
-};
+interface BrandCategoryTab {
+  id: string;
+  label: string;
+  icon: any;
+}
 
 export default function CategoriesPage() {
   const [selectedTab, setSelectedTab] = useState('สินค้า');
-  const [brandFilter, setBrandFilter] = useState<BrandCategory | 'ทั้งหมด'>('ทั้งหมด');
+  const [brandFilter, setBrandFilter] = useState<string>('ทั้งหมด');
+
+  // ── API-Ready State ──
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [brandCategories, setBrandCategories] = useState<BrandCategoryTab[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+
+  // TODO: Replace with actual API call
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     setIsLoading(true);
+  //     setIsError(false);
+  //     try {
+  //       const res = await fetch('/api/categories');
+  //       if (!res.ok) throw new Error('Failed to fetch');
+  //       const data = await res.json();
+  //       setCategoryGroups(data.categoryGroups.map((g: any) => ({
+  //         ...g,
+  //         icon: ICON_MAP[g.iconName] || ShoppingBagIcon,
+  //         subcategories: g.subcategories.map((s: any) => ({
+  //           ...s,
+  //           icon: ICON_MAP[s.iconName] || ShoppingBagIcon,
+  //         })),
+  //       })));
+  //       setBrands(data.brands);
+  //       setBrandCategories(data.brandCategories);
+  //     } catch {
+  //       setIsError(true);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   fetchCategories();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredBrands = useMemo(() => {
-    if (brandFilter === 'ทั้งหมด') return BRANDS;
-    return BRANDS.filter(b => b.category === brandFilter);
-  }, [brandFilter]);
+    if (brandFilter === 'ทั้งหมด') return brands;
+    return brands.filter(b => b.category === brandFilter);
+  }, [brandFilter, brands]);
 
-  const hotBrands = useMemo(() => BRANDS.filter(b => b.isHot), []);
+  const hotBrands = useMemo(() => brands.filter(b => b.isHot), [brands]);
+
+  // ── Loading Skeleton ──
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white relative z-10">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-white/20 rounded-lg animate-pulse" />
+              <div className="h-6 w-24 bg-white/30 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 py-6 space-y-10">
+          {Array.from({ length: 4 }).map((_, gi) => (
+            <div key={gi}>
+              <div className="flex items-center gap-3 mb-5 px-2">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
+                <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white border border-gray-200 animate-pulse">
+                    <div className="w-14 h-14 bg-gray-200 rounded-lg" />
+                    <div className="h-3 w-12 bg-gray-200 rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error State ──
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center max-w-md">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
+          <p className="text-sm text-gray-500 mb-6">ไม่สามารถโหลดหมวดหมู่ได้</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold">ลองใหม่</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -318,7 +254,16 @@ export default function CategoriesPage() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.2 }}
             >
-        {CATEGORY_GROUPS.map((group, groupIndex) => {
+        {categoryGroups.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShoppingBagIcon className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีหมวดหมู่สินค้า</h3>
+            <p className="text-sm text-gray-500">ข้อมูลจะแสดงเมื่อเชื่อมต่อ API</p>
+          </div>
+        ) : (
+        categoryGroups.map((group, groupIndex) => {
           const Icon = group.icon;
           
           return (
@@ -385,7 +330,8 @@ export default function CategoriesPage() {
               </div>
             </div>
           );
-        })}
+        })
+        )}
             </motion.div>
           ) : (
             <motion.div
@@ -396,6 +342,7 @@ export default function CategoriesPage() {
               transition={{ duration: 0.2 }}
             >
               {/* Hot Brands Section */}
+              {hotBrands.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
                   <FireIcon className="w-6 h-6 text-red-500" />
@@ -446,6 +393,7 @@ export default function CategoriesPage() {
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Category Filter */}
               <div className="mb-6">
@@ -462,11 +410,11 @@ export default function CategoriesPage() {
                         : 'bg-white text-gray-600 border border-gray-200 hover:border-red-200 hover:text-red-600'
                     }`}
                   >
-                    ทั้งหมด ({BRANDS.length})
+                    ทั้งหมด ({brands.length})
                   </button>
-                  {BRAND_CATEGORIES.map((cat) => {
-                    const count = BRANDS.filter(b => b.category === cat.id).length;
-                    const CatIcon = cat.icon;
+                  {brandCategories.map((cat) => {
+                    const count = brands.filter(b => b.category === cat.id).length;
+                    const CatIcon = cat.icon || ShoppingBagIcon;
                     return (
                       <button
                         key={cat.id}
@@ -486,6 +434,15 @@ export default function CategoriesPage() {
               </div>
 
               {/* All Brands Grid */}
+              {brands.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <TagIcon className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีข้อมูลแบรนด์</h3>
+                  <p className="text-sm text-gray-500">ข้อมูลจะแสดงเมื่อเชื่อมต่อ API</p>
+                </div>
+              ) : (
               <div className="mb-8">
                 <h3 className="text-h3 text-gray-800 mb-4">
                   {brandFilter === 'ทั้งหมด' ? 'แบรนด์ทั้งหมด' : `แบรนด์ — ${brandFilter}`}
@@ -541,6 +498,7 @@ export default function CategoriesPage() {
                   ))}
                 </div>
               </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

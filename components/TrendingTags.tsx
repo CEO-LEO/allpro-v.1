@@ -1,43 +1,99 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, Filter, X } from 'lucide-react';
 
-const trendingTags = [
-  { id: 1, text: 'Starbucks Buy 1 Free 1', category: 'Beverages', count: '2.4k', productId: 'p-starbucks-b1g1' },
-  { id: 2, text: 'Buffet Under 500', category: 'Dining', count: '1.8k', productId: 'p-buffet-500' },
-  { id: 3, text: 'iPhone 15 Pro', category: 'Electronics', count: '3.2k', productId: 'p-iphone15pro' },
-  { id: 4, text: '7-Eleven 50% Off', category: 'Retail', count: '5.1k', productId: 'p-7eleven-50off' },
-  { id: 5, text: 'Free Shipping', category: 'E-commerce', count: '4.3k', productId: 'p-free-shipping' },
-  { id: 6, text: 'Flash Sale', category: 'Limited Time', count: '6.7k', productId: 'p-flash-sale' },
-  { id: 7, text: 'Lotus Hot Deal', category: 'Supermarket', count: '2.9k', productId: 'p-lotus-hotdeal' },
-  { id: 8, text: 'Travel Packages', category: 'Tourism', count: '1.5k', productId: 'p-travel-pkg' },
-];
+/*
+ * Expected API Response: GET /api/trending-tags
+ * Response: {
+ *   tags: TrendingTag[],
+ *   categories: string[]
+ * }
+ *
+ * interface TrendingTag {
+ *   id: number;
+ *   text: string;
+ *   category: string;
+ *   count: string;       // e.g. "2.4k"
+ *   productId: string;
+ * }
+ */
 
-const categories = [
-  'All',
-  'Beverages',
-  'Dining',
-  'Electronics',
-  'Retail',
-  'E-commerce',
-  'Limited Time',
-  'Supermarket',
-  'Tourism',
-];
+interface TrendingTag {
+  id: number;
+  text: string;
+  category: string;
+  count: string;
+  productId: string;
+}
 
 export default function TrendingTags() {
   const router = useRouter();
   const [showFilter, setShowFilter] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
+  // ── API-Ready State ──
+  const [trendingTags, setTrendingTags] = useState<TrendingTag[]>([]);
+  const [tagCategories, setTagCategories] = useState<string[]>(['All']);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // TODO: Replace with actual API call
+  // useEffect(() => {
+  //   const fetchTags = async () => {
+  //     try {
+  //       const res = await fetch('/api/trending-tags');
+  //       const data = await res.json();
+  //       setTrendingTags(data.tags);
+  //       setTagCategories(['All', ...data.categories]);
+  //     } catch { }
+  //     finally { setIsLoading(false); }
+  //   };
+  //   fetchTags();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   const filteredTags = selectedCategory === 'All' 
     ? trendingTags 
     : trendingTags.filter(tag => tag.category === selectedCategory);
   
   const duplicatedTags = [...filteredTags, ...filteredTags];
+
+  // ── Loading State ──
+  if (isLoading) {
+    return (
+      <div className="bg-white border-y border-gray-200 py-4 overflow-hidden relative">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-red-600" />
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="flex gap-3 px-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex-shrink-0 px-4 py-2.5 bg-gray-100 rounded-lg animate-pulse w-40 h-14" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Empty State ──
+  if (trendingTags.length === 0) {
+    return (
+      <div className="bg-white border-y border-gray-200 py-6 text-center">
+        <div className="flex items-center justify-center gap-2 text-gray-400">
+          <TrendingUp className="w-5 h-5" />
+          <p className="text-body-sm font-medium">ยังไม่มี Trending Searches ในขณะนี้</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border-y border-gray-200 py-4 overflow-hidden relative">
@@ -83,7 +139,7 @@ export default function TrendingTags() {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {categories.map((category) => (
+                  {tagCategories.map((category) => (
                     <button
                       key={category}
                       onClick={() => {

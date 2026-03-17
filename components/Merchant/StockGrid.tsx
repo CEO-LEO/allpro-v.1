@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -22,43 +22,31 @@ interface StockGridProps {
   products?: Product[];
 }
 
-// Mock data for Nivea brand
-const defaultProducts: Product[] = [
-  {
-    id: 'nv-001',
-    name: 'NIVEA Creme Soft 50ml ซื้อ 2 แถม 1',
-    brand: 'Nivea',
-    category: 'Personal Care',
-    stockStatus: 'available',
-    lastUpdate: '2 mins ago',
-    views: 1250,
-    salesThisWeek: 45
-  },
-  {
-    id: 'nv-002',
-    name: 'NIVEA MEN Deep Clean 100ml ลด 20%',
-    brand: 'Nivea',
-    category: 'Personal Care',
-    stockStatus: 'available',
-    lastUpdate: '5 mins ago',
-    views: 890,
-    salesThisWeek: 32
-  },
-  {
-    id: 'nv-003',
-    name: 'NIVEA Sun Protect SPF50 แถมฟรี After Sun',
-    brand: 'Nivea',
-    category: 'Sun Care',
-    stockStatus: 'out_of_stock',
-    lastUpdate: '15 mins ago',
-    views: 2100,
-    salesThisWeek: 67
-  }
-];
-
-export default function StockGrid({ branchName, products = defaultProducts }: StockGridProps) {
-  const [productList, setProductList] = useState<Product[]>(products);
+export default function StockGrid({ branchName, products }: StockGridProps) {
+  const [productList, setProductList] = useState<Product[]>(products || []);
+  const [isLoading, setIsLoading] = useState(!products);
   const [flashingId, setFlashingId] = useState<string | null>(null);
+
+  // TODO: เชื่อมต่อ API จริง
+  // useEffect(() => {
+  //   if (products) return;
+  //   const fetchProducts = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const res = await fetch(`/api/merchant/stock?branch=${encodeURIComponent(branchName)}`);
+  //       const data = await res.json();
+  //       setProductList(data.products);
+  //     } catch (err) { console.error(err); }
+  //     finally { setIsLoading(false); }
+  //   };
+  //   fetchProducts();
+  // }, [branchName, products]);
+
+  useEffect(() => {
+    if (products) return;
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, [products]);
 
   const handleToggle = (productId: string) => {
     setProductList(prev => 
@@ -187,6 +175,23 @@ export default function StockGrid({ branchName, products = defaultProducts }: St
           <span className="text-xs text-gray-500">Tap to toggle</span>
         </div>
 
+        {isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border-2 border-gray-200 p-4 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-lg bg-gray-200 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-3 bg-gray-100 rounded w-1/3" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  </div>
+                  <div className="w-16 h-9 rounded-full bg-gray-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <AnimatePresence>
           {productList.map((product) => {
             const isAvailable = product.stockStatus === 'available';
@@ -313,6 +318,7 @@ export default function StockGrid({ branchName, products = defaultProducts }: St
             );
           })}
         </AnimatePresence>
+        )}
       </div>
 
       {/* Empty State */}

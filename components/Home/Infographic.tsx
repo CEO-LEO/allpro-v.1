@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   SparklesIcon,
@@ -8,42 +9,47 @@ import {
   MapPinIcon,
 } from '@heroicons/react/24/solid';
 
-const STATS = [
-  {
-    id: 1,
-    icon: ShoppingBagIcon,
-    value: '12,500+',
-    label: 'โปรโมชั่น',
-    color: 'from-orange-500 to-red-500',
-    bgColor: 'from-orange-50 to-red-50',
-  },
-  {
-    id: 2,
-    icon: UserGroupIcon,
-    value: '50K+',
-    label: 'ผู้ใช้งาน',
-    color: 'from-blue-500 to-cyan-500',
-    bgColor: 'from-blue-50 to-cyan-50',
-  },
-  {
-    id: 3,
-    icon: MapPinIcon,
-    value: '2,000+',
-    label: 'ร้านค้า',
-    color: 'from-purple-500 to-pink-500',
-    bgColor: 'from-purple-50 to-pink-50',
-  },
-  {
-    id: 4,
-    icon: SparklesIcon,
-    value: '฿5M+',
-    label: 'ส่วนลดรวม',
-    color: 'from-green-500 to-emerald-500',
-    bgColor: 'from-green-50 to-emerald-50',
-  },
-];
+// Interface สำหรับข้อมูลสถิติ
+interface StatItem {
+  id: number;
+  iconName: string;
+  value: string;
+  label: string;
+  color: string;
+  bgColor: string;
+}
+
+// Map สำหรับ resolve icon จากชื่อ string (API)
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  ShoppingBagIcon,
+  UserGroupIcon,
+  MapPinIcon,
+  SparklesIcon,
+};
 
 export default function Infographic() {
+  const [stats, setStats] = useState<StatItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // TODO: เชื่อมต่อ API จริง
+  // useEffect(() => {
+  //   const fetchStats = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const res = await fetch('/api/stats/overview');
+  //       const data = await res.json();
+  //       setStats(data.stats);
+  //     } catch (err) { console.error(err); }
+  //     finally { setIsLoading(false); }
+  //   };
+  //   fetchStats();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="mb-8">
       {/* Section Header */}
@@ -57,15 +63,31 @@ export default function Infographic() {
             🎯 All Pro ในตัวเลข
           </h2>
           <p className="text-body-sm text-gray-600">
-            ข้อมูล ณ วันที่ 23 กุมภาพันธ์ 2569
+            ข้อมูลแพลตฟอร์มล่าสุด
           </p>
         </motion.div>
       </div>
 
       {/* Stats Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-gray-100 p-6 border-2 border-white shadow-lg animate-pulse">
+              <div className="w-12 h-12 rounded-xl bg-gray-200 mb-3" />
+              <div className="h-8 bg-gray-200 rounded w-2/3 mb-1" />
+              <div className="h-4 bg-gray-200 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      ) : stats.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-2xl border border-gray-200">
+          <ShoppingBagIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">ยังไม่มีข้อมูลสถิติ</p>
+        </div>
+      ) : (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {STATS.map((stat, index) => {
-          const Icon = stat.icon;
+        {stats.map((stat, index) => {
+          const Icon = ICON_MAP[stat.iconName] || ShoppingBagIcon;
           
           return (
             <motion.div
@@ -108,6 +130,7 @@ export default function Infographic() {
           );
         })}
       </div>
+      )}
 
       {/* Additional Info Banner */}
       <motion.div

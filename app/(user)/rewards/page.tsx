@@ -9,6 +9,27 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import LoginModal from '@/components/Auth/LoginModal';
 
+/*
+ * Expected API Response: GET /api/rewards
+ * Response: {
+ *   rewards: RewardItem[],
+ *   pointsBalance: number,
+ *   redeemedIds: string[],
+ *   categories: { id: string; label: string; icon: string }[]
+ * }
+ *
+ * interface RewardItem {
+ *   id: string;
+ *   name: string;
+ *   description: string;
+ *   emoji: string;
+ *   pointsCost: number;
+ *   featured?: boolean;
+ *   image?: string;
+ *   category?: string;        // 'food-drink' | 'entertainment' | 'shopping' | 'wellness'
+ * }
+ */
+
 interface RewardItem {
   id: string;
   name: string;
@@ -17,22 +38,8 @@ interface RewardItem {
   pointsCost: number;
   featured?: boolean;
   image?: string;
+  category?: string;
 }
-
-const REWARDS_CATALOG: RewardItem[] = [
-  { id: 'free-coffee', name: 'Free Coffee ☕', description: 'Get a free regular coffee at any Seven Eleven', emoji: '☕', pointsCost: 50, featured: true },
-  { id: 'free-coke', name: 'Free Coke 🥤', description: 'Get a free Coca-Cola 350ml at any 7-Eleven', emoji: '🥤', pointsCost: 40 },
-  { id: 'movie-ticket', name: 'Movie Ticket 🎬', description: 'Get one free movie ticket at major cinema chains', emoji: '🎬', pointsCost: 150, featured: true },
-  { id: '100-baht-voucher', name: '100 Baht Voucher 💳', description: 'Use 100 baht on any online shopping platform', emoji: '💳', pointsCost: 100 },
-  { id: 'pizza-voucher', name: 'Pizza Voucher 🍕', description: 'Get 200 baht off on any pizza order', emoji: '🍕', pointsCost: 80 },
-  { id: 'starbucks-drink', name: 'Starbucks Beverage ⭐', description: 'Redeem any beverage at Starbucks (up to 200 baht)', emoji: '⭐', pointsCost: 120, featured: true },
-  { id: 'massage-voucher', name: 'Massage Voucher 💆', description: '30-minute massage at any Thai spa partner', emoji: '💆', pointsCost: 200 },
-  { id: 'netflix-month', name: 'Netflix Month 🎥', description: 'One month free Netflix subscription', emoji: '🎥', pointsCost: 250, featured: true },
-  { id: 'makeup-set', name: 'Makeup Set 💄', description: 'Premium makeup set from top brands', emoji: '💄', pointsCost: 180 },
-  { id: 'phone-credit', name: 'Phone Credit 📱', description: '200 baht mobile credit for any carrier', emoji: '📱', pointsCost: 100 },
-  { id: 'hotel-voucher', name: 'Hotel Voucher 🏨', description: 'Get 500 baht off any hotel booking', emoji: '🏨', pointsCost: 300 },
-  { id: 'gaming-voucher', name: 'Game Voucher 🎮', description: '500 baht gaming credit for Steam/PSN', emoji: '🎮', pointsCost: 220 },
-];
 
 type CategoryType = 'all' | 'food-drink' | 'entertainment' | 'shopping' | 'wellness';
 
@@ -46,11 +53,42 @@ const categories = [
 
 export default function RewardsPage() {
   const { user } = useAuthStore();
-  const [pointsBalance, setPointsBalance] = useState(350);
+  const [pointsBalance, setPointsBalance] = useState(0);
   const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // ── API-Ready State ──
+  const [rewardsCatalog, setRewardsCatalog] = useState<RewardItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+
+  // TODO: Replace with actual API call
+  // useEffect(() => {
+  //   const fetchRewards = async () => {
+  //     setIsLoading(true);
+  //     setIsError(false);
+  //     try {
+  //       const res = await fetch('/api/rewards');
+  //       if (!res.ok) throw new Error('Failed to fetch');
+  //       const data = await res.json();
+  //       setRewardsCatalog(data.rewards);
+  //       setPointsBalance(data.pointsBalance);
+  //       setRedeemedRewards(data.redeemedIds || []);
+  //     } catch {
+  //       setIsError(true);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   fetchRewards();
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleRedeemReward = async (reward: RewardItem) => {
     if (!user) {
@@ -108,21 +146,8 @@ export default function RewardsPage() {
   };
 
   const filteredRewards = selectedCategory === 'all' 
-    ? REWARDS_CATALOG 
-    : REWARDS_CATALOG.filter(reward => {
-        switch (selectedCategory) {
-          case 'food-drink':
-            return ['free-coffee', 'free-coke', 'pizza-voucher', 'starbucks-drink'].includes(reward.id);
-          case 'entertainment':
-            return ['movie-ticket', 'netflix-month', 'gaming-voucher'].includes(reward.id);
-          case 'shopping':
-            return ['100-baht-voucher', 'makeup-set', 'hotel-voucher'].includes(reward.id);
-          case 'wellness':
-            return ['massage-voucher', 'phone-credit'].includes(reward.id);
-          default:
-            return true;
-        }
-      });
+    ? rewardsCatalog 
+    : rewardsCatalog.filter(reward => reward.category === selectedCategory);
 
   if (!user) {
     return (
@@ -235,20 +260,20 @@ export default function RewardsPage() {
             <div className="text-h2 mb-1">🎁</div>
             <p className="text-body-sm text-gray-600">แลกได้</p>
             <p className="text-h4 text-gray-900">
-              {REWARDS_CATALOG.filter(r => r.pointsCost <= pointsBalance).length}
+              {rewardsCatalog.filter(r => r.pointsCost <= pointsBalance).length}
             </p>
           </div>
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
             <div className="text-h2 mb-1">🔥</div>
             <p className="text-body-sm text-gray-600">ดีลเด็ด</p>
             <p className="text-h4 text-gray-900">
-              {REWARDS_CATALOG.filter(r => r.featured).length}
+              {rewardsCatalog.filter(r => r.featured).length}
             </p>
           </div>
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
             <div className="text-h2 mb-1">✨</div>
             <p className="text-body-sm text-gray-600">ของรางวัล</p>
-            <p className="text-h4 text-gray-900">{REWARDS_CATALOG.length}</p>
+            <p className="text-h4 text-gray-900">{rewardsCatalog.length}</p>
           </div>
         </div>
       </div>
@@ -277,6 +302,31 @@ export default function RewardsPage() {
 
       {/* Rewards Grid */}
       <div className="max-w-6xl mx-auto px-4 py-6">
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 animate-pulse">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full" />
+                </div>
+                <div className="space-y-3 text-center">
+                  <div className="h-5 bg-gray-200 rounded w-2/3 mx-auto" />
+                  <div className="h-4 bg-gray-200 rounded w-full" />
+                  <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto" />
+                  <div className="h-10 bg-gray-200 rounded-xl" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : rewardsCatalog.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Gift className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีของรางวัลในขณะนี้</h3>
+            <p className="text-sm text-gray-500">กลับมาตรวจสอบใหม่เร็วๆ นี้</p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRewards.map((reward, index) => {
             const isRedeemed = redeemedRewards.includes(reward.id);
@@ -365,6 +415,7 @@ export default function RewardsPage() {
             );
           })}
         </div>
+        )}
 
         {/* Tips Section */}
         <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
