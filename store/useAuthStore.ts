@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { signOut } from '@/lib/supabase/auth';
 
 export type UserRole = 'USER' | 'MERCHANT' | null;
 
@@ -82,7 +83,10 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: true
       }),
       
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => {
+        signOut(); // Sign out from Supabase (fire-and-forget)
+        set({ user: null, isAuthenticated: false });
+      },
       
       updateUser: (updates) => set((state) => ({
         user: state.user ? { ...state.user, ...updates } : null

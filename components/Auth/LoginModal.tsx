@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, Store, Sparkles, Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { signIn } from '@/lib/supabase/auth';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
@@ -51,7 +53,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     onClose();
   };
 
-  // จำลอง API login
+  // Supabase Auth Login (พร้อม Demo fallback)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -74,29 +76,40 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     setShowAccountNotFound(false);
 
     try {
-      // TODO: เปลี่ยนเป็น API จริง — e.g. const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password, role: selectedRole }) });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // จำลอง: ตรวจสอบบัญชี — ถ้าไม่ใช่ demo account แสดงข้อผิดพลาดให้สมัครก่อน
-      const isDemoAccount = email.toLowerCase() === 'demo@test.com' || email.toLowerCase() === 'test@test.com';
-
-      if (!isDemoAccount) {
-        setError('ไม่พบบัญชีผู้ใช้ กรุณาสมัครสมาชิกก่อน');
-        setShowAccountNotFound(true);
+      // ── ถ้า Supabase ยังไม่ได้ตั้งค่า → ใช้ Demo Mode ──
+      if (!isSupabaseConfigured) {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        if (selectedRole === 'USER') {
+          loginAsUser();
+          toast.success('🎉 Demo Mode — ยินดีต้อนรับ!');
+        } else {
+          loginAsMerchant();
+          toast.success('✅ Demo Mode — Merchant Dashboard');
+          setTimeout(() => router.push('/merchant/dashboard'), 500);
+        }
+        handleClose();
         return;
       }
 
-      if (selectedRole === 'USER') {
-        loginAsUser();
-        toast.success('🎉 ยินดีต้อนรับกลับ Hunter 007!');
+      // ── Supabase Auth — Login จริง ──
+      const result = await signIn(email, password);
+
+      if (!result.success) {
+        setError(result.error || 'เข้าสู่ระบบไม่สำเร็จ');
+        if (result.error?.includes('ไม่ถูกต้อง')) {
+          setShowAccountNotFound(true);
+        }
+        return;
+      }
+
+      // Login สำเร็จ → AuthListener จะ set user ให้อัตโนมัติผ่าน onAuthStateChange
+      if (selectedRole === 'MERCHANT') {
+        toast.success(`✅ ยินดีต้อนรับ ${result.user?.name}!`);
         handleClose();
+        setTimeout(() => router.push('/merchant/dashboard'), 500);
       } else {
-        loginAsMerchant();
-        toast.success('✅ ยินดีต้อนรับ Siam Store!');
+        toast.success(`🎉 ยินดีต้อนรับกลับ ${result.user?.name}!`);
         handleClose();
-        setTimeout(() => {
-          router.push('/merchant/dashboard');
-        }, 500);
       }
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');

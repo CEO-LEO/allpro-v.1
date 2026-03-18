@@ -3,13 +3,25 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Create a placeholder client if env vars are missing (build time / demo mode)
+// Detect if Supabase is configured (not placeholder)
+export const isSupabaseConfigured =
+  !!supabaseUrl &&
+  !!supabaseAnonKey &&
+  !supabaseUrl.includes('placeholder') &&
+  !supabaseAnonKey.includes('placeholder');
+
 let supabase: SupabaseClient;
 
-if (supabaseUrl && supabaseAnonKey) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (isSupabaseConfigured) {
+  supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  });
 } else {
-  // Provide a dummy client for build time / when Supabase is not configured
+  // Dummy client for build time / demo mode
   supabase = createClient('https://placeholder.supabase.co', 'placeholder-key');
 }
 

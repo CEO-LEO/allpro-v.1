@@ -4,6 +4,7 @@ import './globals.css'
 import { NotificationProvider } from '@/lib/notificationContext'
 import { FlashSaleProvider } from '@/lib/flashSaleContext'
 import GameificationEventListener from '@/components/Common/GameificationEventListener'
+import AuthListener from '@/components/Auth/AuthListener'
 import { Toaster } from 'sonner'
 
 const kanit = Kanit({
@@ -78,6 +79,7 @@ export default function RootLayout({
       <body className="font-kanit antialiased bg-slate-50 text-slate-900">
         <NotificationProvider>
           <FlashSaleProvider>
+            <AuthListener />
             <GameificationEventListener />
             {/* NO UI components here - layouts are in route groups */}
             {children}

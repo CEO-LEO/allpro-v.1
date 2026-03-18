@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, Store, UserPlus, Lock, Mail, Eye, EyeOff, Loader2, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { signUp } from '@/lib/supabase/auth';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -61,7 +63,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     return null;
   };
 
-  // จำลอง API register
+  // Supabase Auth Register (พร้อม Demo fallback)
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -75,10 +77,22 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     setIsLoading(true);
 
     try {
-      // TODO: เปลี่ยนเป็น API จริง — e.g. await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, role: selectedRole }) });
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // ── ถ้า Supabase ยังไม่ได้ตั้งค่า → Demo Mode ──
+      if (!isSupabaseConfigured) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        toast.success('🎉 Demo Mode — สมัครสำเร็จ! กรุณาเข้าสู่ระบบ');
+        handleGoToLogin();
+        return;
+      }
 
-      // สมัครสำเร็จ → ส่งกลับไปหน้า Login
+      // ── Supabase Auth — Register จริง ──
+      const result = await signUp(email, password, name, selectedRole);
+
+      if (!result.success) {
+        setError(result.error || 'สมัครสมาชิกไม่สำเร็จ');
+        return;
+      }
+
       toast.success('🎉 สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
       handleGoToLogin();
     } catch {
