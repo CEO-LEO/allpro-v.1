@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, Store, Sparkles, Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -28,6 +28,16 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showAccountNotFound, setShowAccountNotFound] = useState(false);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
 
   // รีเซ็ตฟอร์มเมื่อปิด modal
   const handleClose = () => {
@@ -105,23 +115,23 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-[340px] overflow-hidden"
             >
               {/* Header */}
-              <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 px-6 pt-5 pb-4 text-white">
+              <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 px-5 pt-4 pb-3 text-white">
                 <button
                   onClick={handleClose}
-                  className="absolute top-3 right-3 p-1.5 hover:bg-white/20 rounded-full transition-colors duration-200"
+                  className="absolute top-2.5 right-2.5 p-1 hover:bg-white/20 rounded-full transition-colors duration-200"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -131,15 +141,15 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                     animate={{ rotate: [0, 10, -10, 0] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <Sparkles className="w-10 h-10 mb-2" />
+                    <Sparkles className="w-8 h-8 mb-1.5" />
                   </motion.div>
-                  <h2 className="text-lg font-bold mb-0.5">Welcome Back!</h2>
-                  <p className="text-white/80 text-xs">เข้าสู่ระบบเพื่อดำเนินการต่อ</p>
+                  <h2 className="text-base font-bold mb-0.5">Welcome Back!</h2>
+                  <p className="text-white/80 text-[11px]">เข้าสู่ระบบเพื่อดำเนินการต่อ</p>
                 </div>
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleLogin} className="p-5 space-y-3">
+              <form onSubmit={handleLogin} className="px-5 py-4 space-y-2.5">
                 {/* Error message */}
                 {error && (
                   <motion.div
@@ -163,7 +173,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
                       autoComplete="email"
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
                 </div>
@@ -180,7 +190,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       autoComplete="current-password"
-                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
+                      className="w-full pl-9 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs text-gray-900 placeholder:text-gray-400"
                     />
                     <button
                       type="button"
@@ -199,28 +209,28 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                     <button
                       type="button"
                       onClick={() => setSelectedRole('USER')}
-                      className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all duration-200 ${
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-all duration-200 ${
                         selectedRole === 'USER'
                           ? 'border-green-500 bg-green-50 ring-1 ring-green-200'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <UserCircle className={`w-6 h-6 transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-600' : 'text-gray-400'}`} />
-                      <span className={`text-xs font-semibold transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-700' : 'text-gray-600'}`}>
+                      <UserCircle className={`w-5 h-5 transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className={`text-[11px] font-semibold transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-700' : 'text-gray-600'}`}>
                         ลูกค้า 🎯
                       </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedRole('MERCHANT')}
-                      className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all duration-200 ${
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-all duration-200 ${
                         selectedRole === 'MERCHANT'
                           ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <Store className={`w-6 h-6 transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-600' : 'text-gray-400'}`} />
-                      <span className={`text-xs font-semibold transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-700' : 'text-gray-600'}`}>
+                      <Store className={`w-5 h-5 transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-600' : 'text-gray-400'}`} />
+                      <span className={`text-[11px] font-semibold transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-700' : 'text-gray-600'}`}>
                         ร้านค้า 🏪
                       </span>
                     </button>
@@ -231,7 +241,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white py-2 rounded-lg text-xs font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
                 >
                   {isLoading ? (
                     <>
@@ -262,7 +272,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                       onSwitchToRegister();
                     }
                   }}
-                  className={`w-full text-center py-2 text-sm font-semibold rounded-lg transition-all ${
+                  className={`w-full text-center py-1.5 text-xs font-semibold rounded-lg transition-all ${
                     showAccountNotFound
                       ? 'bg-orange-50 text-orange-600 border-2 border-orange-400 animate-pulse'
                       : 'text-orange-600 hover:text-orange-700'
@@ -272,9 +282,9 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                 </button>
 
                 {/* Demo Notice */}
-                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <Lock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-1.5">
+                    <Lock className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-[10px] font-semibold text-amber-800">Demo Mode</p>
                       <p className="text-[10px] text-amber-600 mt-0.5 leading-relaxed">
