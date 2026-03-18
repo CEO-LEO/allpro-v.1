@@ -10,45 +10,8 @@ interface StoreSheetProps {
   onClose: () => void;
 }
 
-// Mock promotion data for the selected store
-const getMockPromotions = (storeId: string) => [
-  {
-    id: '1',
-    title: 'Buy 1 Get 1 Free Coffee',
-    description: 'Valid for all coffee sizes',
-    discount: 50,
-    imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=300&fit=crop',
-    validUntil: '2026-02-28',
-    category: 'Beverage'
-  },
-  {
-    id: '2',
-    title: 'Fresh Sandwiches 30% Off',
-    description: 'All varieties available',
-    discount: 30,
-    imageUrl: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&h=300&fit=crop',
-    validUntil: '2026-02-15',
-    category: 'Food'
-  },
-  {
-    id: '3',
-    title: 'Energy Drink Bundle Deal',
-    description: 'Buy 3 get 20% off',
-    discount: 20,
-    imageUrl: 'https://images.unsplash.com/photo-1622543925917-763c34f1f87a?w=400&h=300&fit=crop',
-    validUntil: '2026-03-10',
-    category: 'Beverage'
-  },
-  {
-    id: '4',
-    title: 'Snack Attack Combo',
-    description: '2 snacks + 1 drink special',
-    discount: 25,
-    imageUrl: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=400&h=300&fit=crop',
-    validUntil: '2026-02-20',
-    category: 'Snacks'
-  },
-];
+// TODO: Replace with API call -> GET /api/stores/:id/promotions
+const getMockPromotions = (storeId: string): { id: string; title: string; description: string; discount: number; imageUrl: string; validUntil: string; category: string }[] => [];
 
 export default function StoreSheet({ store, onClose }: StoreSheetProps) {
   if (!store) return null;

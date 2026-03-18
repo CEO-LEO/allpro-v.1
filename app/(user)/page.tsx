@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowRight, Store, Search } from 'lucide-react';
+import { ArrowRight, Store, Search, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { getPromotions } from '@/lib/getPromotions';
@@ -59,14 +59,33 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [promotions, setPromotions] = useState<ReturnType<typeof getPromotions>>([]);
 
-  // Get all promotions from promotions.json
-  const allPromotions = useMemo(() => getPromotions(), []);
-
-  // Fetch data on mount
+  // Fetch promotions on mount
   useEffect(() => {
     checkAuth();
+    async function fetchPromotions() {
+      setIsLoading(true);
+      try {
+        // TODO: Replace with real API call
+        // const res = await fetch('/api/promotions');
+        // const data = await res.json();
+        // setPromotions(data);
+        
+        // Temporary: load from local data (will be empty until API is connected)
+        const data = getPromotions();
+        setPromotions(data);
+      } catch (err) {
+        console.error('Failed to fetch promotions:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchPromotions();
   }, [checkAuth]);
+
+  const allPromotions = promotions;
 
   // Filter promotions with memoization
   const filteredProducts = useMemo(() => {
@@ -268,8 +287,46 @@ export default function Home() {
           </p>
         </motion.div>
 
-        {/* Enhanced Grid Layout */}
-        {displayedProducts.length > 0 ? (
+        {/* Loading Skeleton */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
+                <div className="h-48 bg-gray-200" />
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gray-200" />
+                    <div className="h-4 bg-gray-200 rounded w-24" />
+                  </div>
+                  <div className="h-5 bg-gray-200 rounded w-3/4" />
+                  <div className="h-4 bg-gray-200 rounded w-full" />
+                  <div className="flex justify-between items-center">
+                    <div className="h-6 bg-gray-200 rounded w-20" />
+                    <div className="h-4 bg-gray-200 rounded w-16" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : allPromotions.length === 0 ? (
+          /* Empty State — No data at all */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-24 px-4"
+          >
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+              <Megaphone className="w-12 h-12 text-gray-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-700 mb-2">
+              ยังไม่มีโพสต์หรือโปรโมชั่นในขณะนี้
+            </h3>
+            <p className="text-gray-400 text-center max-w-sm">
+              เมื่อมีโพสต์หรือโปรโมชั่นใหม่ จะแสดงที่นี่
+            </p>
+          </motion.div>
+        ) : displayedProducts.length > 0 ? (
+          /* Promotion Grid */
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayedProducts.map((promo, index) => (
@@ -325,7 +382,7 @@ export default function Home() {
             )}
           </>
         ) : (
-          // Empty State
+          /* Search/Filter — No results found */
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

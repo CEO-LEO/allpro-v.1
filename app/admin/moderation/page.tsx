@@ -20,8 +20,37 @@ import toast, { Toaster } from 'react-hot-toast';
 
 export default function ModerationQueue() {
   const [posts, setPosts] = useState<PendingPost[]>(pendingPosts);
-  const [selectedPost, setSelectedPost] = useState<PendingPost>(posts[0]);
-  const [userStats, setUserStats] = useState(getUserStats(posts[0].userId));
+  const [selectedPost, setSelectedPost] = useState<PendingPost | null>(posts[0] ?? null);
+  const [userStats, setUserStats] = useState(posts[0] ? getUserStats(posts[0].userId) : getUserStats(''));
+
+  // Empty state when no posts to moderate
+  if (posts.length === 0 || !selectedPost) {
+    return (
+      <AdminLayout>
+        <div className="h-screen flex flex-col bg-gray-900">
+          <header className="bg-gray-950 border-b border-gray-800 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-h2 text-white mb-1">Content Moderation Queue</h1>
+                <p className="text-body-sm text-gray-400">Review community-submitted posts</p>
+              </div>
+              <div className="bg-green-500/20 border border-green-500/30 rounded-lg px-4 py-2">
+                <p className="text-caption text-green-400 mb-1">Pending Items</p>
+                <p className="text-h2 text-green-400">0</p>
+              </div>
+            </div>
+          </header>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <CheckCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <p className="text-lg text-gray-400">ไม่มีโพสต์ที่รอตรวจสอบในขณะนี้</p>
+              <p className="text-sm text-gray-500 mt-2">โพสต์ใหม่จากชุมชนจะปรากฏที่นี่</p>
+            </div>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   const handleApprove = () => {
     toast.success(

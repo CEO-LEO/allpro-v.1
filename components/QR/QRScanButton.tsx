@@ -16,49 +16,12 @@ export default function QRScanButton() {
   const mockScan = () => {
     setIsScanning(true);
     
-    // Simulate scanning delay
+    // TODO: Replace with real QR scan -> POST /api/qr/scan
     setTimeout(() => {
-      const mockPromos = [
-        {
-          id: '1',
-          title: 'Starbucks Buy 1 Get 1',
-          discount: '50%',
-          validUntil: '31 ธ.ค. 2026',
-          points: 50,
-        },
-        {
-          id: '2',
-          title: '7-Eleven Coffee -20฿',
-          discount: '20฿',
-          validUntil: '28 ก.พ. 2026',
-          points: 30,
-        },
-        {
-          id: '3',
-          title: 'Big C Fresh Milk 25%',
-          discount: '25%',
-          validUntil: '15 มี.ค. 2026',
-          points: 40,
-        },
-      ];
-
-      const randomPromo = mockPromos[Math.floor(Math.random() * mockPromos.length)];
-      
-      setScanResult(randomPromo);
+      setScanResult(null);
       setIsScanning(false);
-
-      // Award points
-      earnPoints('SCAN_QR');
-
-      // Confetti effect
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-
-      toast.success(`สแกนสำเร็จ! +${randomPromo.points} แต้ม`, {
-        icon: '🎉',
+      toast.success('ไม่พบโปรโมชั่นสำหรับ QR นี้', {
+        icon: '📱',
         duration: 3000,
       });
     }, 2000);

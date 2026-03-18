@@ -9,25 +9,8 @@ import { useGeolocation, calcDistanceKm } from '@/hooks/useGeolocation';
 import { Product } from '@/store/useAppStore';
 import { supabase } from '@/lib/supabase';
 
-// พิกัดจำลองสำหรับ MOCK_PRODUCTS (กรุงเทพ รอบสยาม-สุขุมวิท)
-const MOCK_COORDS: Record<string, { lat: number; lng: number }> = {
-  '7-eleven-001':  { lat: 13.7462, lng: 100.5347 }, // สาขาอารีย์
-  '7-eleven-002':  { lat: 13.7468, lng: 100.5390 }, // สาขาสยาม
-  '7-eleven-003':  { lat: 13.7310, lng: 100.5677 }, // สาขาเอกมัย
-  '7-eleven-004':  { lat: 13.7450, lng: 100.5280 }, // สาขาอโศก
-  '7-eleven-005':  { lat: 13.7450, lng: 100.5350 }, // สาขาราชดำริ
-  '7-eleven-006':  { lat: 13.7380, lng: 100.5600 }, // สาขาสุขุมวิท
-  '7-eleven-007':  { lat: 13.7460, lng: 100.5320 }, // สาขาพระราม 9
-  '7-eleven-008':  { lat: 13.7400, lng: 100.5520 }, // สาขาลาดพร้าว
-  '7-eleven-009':  { lat: 13.7350, lng: 100.5700 }, // สาขาบางนา
-  '7-eleven-010':  { lat: 13.7280, lng: 100.5850 }, // สาขาสำโรง
-  'lotus-001': { lat: 13.7520, lng: 100.4930 }, // พระราม 4
-  'lotus-002': { lat: 13.7600, lng: 100.5020 }, // รามคำแหง
-  'lotus-003': { lat: 13.7250, lng: 100.5900 }, // บางกะปิ
-  'lotus-004': { lat: 13.7150, lng: 100.6050 }, // สีลม
-  'makro-001': { lat: 13.7680, lng: 100.5150 }, // ราชเทวี
-  'makro-002': { lat: 13.7380, lng: 100.5450 }, // อโศก
-};
+// TODO: Replace with real coordinates from API
+const MOCK_COORDS: Record<string, { lat: number; lng: number }> = {};
 
 // Default: สยามสแควร์
 const DEFAULT_LAT = 13.7460;

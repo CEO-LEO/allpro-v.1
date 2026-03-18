@@ -285,33 +285,8 @@ const BRAND_CATEGORIES: { id: BrandCategory; label: string; icon: React.Componen
   { id: 'สุขภาพ', label: 'สุขภาพ', icon: ShieldCheckIcon },
 ];
 
-const BRANDS: Brand[] = [
-  { id: 'nike', name: 'Nike', logo: 'https://logo.clearbit.com/nike.com', category: 'แฟชั่น', promoCount: 24, rating: 4.9, isHot: true, discount: 'สูงสุด 50%', color: 'bg-black' },
-  { id: 'adidas', name: 'Adidas', logo: 'https://logo.clearbit.com/adidas.com', category: 'แฟชั่น', promoCount: 18, rating: 4.8, isHot: true, discount: 'สูงสุด 40%', color: 'bg-black' },
-  { id: 'uniqlo', name: 'UNIQLO', logo: 'https://logo.clearbit.com/uniqlo.com', category: 'แฟชั่น', promoCount: 15, rating: 4.7, discount: 'สูงสุด 30%', color: 'bg-red-600' },
-  { id: 'hm', name: 'H&M', logo: 'https://logo.clearbit.com/hm.com', category: 'แฟชั่น', promoCount: 12, rating: 4.5, discount: 'สูงสุด 60%', color: 'bg-red-700' },
-  { id: 'zara', name: 'ZARA', logo: 'https://logo.clearbit.com/zara.com', category: 'แฟชั่น', promoCount: 8, rating: 4.6, color: 'bg-black' },
-  { id: 'converse', name: 'Converse', logo: 'https://logo.clearbit.com/converse.com', category: 'แฟชั่น', promoCount: 10, rating: 4.7, discount: 'สูงสุด 35%', color: 'bg-black' },
-  { id: 'mcdonalds', name: "McDonald's", logo: 'https://logo.clearbit.com/mcdonalds.com', category: 'อาหาร', promoCount: 32, rating: 4.5, isHot: true, discount: '1 แถม 1', color: 'bg-red-600' },
-  { id: 'kfc', name: 'KFC', logo: 'https://logo.clearbit.com/kfc.com', category: 'อาหาร', promoCount: 28, rating: 4.4, isHot: true, discount: 'เริ่มต้น 59 บาท', color: 'bg-red-700' },
-  { id: 'pizzahut', name: 'Pizza Hut', logo: 'https://logo.clearbit.com/pizzahut.com', category: 'อาหาร', promoCount: 15, rating: 4.3, discount: 'สูงสุด 50%', color: 'bg-red-600' },
-  { id: 'shabushi', name: 'Shabushi', logo: 'https://ui-avatars.com/api/?name=SB&background=E11D48&color=fff&size=128', category: 'อาหาร', promoCount: 9, rating: 4.5, discount: 'บุฟเฟ่ต์ 299', color: 'bg-red-500' },
-  { id: 'starbucks', name: 'Starbucks', logo: 'https://logo.clearbit.com/starbucks.com', category: 'เครื่องดื่ม', promoCount: 20, rating: 4.8, isHot: true, discount: '1 แถม 1', color: 'bg-green-700' },
-  { id: 'cafe-amazon', name: 'Cafe Amazon', logo: 'https://ui-avatars.com/api/?name=CA&background=2D5016&color=fff&size=128', category: 'เครื่องดื่ม', promoCount: 16, rating: 4.5, discount: 'ลด 20%', color: 'bg-green-800' },
-  { id: 'apple', name: 'Apple', logo: 'https://logo.clearbit.com/apple.com', category: 'อิเล็กทรอนิกส์', promoCount: 12, rating: 4.9, isHot: true, discount: 'ลดสูงสุด 15%', color: 'bg-gray-900' },
-  { id: 'samsung', name: 'Samsung', logo: 'https://logo.clearbit.com/samsung.com', category: 'อิเล็กทรอนิกส์', promoCount: 22, rating: 4.7, isHot: true, discount: 'ลดสูงสุด 40%', color: 'bg-blue-900' },
-  { id: 'xiaomi', name: 'Xiaomi', logo: 'https://logo.clearbit.com/xiaomi.com', category: 'อิเล็กทรอนิกส์', promoCount: 18, rating: 4.5, discount: 'ลดสูงสุด 50%', color: 'bg-orange-500' },
-  { id: 'loreal', name: "L'Oréal", logo: 'https://logo.clearbit.com/loreal.com', category: 'ความงาม', promoCount: 14, rating: 4.7, discount: 'ลด 30%', color: 'bg-black' },
-  { id: 'mac', name: 'MAC', logo: 'https://logo.clearbit.com/maccosmetics.com', category: 'ความงาม', promoCount: 8, rating: 4.8, isHot: true, color: 'bg-black' },
-  { id: 'innisfree', name: 'Innisfree', logo: 'https://logo.clearbit.com/innisfree.com', category: 'ความงาม', promoCount: 9, rating: 4.6, color: 'bg-green-600' },
-  { id: 'agoda', name: 'Agoda', logo: 'https://logo.clearbit.com/agoda.com', category: 'ท่องเที่ยว', promoCount: 20, rating: 4.6, isHot: true, discount: 'ลดสูงสุด 75%', color: 'bg-blue-700' },
-  { id: 'airasia', name: 'AirAsia', logo: 'https://logo.clearbit.com/airasia.com', category: 'ท่องเที่ยว', promoCount: 15, rating: 4.4, discount: 'เริ่มต้น 0 บาท', color: 'bg-red-600' },
-  { id: 'klook', name: 'Klook', logo: 'https://logo.clearbit.com/klook.com', category: 'ท่องเที่ยว', promoCount: 12, rating: 4.5, discount: 'ลด 10%', color: 'bg-orange-500' },
-  { id: 'watsons', name: 'Watsons', logo: 'https://logo.clearbit.com/watsons.com', category: 'สุขภาพ', promoCount: 18, rating: 4.5, isHot: true, discount: 'ลดสูงสุด 50%', color: 'bg-green-600' },
-  { id: 'boots', name: 'Boots', logo: 'https://logo.clearbit.com/boots.com', category: 'สุขภาพ', promoCount: 12, rating: 4.4, discount: '1 แถม 1', color: 'bg-blue-700' },
-  { id: '7eleven', name: '7-Eleven', logo: 'https://logo.clearbit.com/7-eleven.com', category: 'ซูเปอร์มาร์เก็ต', promoCount: 45, rating: 4.3, isHot: true, discount: 'ลดทุกวัน', color: 'bg-green-600' },
-  { id: 'lotuss', name: "Lotus's", logo: 'https://ui-avatars.com/api/?name=LT&background=0EA5E9&color=fff&size=128', category: 'ซูเปอร์มาร์เก็ต', promoCount: 38, rating: 4.4, discount: 'ลดสูงสุด 50%', color: 'bg-sky-600' },
-];
+// TODO: Replace with API call -> GET /api/brands
+const BRANDS: Brand[] = [];
 
 // Map route category to brand categories for filtering
 const CATEGORY_TO_BRAND: Record<string, BrandCategory[]> = {
