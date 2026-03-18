@@ -108,15 +108,15 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden max-h-[90vh] overflow-y-auto"
             >
               {/* Header — Gradient ส้ม-ชมพู เหมือน Login */}
-              <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 px-8 pt-8 pb-7 text-white">
+              <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 px-6 pt-5 pb-4 text-white">
                 <button
                   onClick={handleClose}
-                  className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors duration-200"
+                  className="absolute top-3 right-3 p-1.5 hover:bg-white/20 rounded-full transition-colors duration-200"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
 
                 <div className="flex flex-col items-center text-center">
@@ -124,21 +124,21 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <UserPlus className="w-14 h-14 mb-3" />
+                    <UserPlus className="w-10 h-10 mb-2" />
                   </motion.div>
-                  <h2 className="text-2xl font-bold mb-1">สมัครสมาชิก</h2>
-                  <p className="text-white/80 text-sm">สร้างบัญชีเพื่อเริ่มต้นใช้งาน All Pro</p>
+                  <h2 className="text-lg font-bold mb-0.5">สมัครสมาชิก</h2>
+                  <p className="text-white/80 text-xs">สร้างบัญชีเพื่อเริ่มต้นใช้งาน All Pro</p>
                 </div>
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleRegister} className="p-6 sm:p-8 space-y-4">
+              <form onSubmit={handleRegister} className="p-5 space-y-3">
                 {/* Error message */}
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center font-medium"
+                    className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 text-center font-medium"
                   >
                     {error}
                   </motion.div>
@@ -146,9 +146,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
                 {/* ชื่อ-นามสกุล */}
                 <div>
-                  <label htmlFor="register-name" className="block text-sm font-medium text-gray-700 mb-1.5">ชื่อ-นามสกุล</label>
+                  <label htmlFor="register-name" className="block text-xs font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       id="register-name"
                       type="text"
@@ -156,16 +156,16 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                       onChange={(e) => setName(e.target.value)}
                       placeholder="กรอกชื่อ-นามสกุล"
                       autoComplete="name"
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
                 </div>
 
                 {/* อีเมล */}
                 <div>
-                  <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1.5">อีเมล</label>
+                  <label htmlFor="register-email" className="block text-xs font-medium text-gray-700 mb-1">อีเมล</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       id="register-email"
                       type="email"
@@ -173,16 +173,16 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
                       autoComplete="email"
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
                 </div>
 
                 {/* รหัสผ่าน */}
                 <div>
-                  <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-1.5">รหัสผ่าน</label>
+                  <label htmlFor="register-password" className="block text-xs font-medium text-gray-700 mb-1">รหัสผ่าน</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       id="register-password"
                       type={showPassword ? 'text' : 'password'}
@@ -190,23 +190,23 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="อย่างน้อย 6 ตัวอักษร"
                       autoComplete="new-password"
-                      className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 {/* ยืนยันรหัสผ่าน */}
                 <div>
-                  <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700 mb-1.5">ยืนยันรหัสผ่าน</label>
+                  <label htmlFor="register-confirm-password" className="block text-xs font-medium text-gray-700 mb-1">ยืนยันรหัสผ่าน</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       id="register-confirm-password"
                       type={showConfirmPassword ? 'text' : 'password'}
@@ -214,47 +214,47 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="กรอกรหัสผ่านอีกครั้ง"
                       autoComplete="new-password"
-                      className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 {/* เลือกบทบาท */}
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">เลือกบทบาท</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <p className="text-xs font-medium text-gray-700 mb-1.5">เลือกบทบาท</p>
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setSelectedRole('USER')}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all duration-200 ${
                         selectedRole === 'USER'
-                          ? 'border-green-500 bg-green-50 ring-1 ring-green-200 shadow-sm'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
+                          ? 'border-green-500 bg-green-50 ring-1 ring-green-200'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <UserCircle className={`w-7 h-7 transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-600' : 'text-gray-400'}`} />
-                      <span className={`text-sm font-semibold transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-700' : 'text-gray-600'}`}>
+                      <UserCircle className={`w-6 h-6 transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className={`text-xs font-semibold transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-700' : 'text-gray-600'}`}>
                         ลูกค้า 🎯
                       </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedRole('MERCHANT')}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all duration-200 ${
                         selectedRole === 'MERCHANT'
-                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200 shadow-sm'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
+                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <Store className={`w-7 h-7 transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-600' : 'text-gray-400'}`} />
-                      <span className={`text-sm font-semibold transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-700' : 'text-gray-600'}`}>
+                      <Store className={`w-6 h-6 transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-600' : 'text-gray-400'}`} />
+                      <span className={`text-xs font-semibold transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-700' : 'text-gray-600'}`}>
                         ร้านค้า 🏪
                       </span>
                     </button>
@@ -265,11 +265,11 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white py-3.5 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       กำลังสมัครสมาชิก...
                     </>
                   ) : (
@@ -278,12 +278,12 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 </button>
 
                 {/* Divider */}
-                <div className="relative py-1">
+                <div className="relative py-0.5">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200"></div>
                   </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white text-gray-400">มีบัญชีอยู่แล้ว?</span>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-3 bg-white text-gray-400">มีบัญชีอยู่แล้ว?</span>
                   </div>
                 </div>
 
@@ -291,7 +291,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 <button
                   type="button"
                   onClick={handleGoToLogin}
-                  className="w-full text-center py-3 text-orange-600 hover:text-orange-700 font-semibold transition-colors"
+                  className="w-full text-center py-2 text-orange-600 hover:text-orange-700 text-sm font-semibold transition-colors"
                 >
                   ← เข้าสู่ระบบ
                 </button>

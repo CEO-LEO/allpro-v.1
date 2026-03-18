@@ -223,15 +223,15 @@ export default function AIChatButton() {
               setIsOpen(true);
               toast.success('AI ตัวช่วยพร้อมแล้ว! 🤖');
             }}
-            className="fixed bottom-6 right-6 z-50 bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-full p-4 shadow-2xl hover:shadow-purple-500/50 hover:scale-110 transition-all duration-300 group"
+            className="fixed bottom-4 right-4 z-50 bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-full p-3 shadow-lg hover:shadow-purple-500/40 hover:scale-110 transition-all duration-300 group"
           >
-            <MessageCircle className="w-6 h-6" />
+            <MessageCircle className="w-5 h-5" />
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ repeat: Infinity, duration: 2 }}
-              className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"
+              className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
             />
-            <div className="absolute -top-12 right-0 bg-black text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute -top-10 right-0 bg-black text-white px-2.5 py-1.5 rounded-md text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
               หาโปรด้วย AI! ✨
             </div>
           </motion.button>
@@ -245,53 +245,53 @@ export default function AIChatButton() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-4 right-4 z-50 w-80 h-[440px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2 rounded-lg">
-                  <Sparkles className="w-5 h-5" />
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-2.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="bg-white/20 p-1.5 rounded-md">
+                  <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold">AI ช่วยหาโปร</h3>
-                  <p className="text-xs text-purple-100">ออนไลน์</p>
+                  <h3 className="text-sm font-bold leading-tight">AI ช่วยหาโปร</h3>
+                  <p className="text-[10px] text-purple-200">ออนไลน์</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="hover:bg-white/20 p-2 rounded-lg transition-colors"
+                className="hover:bg-white/20 p-1.5 rounded-md transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-[80%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
+                  <div className={`max-w-[85%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
                     <div
-                      className={`p-3 rounded-2xl ${
+                      className={`px-3 py-2 rounded-xl ${
                         message.type === 'user'
                           ? 'bg-purple-600 text-white rounded-br-none'
-                          : 'bg-white text-gray-900 rounded-bl-none shadow-md'
+                          : 'bg-white text-gray-900 rounded-bl-none shadow-sm'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                      <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.text}</p>
                     </div>
                     
                     {/* Suggestions */}
                     {message.suggestions && (
-                      <div className="flex flex-wrap gap-2 mt-2">
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
                         {message.suggestions.map((suggestion, idx) => (
                           <button
                             key={idx}
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 transition-colors"
+                            className="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-200 transition-colors"
                           >
                             {suggestion}
                           </button>
@@ -305,11 +305,11 @@ export default function AIChatButton() {
               {/* Typing Indicator */}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="bg-white p-3 rounded-2xl rounded-bl-none shadow-md">
+                  <div className="bg-white px-3 py-2 rounded-xl rounded-bl-none shadow-sm">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>
@@ -319,22 +319,22 @@ export default function AIChatButton() {
             </div>
 
             {/* Input */}
-            <div className="p-4 bg-white border-t border-gray-200">
-              <div className="flex gap-2">
+            <div className="p-2.5 bg-white border-t border-gray-200">
+              <div className="flex gap-1.5">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="พิมพ์ข้อความ..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  placeholder="ถามหาโปรโมชั่น..."
+                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!input.trim()}
-                  className="bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="bg-purple-600 text-white p-1.5 rounded-full hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4" />
                 </button>
               </div>
             </div>
