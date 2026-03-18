@@ -41,13 +41,13 @@ export default function UserPostCard({ post }: UserPostCardProps) {
     if (!marked) {
       setMarked(true);
       setHelpfulCount(helpfulCount + 1);
-      earnPoints('WRITE_REVIEW', { action: 'Marked post helpful' });
+      earnPoints('WRITE_REVIEW');
       toast.success('Marked as helpful! +10 points 👍');
     }
   };
 
   const handleShare = () => {
-    earnPoints('SHARE_DEAL', { action: 'Shared user post' });
+    earnPoints('SHARE_DEAL');
     toast.success('Link copied! +25 points 🎉');
   };
 

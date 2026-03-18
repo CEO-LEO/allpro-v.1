@@ -16,7 +16,7 @@ export default function MerchantShopPage() {
   const activePromos = myProducts.length;
   const totalViews = myProducts.reduce((sum, p) => sum + ((p.likes || 0) * 10), 0);
   const estimatedRevenue = myProducts.reduce((sum, p) => {
-    const price = p.promoPrice || p.price || 0;
+    const price = p.promoPrice || p.originalPrice || 0;
     const sales = (p.reviews || 0);
     return sum + (price * sales);
   }, 0);

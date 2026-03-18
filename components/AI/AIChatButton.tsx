@@ -5,7 +5,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Sparkles, TrendingUp, MapPin, ShoppingBag, Gift } from 'lucide-react';
 import { useChatBot } from '@/hooks/useChatBot';
 import { useGamification } from '@/hooks/useGamification';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
+
+// Mock deal type for AI chat search results
+interface MockDeal {
+  title: string;
+  discount_rate: number;
+  final_price: number;
+  shop_name: string;
+  distance: number;
+  description: string;
+}
+
+const MOCK_DEALS: MockDeal[] = [
+  { title: 'Premium Sushi Set', discount_rate: 50, final_price: 299, shop_name: 'Sushi Master', distance: 0.8, description: 'เซ็ตซูชิพรีเมียม 10 ชิ้น' },
+  { title: 'Artisan Coffee Bundle', discount_rate: 40, final_price: 150, shop_name: 'Cafe Latte', distance: 1.2, description: 'เซ็ตกาแฟคราฟท์ 3 แก้ว' },
+  { title: 'Wagyu Burger Combo', discount_rate: 35, final_price: 293, shop_name: 'Burger Kingdom', distance: 0.5, description: 'เบอร์เกอร์วากิวพร้อมเฟรนช์ฟรายส์' },
+  { title: 'Thai Milk Tea Special', discount_rate: 25, final_price: 45, shop_name: 'Tea Time', distance: 0.3, description: 'ชานมไทยสูตรพิเศษ' },
+  { title: 'Pizza Party Set', discount_rate: 30, final_price: 399, shop_name: 'Pizza Place', distance: 1.5, description: 'พิซซ่า 2 ถาด + เครื่องดื่ม 4 แก้ว' },
+];
+
+function getSurpriseMe(): MockDeal {
+  return MOCK_DEALS[Math.floor(Math.random() * MOCK_DEALS.length)];
+}
+
+function searchDeals(query: string, _options: Record<string, string>): MockDeal[] {
+  if (!query) return MOCK_DEALS;
+  const q = query.toLowerCase();
+  const filtered = MOCK_DEALS.filter(d =>
+    d.title.toLowerCase().includes(q) ||
+    d.shop_name.toLowerCase().includes(q) ||
+    d.description.toLowerCase().includes(q)
+  );
+  return filtered.length > 0 ? filtered : MOCK_DEALS.slice(0, 2);
+}
 
 interface Message {
   id: string;
@@ -78,7 +111,7 @@ export default function AIChatButton() {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Award points for using chat
-    earnPoints(10);
+    earnPoints('USE_CHAT');
 
     // Handle different intents
     if (input.includes('ใกล้') || input.includes('near') || input.includes('7-11') || input.includes('เซเว่น')) {

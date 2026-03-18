@@ -12,7 +12,7 @@ import {
   ArrowUpTrayIcon, 
   CalendarIcon 
 } from '@heroicons/react/24/solid';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { useGamification } from '@/hooks/useGamification';
 
@@ -55,9 +55,7 @@ export default function CreatePostModal({ isOpen, onClose, defaultTab = 'users' 
 
     // Award points based on post type
     const points = postType === 'brands' ? 100 : 50;
-    earnPoints('WRITE_REVIEW', { 
-      action: postType === 'brands' ? 'Posted brand promotion' : 'Shared user experience'
-    });
+    earnPoints('WRITE_REVIEW', points);
 
     // Show success
     confetti({
@@ -66,9 +64,7 @@ export default function CreatePostModal({ isOpen, onClose, defaultTab = 'users' 
       origin: { y: 0.6 }
     });
 
-    toast.success(`Post created! +${points} points 🎉`, {
-      description: 'Your post is now live in the community feed!'
-    });
+    toast.success(`Post created! +${points} points 🎉\nYour post is now live!`);
 
     // Reset and close
     resetForm();
@@ -117,7 +113,7 @@ export default function CreatePostModal({ isOpen, onClose, defaultTab = 'users' 
                 onClick={onClose}
                 className="p-2 hover:bg-white/20 rounded-full transition-colors"
               >
-                <X className="w-6 h-6" />
+                <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
 
@@ -214,7 +210,7 @@ export default function CreatePostModal({ isOpen, onClose, defaultTab = 'users' 
             {/* Location */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                <MapPin className="w-4 h-4 inline-block mr-1" />
+                <MapPinIcon className="w-4 h-4 inline-block mr-1" />
                 Location *
               </label>
               <input
@@ -234,7 +230,7 @@ export default function CreatePostModal({ isOpen, onClose, defaultTab = 'users' 
                   {/* Category */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
-                      <Tag className="w-4 h-4 inline-block mr-1" />
+                      <TagIcon className="w-4 h-4 inline-block mr-1" />
                       Category
                     </label>
                     <select
@@ -269,7 +265,7 @@ export default function CreatePostModal({ isOpen, onClose, defaultTab = 'users' 
                 {/* Valid Until */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
-                    <Calendar className="w-4 h-4 inline-block mr-1" />
+                    <CalendarIcon className="w-4 h-4 inline-block mr-1" />
                     Valid Until
                   </label>
                   <input

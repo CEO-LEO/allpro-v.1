@@ -16,7 +16,8 @@ export type ActionType =
   | 'REFER_FRIEND'
   | 'SHARE_DEAL'
   | 'COMPLETE_PROFILE'
-  | 'UPGRADE_PRO';
+  | 'UPGRADE_PRO'
+  | 'USE_CHAT';
 
 const POINT_VALUES: Record<ActionType, number> = {
   DAILY_LOGIN: 10,
@@ -26,6 +27,7 @@ const POINT_VALUES: Record<ActionType, number> = {
   SHARE_DEAL: 25,
   COMPLETE_PROFILE: 150,
   UPGRADE_PRO: 500,
+  USE_CHAT: 10,
 };
 
 const ACTION_LABELS: Record<ActionType, string> = {
@@ -36,6 +38,7 @@ const ACTION_LABELS: Record<ActionType, string> = {
   SHARE_DEAL: 'แชร์โปรโมชั่น',
   COMPLETE_PROFILE: 'โปรไฟล์สมบูรณ์',
   UPGRADE_PRO: 'อัพเกรด PRO',
+  USE_CHAT: 'ใช้ AI Chat',
 };
 
 // ============================================================================

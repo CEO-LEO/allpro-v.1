@@ -51,7 +51,7 @@ export default function AdsManagerPage() {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
   
-  const isPro = user?.isVerified || false;
+  const isPro = user?.isPro || false;
 
   // Wizard state
   const [wizardStep, setWizardStep] = useState(1);

@@ -106,7 +106,7 @@ export default function StatCards({ stats = defaultStats }: StatCardsProps) {
             <div className="flex items-start justify-between mb-3">
               <div className={`w-12 h-12 ${colors.iconBg} rounded-lg flex items-center justify-center`}>
                 <div className={colors.iconText}>
-                  {stat.icon}
+                  {getIcon(stat.label)}
                 </div>
               </div>
               

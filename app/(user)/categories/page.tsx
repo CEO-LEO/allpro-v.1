@@ -88,6 +88,18 @@ interface BrandCategoryTab {
   icon: any;
 }
 
+// Route mapping for category group IDs → URL slugs
+const GROUP_ROUTE_MAP: Record<string, string> = {
+  'food-drink': 'food-drink',
+  'fashion-beauty': 'fashion-beauty',
+  'travel-leisure': 'travel-leisure',
+  'tech-gadgets': 'tech-gadgets',
+  'health-wellness': 'health-wellness',
+  'home-living': 'home-living',
+  'services': 'services',
+  'finance': 'finance',
+};
+
 export default function CategoriesPage() {
   const [selectedTab, setSelectedTab] = useState('สินค้า');
   const [brandFilter, setBrandFilter] = useState<string>('ทั้งหมด');

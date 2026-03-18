@@ -1004,7 +1004,6 @@ export const useAppStore = create<AppState>()(
           
           // ถ้า error หรือไม่มีข้อมูล ใช้ Mock ทันที
           if (error || !data || data.length === 0) {
-            console.log('Using mock data:', error ? error.message : 'No products in database');
             set({ products: MOCK_PRODUCTS, loading: false });
             return;
           }
@@ -1037,7 +1036,6 @@ export const useAppStore = create<AppState>()(
           
           set({ products, loading: false });
         } catch (error: any) {
-          console.log('Fallback to mock data due to error:', error.message);
           set({ products: MOCK_PRODUCTS, loading: false });
         }
       },

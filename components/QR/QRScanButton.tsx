@@ -48,10 +48,7 @@ export default function QRScanButton() {
       setIsScanning(false);
 
       // Award points
-      earnPoints('SCAN_QR', { 
-        action: 'Scan QR Code',
-        promo: randomPromo.title 
-      });
+      earnPoints('SCAN_QR');
 
       // Confetti effect
       confetti({
