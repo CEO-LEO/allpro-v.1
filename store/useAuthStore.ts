@@ -54,15 +54,15 @@ export const useAuthStore = create<AuthState>()(
       loginAsUser: () => set({
         user: {
           id: `user-${Date.now()}`,
-          name: 'Hunter 007',
-          email: 'hunter007@allpro.com',
+          name: '',
+          email: '',
           role: 'USER',
-          avatar: 'https://i.pravatar.cc/150?img=12',
-          phone: '081-234-5678',
+          avatar: '',
+          phone: '',
           createdAt: new Date().toISOString(),
           xp: 0,
           level: 1,
-          coins: 100,
+          coins: 0,
           points: 0
         },
         isAuthenticated: true
@@ -71,14 +71,14 @@ export const useAuthStore = create<AuthState>()(
       loginAsMerchant: () => set({
         user: {
           id: `merchant-${Date.now()}`,
-          name: 'Siam Store',
-          email: 'siam@store.com',
+          name: '',
+          email: '',
           role: 'MERCHANT',
-          avatar: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=150&h=150&fit=crop',
-          phone: '02-123-4567',
-          shopName: 'Siam Store',
-          shopLogo: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=100&h=100&fit=crop',
-          verified: true
+          avatar: '',
+          phone: '',
+          shopName: '',
+          shopLogo: '',
+          verified: false
         },
         isAuthenticated: true
       }),
@@ -103,13 +103,13 @@ export const useAuthStore = create<AuthState>()(
         const updates: Partial<User> = { role };
         
         if (role === 'MERCHANT') {
-          updates.shopName = state.user.shopName || 'My Shop';
-          updates.shopLogo = state.user.shopLogo || 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=100&h=100&fit=crop';
+          updates.shopName = state.user.shopName || '';
+          updates.shopLogo = state.user.shopLogo || '';
           updates.verified = state.user.verified ?? false;
         } else if (role === 'USER') {
           updates.level = state.user.level || 1;
           updates.xp = state.user.xp || 0;
-          updates.coins = state.user.coins || 100;
+          updates.coins = state.user.coins || 0;
         }
         
         return {

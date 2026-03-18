@@ -196,31 +196,31 @@ export const useAppStore = create<AppState>()(
       loginAsUser: () => {
         const newUser: User = {
           id: `user-${Date.now()}`,
-          name: 'Hunter 007',
-          username: 'Hunter 007',
-          email: 'hunter007@allpromo.com',
+          name: '',
+          username: '',
+          email: '',
           role: 'user',
-          avatar: 'https://i.pravatar.cc/150?img=12',
-          phone: '081-234-5678',
+          avatar: '',
+          phone: '',
           createdAt: new Date().toISOString(),
           xp: 0,
           level: 1,
-          coins: 100
+          coins: 0
         };
 
         set({ user: newUser, isAuthenticated: true });
-        toast.success('เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธชเธณเน€เธฃเนเธ! เธขเธดเธเธ”เธตเธ•เนเธญเธเธฃเธฑเธ Hunter 007');
+        toast.success('เข้าสู่ระบบสำเร็จ!');
       },
 
       loginAsMerchant: () => {
         const newUser: User = {
           id: `merchant-${Date.now()}`,
-          name: 'Siam Store',
-          username: 'Siam Store',
-          email: 'siam@store.com',
+          name: '',
+          username: '',
+          email: '',
           role: 'merchant',
-          avatar: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=150',
-          phone: '02-123-4567',
+          avatar: '',
+          phone: '',
           createdAt: new Date().toISOString(),
           xp: 0,
           level: 1,

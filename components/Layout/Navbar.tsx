@@ -191,7 +191,7 @@ export default function Navbar() {
                     {/* Coins */}
                     <div className="hidden sm:flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
                       <Coins className="w-3 h-3" />
-                      <span>{user.coins}</span>
+                      <span>{user.coins ?? 0}</span>
                     </div>
 
                     {/* Avatar */}
@@ -221,12 +221,12 @@ export default function Navbar() {
                         >
                           {/* User Info */}
                           <div className="px-3 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 text-white">
-                            <p className="font-bold text-sm">{user.name}</p>
-                            <p className="text-xs text-orange-100">{user.email}</p>
+                            <p className="font-bold text-sm">{user.name || 'ผู้ใช้งาน'}</p>
+                            <p className="text-xs text-orange-100">{user.email || 'กำลังโหลดข้อมูล...'}</p>
                             <div className="flex items-center gap-3 mt-1 text-xs">
-                              <span>Level {user.level}</span>
+                              <span>Level {user.level ?? 1}</span>
                               <span>•</span>
-                              <span>{user.xp} XP</span>
+                              <span>{user.xp ?? 0} XP</span>
                             </div>
                           </div>
 

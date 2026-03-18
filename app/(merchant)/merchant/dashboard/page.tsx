@@ -180,9 +180,8 @@ export default function MerchantDashboard() {
   }, [user]);
 
   // Filter products for this merchant
-  // Fallback to "Siam Store" or "My Shop" if user has no shopName set
-  const shopName = user?.shopName || "Siam Store";
-  const myProducts = products.filter((p) => p.shopName === shopName);
+  const shopName = user?.shopName || '';
+  const myProducts = products.filter((p) => shopName && p.shopName === shopName);
 
   // Sort products
   const sortedProducts = [...myProducts].sort((a, b) => {
