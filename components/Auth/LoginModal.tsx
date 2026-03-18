@@ -2,61 +2,85 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserCircle, Store, Sparkles, Lock } from 'lucide-react';
+import { X, UserCircle, Store, Sparkles, Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import confetti from 'canvas-confetti';
+import { toast } from 'react-hot-toast';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// บทบาทที่เลือกได้
+type SelectedRole = 'USER' | 'MERCHANT' | null;
+
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const router = useRouter();
   const { loginAsUser, loginAsMerchant } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (role: 'USER' | 'MERCHANT') => {
+  // ฟอร์ม state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<SelectedRole>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // รีเซ็ตฟอร์มเมื่อปิด modal
+  const handleClose = () => {
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setSelectedRole(null);
+    setError('');
+    setIsLoading(false);
+    onClose();
+  };
+
+  // จำลอง API login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validation
+    if (!email.trim()) {
+      setError('กรุณากรอกอีเมล');
+      return;
+    }
+    if (!password) {
+      setError('กรุณากรอกรหัสผ่าน');
+      return;
+    }
+    if (!selectedRole) {
+      setError('กรุณาเลือกบทบาท');
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API delay
-    setTimeout(() => {
-      if (role === 'USER') {
-        // Login as Customer
+    try {
+      // TODO: เปลี่ยนเป็น API จริง — e.g. const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password, role: selectedRole }) });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // จำลอง: demo@test.com / password ล็อกอินสำเร็จเสมอ (Demo Mode)
+      if (selectedRole === 'USER') {
         loginAsUser();
-
-        // Celebration
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-
-        toast.success('🎉 Welcome back, Hunter 007!', {
-          description: 'Happy hunting for the best deals!'
-        });
-
-        onClose();
+        toast.success('🎉 ยินดีต้อนรับกลับ Hunter 007!');
+        handleClose();
       } else {
-        // Login as Merchant
         loginAsMerchant();
-
-        toast.success('✅ Welcome, Siam Store!', {
-          description: 'Redirecting to Merchant Dashboard...'
-        });
-
-        onClose();
-
-        // Redirect to merchant dashboard
+        toast.success('✅ ยินดีต้อนรับ Siam Store!');
+        handleClose();
         setTimeout(() => {
           router.push('/merchant/dashboard');
         }, 500);
       }
-
+    } catch {
+      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -68,7 +92,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
           />
 
@@ -84,7 +108,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               {/* Header */}
               <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 p-8 text-white">
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -98,93 +122,143 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <Sparkles className="w-16 h-16 mb-4" />
                   </motion.div>
                   <h2 className="text-display mb-2">Welcome Back!</h2>
-                  <p className="text-white/90 text-body-sm">
-                    Choose your role to continue
-                  </p>
+                  <p className="text-white/90 text-body-sm">เข้าสู่ระบบเพื่อดำเนินการต่อ</p>
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="p-8 space-y-4">
-                <p className="text-center text-gray-600 text-body-sm mb-6">
-                  Select how you want to login:
-                </p>
-
-                {/* Login as Customer Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleLogin('USER')}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-white/20 p-3 rounded-xl">
-                        <UserCircle className="w-8 h-8" />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="text-h4">Login as Customer</h3>
-                        <p className="text-white/80 text-body-sm">Hunt for deals & earn points</p>
-                      </div>
-                    </div>
-                    <div className="text-3xl">🎯</div>
+              {/* Form Content */}
+              <form onSubmit={handleLogin} className="p-8 space-y-5">
+                {/* Error message */}
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center">
+                    {error}
                   </div>
-                </motion.button>
+                )}
 
-                {/* Login as Merchant Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleLogin('MERCHANT')}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-white/20 p-3 rounded-xl">
-                        <Store className="w-8 h-8" />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="text-h4">Login as Merchant</h3>
-                        <p className="text-white/80 text-body-sm">Manage your shop & deals</p>
-                      </div>
-                    </div>
-                    <div className="text-3xl">🏪</div>
+                {/* Email */}
+                <div>
+                  <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1.5">อีเมล</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="login-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                    />
                   </div>
-                </motion.button>
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1.5">รหัสผ่าน</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="login-password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                      className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Role Selection */}
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">เลือกบทบาท</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole('USER')}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        selectedRole === 'USER'
+                          ? 'border-green-500 bg-green-50 ring-1 ring-green-200'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <UserCircle className={`w-8 h-8 ${selectedRole === 'USER' ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className={`text-sm font-semibold ${selectedRole === 'USER' ? 'text-green-700' : 'text-gray-600'}`}>
+                        ลูกค้า 🎯
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole('MERCHANT')}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        selectedRole === 'MERCHANT'
+                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Store className={`w-8 h-8 ${selectedRole === 'MERCHANT' ? 'text-blue-600' : 'text-gray-400'}`} />
+                      <span className={`text-sm font-semibold ${selectedRole === 'MERCHANT' ? 'text-blue-700' : 'text-gray-600'}`}>
+                        ร้านค้า 🏪
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-3.5 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      กำลังเข้าสู่ระบบ...
+                    </>
+                  ) : (
+                    'เข้าสู่ระบบ'
+                  )}
+                </button>
 
                 {/* Divider */}
-                <div className="relative py-4">
+                <div className="relative py-2">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200"></div>
                   </div>
                   <div className="relative flex justify-center text-body-sm">
-                    <span className="px-4 bg-white text-gray-500">Don't have an account?</span>
+                    <span className="px-4 bg-white text-gray-500">ยังไม่มีบัญชี?</span>
                   </div>
                 </div>
 
                 {/* Register Link */}
                 <button
-                  onClick={onClose}
+                  type="button"
+                  onClick={handleClose}
                   className="w-full text-center py-3 text-orange-600 hover:text-orange-700 font-semibold transition-colors"
                 >
-                  Register New Account →
+                  สมัครสมาชิกใหม่ →
                 </button>
 
                 {/* Demo Notice */}
-                <div className="mt-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
+                <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
                   <div className="flex items-start gap-3">
                     <Lock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-body-sm text-amber-900">Demo Mode</p>
                       <p className="text-caption text-amber-700 mt-1">
-                        This is a simulated login. No real authentication required.
+                        ใช้อีเมลและรหัสผ่านใดก็ได้เพื่อทดลองใช้งาน ระบบจำลองจะล็อกอินอัตโนมัติ
                       </p>
                     </div>
                   </div>
                 </div>
-              </div>
+              </form>
             </motion.div>
           </div>
         </>

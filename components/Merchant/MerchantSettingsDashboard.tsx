@@ -42,7 +42,7 @@ interface SettingsState {
   language: 'th' | 'en';
   timezone: string;
   autoCleanExpired: boolean;
-  // CP ALL Ecosystem
+  // Partner Services
   sevenDelivery: boolean;
   allMember: boolean;
   trueMoneyWallet: boolean;
@@ -221,7 +221,7 @@ export default function MerchantSettingsDashboard() {
     language: 'th',
     timezone: 'Asia/Bangkok',
     autoCleanExpired: true,
-    // CP ALL Ecosystem
+    // Partner Services
     sevenDelivery: false,
     allMember: true,
     trueMoneyWallet: false,
@@ -534,7 +534,7 @@ export default function MerchantSettingsDashboard() {
   );
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  CP ALL ECOSYSTEM — Data
+  //  PARTNER SERVICES — Data
   // ═══════════════════════════════════════════════════════════════════════
 
   const ECOSYSTEM_SERVICES: {
@@ -698,7 +698,7 @@ export default function MerchantSettingsDashboard() {
               {tabContent[activeTab]?.()}
             </GlassCard>
 
-            {/* ─── CP ALL Ecosystem — Collapsible Section ────────── */}
+            {/* ─── Partner Services — Collapsible Section ────────── */}
             <div
               className={`
                 mt-6 rounded-2xl border-2 transition-all duration-300
@@ -727,7 +727,7 @@ export default function MerchantSettingsDashboard() {
                   </div>
                   <div className="min-w-0">
                     <p className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${isEcosystemExpanded ? 'text-blue-600' : 'text-gray-700'}`}>
-                      การเชื่อมต่อ CP ALL Ecosystem
+                      การเชื่อมต่อ Partner Services
                     </p>
                     <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                       เปิดใช้งาน {ecosystemEnabledCount} จาก {ECOSYSTEM_SERVICES.length} บริการ
@@ -805,7 +805,7 @@ export default function MerchantSettingsDashboard() {
                           ? 'ยังไม่ได้เปิดใช้งานบริการใดๆ'
                           : ecosystemEnabledCount === ECOSYSTEM_SERVICES.length
                             ? 'เปิดใช้งานครบทุกบริการแล้ว!'
-                            : `กำลังใช้งาน ${ecosystemEnabledCount} บริการจาก CP ALL Ecosystem`
+                            : `กำลังใช้งาน ${ecosystemEnabledCount} บริการจาก Partner Services`
                         }
                       </span>
                     </div>

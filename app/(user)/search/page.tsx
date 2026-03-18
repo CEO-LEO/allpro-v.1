@@ -1,36 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowLeftIcon, FunnelIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/solid';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, FunnelIcon } from '@heroicons/react/24/solid';
+import { Search } from 'lucide-react';
 import PromoCard from '@/components/PromoCard';
+import { getPromotions } from '@/lib/getPromotions';
 import { Promotion } from '@/lib/types';
 
 /*
- * Expected API Response: GET /api/promotions/search?q=xxx&category=xxx
- * Response: { promotions: Promotion[], total: number }
+ * Search Results Page — /search?q=xxx&category=xxx
  *
- * Promotion interface (from @/lib/types):
- * {
- *   id: string;
- *   shop_name: string;
- *   title: string;
- *   description: string;
- *   price: number;
- *   discount_rate: number;
- *   image: string;
- *   category: string;
- *   location: string;
- *   is_verified: boolean;
- *   is_sponsored: boolean;
- *   search_volume: number;
- *   valid_until: string;       // ISO date
- *   views: number;
- *   saves: number;
- * }
+ * Data Source: getPromotions() from promotions.json (local)
+ * TODO: Replace with API call — GET /api/promotions/search?q=xxx&category=xxx
  */
 
 const SORT_OPTIONS = [
@@ -42,164 +26,193 @@ const SORT_OPTIONS = [
 
 const FILTER_OPTIONS = [
   { value: 'all', label: 'ทั้งหมด' },
-  { value: 'verified', label: 'ร้านค้าที่ตรวจสอบแล้ว' },
+  { value: 'verified', label: 'ร้านยืนยันแล้ว' },
   { value: 'online', label: 'ออนไลน์' },
   { value: 'nearby', label: 'ใกล้ฉัน' },
 ];
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const category = searchParams.get('category') || '';
   const query = searchParams.get('q') || '';
-  
+
   const [searchText, setSearchText] = useState(query);
   const [sortBy, setSortBy] = useState('popular');
   const [filterBy, setFilterBy] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-
-  // ── API-Ready State ──
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
 
-  // TODO: Replace with actual API call
-  // useEffect(() => {
-  //   const fetchPromotions = async () => {
-  //     setIsLoading(true);
-  //     setIsError(false);
-  //     try {
-  //       const params = new URLSearchParams();
-  //       if (searchText) params.set('q', searchText);
-  //       if (category) params.set('category', category);
-  //       const res = await fetch(`/api/promotions/search?${params}`);
-  //       if (!res.ok) throw new Error('Failed to fetch');
-  //       const data = await res.json();
-  //       setPromotions(data.promotions);
-  //     } catch {
-  //       setIsError(true);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   fetchPromotions();
-  // }, [searchText, category]);
+  // โหลดข้อมูลโปรโมชั่นทั้งหมดจาก getPromotions
+  const allPromotions = useMemo(() => getPromotions(), []);
 
+  // จำลอง loading delay (ลบเมื่อเชื่อม API จริง)
   useEffect(() => {
-    // Simulate loading delay — remove when connecting real API
-    const timer = setTimeout(() => setIsLoading(false), 600);
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [searchText, category]);
 
-  // Filter promotions based on category or search query
-  const filteredPromotions = promotions.filter(promo => {
-    if (category) {
-      return promo.category.includes(category) || 
-             promo.title.includes(category) ||
-             promo.description.includes(category);
-    }
-    if (searchText) {
-      const searchLower = searchText.toLowerCase();
-      return promo.title.toLowerCase().includes(searchLower) ||
-             promo.description.toLowerCase().includes(searchLower) ||
-             promo.shop_name.toLowerCase().includes(searchLower) ||
-             promo.category.toLowerCase().includes(searchLower);
-    }
-    return true;
-  });
+  // Sync searchText เมื่อ URL query เปลี่ยน (เช่น กด Back)
+  useEffect(() => {
+    setSearchText(query);
+  }, [query]);
 
-  // Apply additional filters
-  const finalPromotions = filteredPromotions.filter(promo => {
-    if (filterBy === 'verified') return promo.is_verified;
-    if (filterBy === 'online') return promo.location.includes('ออนไลน์');
-    return true;
-  });
+  // กรองตาม keyword + category
+  const filteredPromotions = useMemo(() => {
+    return allPromotions.filter((promo) => {
+      // ตรงกับ category (ถ้ามี)
+      if (category && promo.category !== category &&
+          !promo.title.includes(category) &&
+          !promo.description.includes(category)) {
+        return false;
+      }
+      // ตรงกับคำค้นหา
+      if (searchText) {
+        const q = searchText.toLowerCase();
+        return (
+          promo.title.toLowerCase().includes(q) ||
+          promo.description.toLowerCase().includes(q) ||
+          promo.shop_name.toLowerCase().includes(q) ||
+          promo.category.toLowerCase().includes(q) ||
+          (promo.tags || []).some((t) => t.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [allPromotions, searchText, category]);
 
-  // Sort promotions
-  const sortedPromotions = [...finalPromotions].sort((a, b) => {
-    switch (sortBy) {
-      case 'newest':
-        return b.id.localeCompare(a.id);
-      case 'discount':
-        return b.discount_rate - a.discount_rate;
-      case 'ending':
-        return new Date(a.valid_until).getTime() - new Date(b.valid_until).getTime();
-      default: // popular
-        return (b.views || 0) - (a.views || 0);
-    }
-  });
+  // กรองเพิ่มเติม (verified / online)
+  const afterFilter = useMemo(() => {
+    if (filterBy === 'verified') return filteredPromotions.filter((p) => p.is_verified);
+    if (filterBy === 'online')   return filteredPromotions.filter((p) => p.location.includes('ออนไลน์'));
+    return filteredPromotions;
+  }, [filteredPromotions, filterBy]);
 
-  const displayTitle = category || searchText || 'ค้นหาโปรโมชั่น';
+  // เรียงลำดับ
+  const sortedPromotions = useMemo(() => {
+    return [...afterFilter].sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return b.id.localeCompare(a.id);
+        case 'discount':
+          return b.discount_rate - a.discount_rate;
+        case 'ending':
+          return new Date(a.valid_until).getTime() - new Date(b.valid_until).getTime();
+        default: // popular
+          return (b.views || 0) - (a.views || 0);
+      }
+    });
+  }, [afterFilter, sortBy]);
+
+  // กด Enter หรือคลิกค้นหา → อัปเดต URL
+  const handleSearch = () => {
+    const trimmed = searchText.trim();
+    if (!trimmed && !category) return;
+    const params = new URLSearchParams();
+    if (trimmed) params.set('q', trimmed);
+    if (category) params.set('category', category);
+    router.push(`/search?${params.toString()}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
+  const displayTitle = query
+    ? `ผลลัพธ์การค้นหาสำหรับ: "${query}"`
+    : category
+    ? `หมวดหมู่: ${category}`
+    : 'ค้นหาโปรโมชั่น';
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 text-white sticky top-0 z-50 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4 mb-4">
-            <Link href="/" className="hover:bg-white/10 p-2 rounded-lg transition-colors">
-              <ArrowLeftIcon className="w-6 h-6" />
+      {/* ── Header (Light Mode — white bg, orange search bar) ── */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          {/* Row 1: Back + Title */}
+          <div className="flex items-center gap-3 mb-3">
+            <Link
+              href="/"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ArrowLeftIcon className="w-5 h-5 text-gray-700" />
             </Link>
-            <h1 className="text-h3">{displayTitle}</h1>
+            <h1 className="text-lg font-bold text-gray-900 truncate">
+              {displayTitle}
+            </h1>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative">
+          {/* Row 2: Search bar (orange border, rounded-full — เหมือนหน้า Home) */}
+          <div className="relative max-w-2xl mx-auto">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-400 pointer-events-none" />
             <input
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="ค้นหาโปรโมชั่น, ร้านค้า, หมวดหมู่..."
-              className="w-full px-12 py-3 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50"
+              onKeyDown={handleKeyDown}
+              placeholder="ค้นหาโปรโมชั่น, ร้านค้า..."
+              className="w-full h-12 pl-11 pr-28 rounded-full border-2 border-orange-400 bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-base text-gray-700 placeholder:text-gray-400"
             />
-            <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <button
+              onClick={handleSearch}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 px-5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full font-bold text-sm shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-1.5"
+            >
+              <Search className="w-4 h-4" />
+              <span>ค้นหา</span>
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Filters & Sort */}
-      <div className="sticky top-[144px] z-40 bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+      {/* ── Filters & Sort Bar ── */}
+      <div className="sticky top-[118px] z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-2.5">
           <div className="flex items-center justify-between gap-4">
             {/* Results Count */}
-            <p className="text-body-sm text-gray-600">
+            <p className="text-sm text-gray-600">
               {isLoading ? (
                 <span className="inline-block h-4 w-20 bg-gray-200 rounded animate-pulse" />
               ) : (
-                <>พบ <span className="font-bold text-orange-600">{sortedPromotions.length}</span> รายการ</>
+                <>
+                  พบ{' '}
+                  <span className="font-bold text-orange-600">
+                    {sortedPromotions.length}
+                  </span>{' '}
+                  รายการ
+                </>
               )}
             </p>
 
             {/* Controls */}
             <div className="flex items-center gap-2">
-              {/* Sort Dropdown */}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-body-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                {SORT_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
 
-              {/* Filter Button */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
                   showFilters
                     ? 'border-orange-500 bg-orange-50 text-orange-600'
                     : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <FunnelIcon className="w-4 h-4" />
-                <span className="text-body-sm">Filter</span>
+                Filter
               </button>
             </div>
           </div>
 
-          {/* Filter Options */}
+          {/* Filter Options (expandable) */}
           <AnimatePresence>
             {showFilters && (
               <motion.div
@@ -208,18 +221,18 @@ export default function SearchPage() {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="flex gap-2 pt-3 mt-3 border-t">
-                  {FILTER_OPTIONS.map(option => (
+                <div className="flex flex-wrap gap-2 pt-3 mt-2 border-t border-gray-100">
+                  {FILTER_OPTIONS.map((opt) => (
                     <button
-                      key={option.value}
-                      onClick={() => setFilterBy(option.value)}
-                      className={`px-4 py-2 rounded-full text-body-sm transition-all ${
-                        filterBy === option.value
-                          ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-md'
+                      key={opt.value}
+                      onClick={() => setFilterBy(opt.value)}
+                      className={`px-4 py-2 rounded-full text-sm transition-all ${
+                        filterBy === opt.value
+                          ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {option.label}
+                      {opt.label}
                     </button>
                   ))}
                 </div>
@@ -229,13 +242,16 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Results */}
+      {/* ── Results ── */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Loading State */}
+        {/* Skeleton Loading */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
+              <div
+                key={i}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse"
+              >
                 <div className="aspect-[4/3] bg-gray-200" />
                 <div className="p-4 space-y-3">
                   <div className="h-4 bg-gray-200 rounded w-3/4" />
@@ -246,48 +262,39 @@ export default function SearchPage() {
               </div>
             ))}
           </div>
-        ) : isError ? (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">⚠️</span>
-            </div>
-            <h3 className="text-h3 text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
-            <p className="text-gray-600 mb-6">ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="inline-block px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
-            >
-              ลองใหม่
-            </button>
-          </div>
         ) : sortedPromotions.length > 0 ? (
+          /* Results Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {sortedPromotions.map((promo, index) => (
               <motion.div
                 key={promo.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.04, 0.4) }}
               >
                 <PromoCard promo={promo} />
               </motion.div>
             ))}
           </div>
         ) : (
+          /* Empty State */
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-h3 text-gray-800 mb-2">ไม่พบโปรโมชั่น</h3>
-            <p className="text-gray-600 mb-6">
-              {category 
+            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-10 h-10 text-orange-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              ไม่พบโปรโมชั่น
+            </h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              {query
+                ? `ไม่พบผลลัพธ์สำหรับ "${query}" — ลองค้นหาคำอื่น`
+                : category
                 ? `ไม่พบโปรโมชั่นในหมวด "${category}"`
-                : searchText
-                ? `ไม่พบผลลัพธ์สำหรับ "${searchText}"`
-                : 'ลองค้นหาด้วยคำอื่น'
-              }
+                : 'ลองพิมพ์ชื่อสินค้า ร้านค้า หรือหมวดหมู่ที่ต้องการ'}
             </p>
             <Link
               href="/"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full font-bold hover:shadow-lg transition-shadow"
             >
               กลับหน้าแรก
             </Link>

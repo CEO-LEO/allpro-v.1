@@ -33,15 +33,63 @@ import consumerData from '@/data/consumer_insights.json';
 
 const COLORS = ['#FF5722', '#FF7043', '#FF8A65', '#FFAB91', '#FFCCBC'];
 
+// ประเภทข้อมูล Trending Keyword
+interface TrendingKeyword {
+  keyword: string;
+  search_volume: number;
+  growth: number;
+  top_area: string;
+  peak_time: string;
+  demographic: string;
+}
+
+// ตัวเลือกการเรียงลำดับ
+type SortField = 'rank' | 'volume' | 'growth';
+
+// จำลอง API call สำหรับดึงข้อมูล Trending Keywords
+// TODO: เปลี่ยนเป็น API จริง — e.g. const res = await fetch('/api/merchant/trending-keywords');
+async function fetchTrendingKeywords(): Promise<TrendingKeyword[]> {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  return consumerData.search_intent_trends;
+}
+
 export default function MarketInsights() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'trends' | 'engagement' | 'prediction' | 'competition'>('trends');
 
+  // สถานะสำหรับ Trending Keywords (dynamic)
+  const [trendingKeywords, setTrendingKeywords] = useState<TrendingKeyword[]>([]);
+  const [isKeywordsLoading, setIsKeywordsLoading] = useState(true);
+  const [sortField, setSortField] = useState<SortField>('rank');
+
   useEffect(() => {
-    // Simulate loading animation
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  // โหลดข้อมูล Trending Keywords
+  useEffect(() => {
+    let cancelled = false;
+    setIsKeywordsLoading(true);
+    fetchTrendingKeywords()
+      .then((data) => {
+        if (!cancelled) {
+          setTrendingKeywords(data);
+          setIsKeywordsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setIsKeywordsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // เรียงลำดับ keywords ตาม sortField
+  const sortedKeywords = [...trendingKeywords].sort((a, b) => {
+    if (sortField === 'volume') return b.search_volume - a.search_volume;
+    if (sortField === 'growth') return b.growth - a.growth;
+    return 0; // rank = ลำดับเดิมจาก API
+  });
 
   if (isLoading) {
     return (
@@ -84,13 +132,13 @@ export default function MarketInsights() {
           </div>
         </div>
 
-        {/* CP ALL Advantage Banner */}
+        {/* Platform Stats Banner */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
           {[
-            { label: 'Total Branches', value: consumerData.brand_insights.cp_all_advantage.total_branches.toLocaleString(), icon: Database },
-            { label: 'Daily Footfall', value: (consumerData.brand_insights.cp_all_advantage.daily_footfall / 1000000).toFixed(1) + 'M', icon: Users },
-            { label: 'Data Accuracy', value: consumerData.brand_insights.cp_all_advantage.data_accuracy + '%', icon: Target },
-            { label: 'Market Penetration', value: consumerData.brand_insights.market_penetration.bangkok + '%', icon: Activity }
+            { label: 'Total Keywords', value: consumerData.search_intent_trends.length.toLocaleString(), icon: Database },
+            { label: 'Avg Growth', value: Math.round(consumerData.search_intent_trends.reduce((s, t) => s + t.growth, 0) / consumerData.search_intent_trends.length) + '%', icon: TrendingUp },
+            { label: 'Data Accuracy', value: '98.5%', icon: Target },
+            { label: 'Active Areas', value: new Set(consumerData.search_intent_trends.map(t => t.top_area)).size.toString(), icon: Activity }
           ].map((stat, idx) => (
             <div key={idx} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
               <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
@@ -152,11 +200,45 @@ export default function MarketInsights() {
 
             {/* Trending Keywords Table */}
             <div className="card overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 border-b border-gray-200">
-                <h3 className="font-bold text-gray-900 text-lg">Trending Search Keywords</h3>
-                <p className="text-gray-500 text-sm">อัปเดตทุก 15 นาที จาก Search Behavior Analytics</p>
+              <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">Trending Search Keywords</h3>
+                  <p className="text-gray-500 text-sm">อัปเดตทุก 15 นาที จาก Search Behavior Analytics</p>
+                </div>
+                {/* Sort controls */}
+                <select
+                  value={sortField}
+                  onChange={(e) => setSortField(e.target.value as SortField)}
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5722] bg-white"
+                >
+                  <option value="rank">เรียงตาม: อันดับ</option>
+                  <option value="volume">เรียงตาม: ปริมาณค้นหา</option>
+                  <option value="growth">เรียงตาม: การเติบโต</option>
+                </select>
               </div>
-              
+
+              {isKeywordsLoading ? (
+                /* Skeleton Loading */
+                <div className="p-4 space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4 animate-pulse">
+                      <div className="w-8 h-8 bg-gray-200 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-1/3" />
+                        <div className="h-3 bg-gray-100 rounded w-1/4" />
+                      </div>
+                      <div className="h-4 bg-gray-200 rounded w-16" />
+                      <div className="h-4 bg-gray-200 rounded w-12" />
+                    </div>
+                  ))}
+                </div>
+              ) : sortedKeywords.length === 0 ? (
+                /* Empty State */
+                <div className="p-10 text-center">
+                  <p className="text-lg font-semibold text-gray-900 mb-2">ยังไม่มีข้อมูล Trending Keywords</p>
+                  <p className="text-sm text-gray-500">ข้อมูลจะปรากฏเมื่อระบบรวบรวมเพียงพอ</p>
+                </div>
+              ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
@@ -171,8 +253,8 @@ export default function MarketInsights() {
                     </tr>
                   </thead>
                   <tbody>
-                    {consumerData.search_intent_trends.map((trend, idx) => (
-                      <tr key={idx} className="border-t border-gray-100 hover:bg-orange-50 transition-colors">
+                    {sortedKeywords.map((trend, idx) => (
+                      <tr key={trend.keyword} className="border-t border-gray-100 hover:bg-orange-50 transition-colors">
                         <td className="p-4">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
                             idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-600' : 'bg-gray-300'
@@ -214,6 +296,7 @@ export default function MarketInsights() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
 
             {/* Value Proposition */}

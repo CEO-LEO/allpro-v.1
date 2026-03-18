@@ -16,7 +16,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { getSearchInsights } from "@/lib/getPromotions";
 import { Package as PackageIcon } from "lucide-react";
-import CPAllSyncDisplay, { CPAllSyncBanner } from "@/components/CPAllSyncDisplay";
 import { useFlashSale } from "@/lib/flashSaleContext";
 import UpgradeBanner from "@/components/Merchant/UpgradeBanner";
 import DynamicNavbar from "@/components/Layout/DynamicNavbar";
@@ -87,12 +86,34 @@ interface ActivityItem {
   timestamp: string;
 }
 
+// แปลง ISO timestamp เป็นข้อความเวลาสัมพัทธ์ (เช่น "2 ชม. ที่แล้ว")
+function formatRelativeTime(isoDate: string): string {
+  const now = Date.now();
+  const then = new Date(isoDate).getTime();
+  const diffMs = now - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffMin < 1) return 'เมื่อสักครู่';
+  if (diffMin < 60) return `${diffMin} นาที ที่แล้ว`;
+  if (diffHr < 24) return `${diffHr} ชม. ที่แล้ว`;
+  if (diffDay < 30) return `${diffDay} วัน ที่แล้ว`;
+  return `${Math.floor(diffDay / 30)} เดือน ที่แล้ว`;
+}
+
+// สร้าง ISO timestamp ย้อนหลังตามจำนวนชั่วโมง (สำหรับ mock data)
+function hoursAgo(hours: number): string {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
 // TODO: Replace with API response — e.g. const { data: activityData } = useSWR('/api/merchant/activity');
 const activityData: ActivityItem[] = [
-  { id: "act-1", type: "view",     title: "มีผู้เข้าชม",       subtitle: 'โปรโมชั่น "กาแฟ 2 แก้ว 50 บาท"',    count: 142,  timestamp: "2 ชม. ที่แล้ว" },
-  { id: "act-2", type: "save",     title: "บันทึกโปรโมชั่น",   subtitle: 'โปรโมชั่น "ข้าวกล่อง ลด 10 บาท"',    count: 28,   timestamp: "5 ชม. ที่แล้ว" },
-  { id: "act-3", type: "location", title: "กดดูพิกัดร้าน",     subtitle: 'โปรโมชั่น "นมโปรตีน ซื้อ 2 แถม 1"',  count: 67,   timestamp: "1 วัน ที่แล้ว" },
-  { id: "act-4", type: "search",   title: "ปรากฏในการค้นหา",   subtitle: 'คำค้นหา "กาแฟ"',                      count: 1250, timestamp: "1 วัน ที่แล้ว" },
+  { id: "act-1", type: "view",     title: "มีผู้เข้าชม",       subtitle: 'โปรโมชั่น "กาแฟ 2 แก้ว 50 บาท"',    count: 142,  timestamp: hoursAgo(2) },
+  { id: "act-2", type: "save",     title: "บันทึกโปรโมชั่น",   subtitle: 'โปรโมชั่น "ข้าวกล่อง ลด 10 บาท"',    count: 28,   timestamp: hoursAgo(5) },
+  { id: "act-3", type: "location", title: "กดดูพิกัดร้าน",     subtitle: 'โปรโมชั่น "นมโปรตีน ซื้อ 2 แถม 1"',  count: 67,   timestamp: hoursAgo(24) },
+  { id: "act-4", type: "search",   title: "ปรากฏในการค้นหา",   subtitle: 'คำค้นหา "กาแฟ"',                      count: 1250, timestamp: hoursAgo(30) },
 ];
 
 const ACTIVITY_ICON_MAP: Record<ActivityType, string> = {
@@ -357,11 +378,6 @@ export default function MerchantDashboard() {
           )}
         </div>
 
-        {/* CP ALL Sync Banner */}
-        <div className="mb-8">
-          <CPAllSyncBanner />
-        </div>
-
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-[#FF5722] to-[#FF7043] rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white mb-6 sm:mb-8">
           <h2 className="text-lg sm:text-2xl font-bold mb-2">สวัสดี คุณเจ้าของร้าน! 👋</h2>
@@ -590,7 +606,7 @@ export default function MerchantDashboard() {
                       <p className="text-sm text-gray-600">{activity.subtitle}</p>
                       <div className="flex items-center gap-4 mt-2">
                         <span className="text-sm font-medium text-[#FF5722]">{activity.count.toLocaleString()} ครั้ง</span>
-                        <span className="text-xs text-gray-400">{activity.timestamp}</span>
+                        <span className="text-xs text-gray-400">{formatRelativeTime(activity.timestamp)}</span>
                       </div>
                     </div>
                   </div>
@@ -606,7 +622,6 @@ export default function MerchantDashboard() {
             🚀 Unfair Advantage: ทำไมต้อง Pro Hunter?
           </h4>
           <ul className="space-y-2 text-sm text-gray-600">
-            <li>✅ ข้อมูลจริงจากเครือ CP ALL (7-11, Lotus, Makro) - ไม่มีใครทำได้</li>
             <li>✅ Data Insights แบบเรียลไทม์ - รู้ว่าลูกค้าต้องการอะไร</li>
             <li>✅ Predictive Analytics ด้วย AI - ทำนายเทรนด์ล่วงหน้า</li>
             <li>✅ SEO Ranking ที่โปร่งใส - จ่ายเท่าไหร่ ได้อันดับชัดเจน</li>
@@ -616,8 +631,6 @@ export default function MerchantDashboard() {
       </div>{/* End Content Card Container */}
       </main>
 
-      {/* Floating CP ALL Sync Display */}
-      <CPAllSyncDisplay />
       </>
       )}
     </div>

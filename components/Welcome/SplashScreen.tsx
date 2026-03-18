@@ -80,7 +80,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         transition={{ delay: 1.5, duration: 0.5 }}
         className="absolute bottom-8 text-center"
       >
-        <p className="text-sm text-white/70">Powered by CP ALL Ecosystem</p>
+        <p className="text-sm text-white/70">Powered by All Pro Platform</p>
       </motion.div>
     </motion.div>
   );

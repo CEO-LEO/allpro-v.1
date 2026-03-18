@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { getPromotions } from '@/lib/getPromotions';
 import TrendingTags from '@/components/TrendingTags';
+import HomeSearchInput from '@/components/Home/HomeSearchInput';
 import EnhancedPromoCard from '@/components/Home/EnhancedPromoCard';
 import CategoryGrid from '@/components/Home/CategoryGrid';
 import ServiceGrid from '@/components/Home/ServiceGrid';
@@ -173,32 +174,10 @@ export default function Home() {
           <TrendingTags />
         </motion.div>
 
-        {/* Search Bar — ช่องค้นหากลางหน้าจอ */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="relative mb-8 max-w-2xl mx-auto"
-        >
-          <input
-            type="text"
-            placeholder="ค้นหาโปรโมชั่น... 🔍"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-14 pl-14 pr-4 rounded-full border-2 border-gray-200 shadow-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-200 focus:outline-none transition-all text-body-lg"
-          />
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6" />
-          
-          {searchQuery && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute right-5 top-1/2 -translate-y-1/2 bg-orange-100 text-orange-700 px-4 py-2 rounded-full text-label font-bold"
-            >
-              {filteredProducts.length} ผลลัพธ์
-            </motion.div>
-          )}
-        </motion.div>
+        {/* Search Bar — กล่องค้นหา (กด Enter → ไปหน้า /search?q=...) */}
+        <div className="mb-8">
+          <HomeSearchInput />
+        </div>
 
         {/* Category Grid — หมวดหมู่แถวเดียว (Single Row) */}
         <motion.div
