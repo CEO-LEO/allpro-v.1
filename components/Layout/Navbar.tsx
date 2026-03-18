@@ -23,6 +23,7 @@ import {
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAppStore } from "@/store/useAppStore";
 import LoginModal from "@/components/Auth/LoginModal";
+import RegisterModal from "@/components/Auth/RegisterModal";
 
 const CATEGORIES = ['All', 'Food', 'Fashion', 'Travel', 'Gadget', 'Beauty'];
 
@@ -53,6 +54,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
@@ -333,7 +335,15 @@ export default function Navbar() {
       {/* Login Modal */}
       <LoginModal 
         isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToRegister={() => setShowRegisterModal(true)}
+      />
+
+      {/* Register Modal */}
+      <RegisterModal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        onSwitchToLogin={() => setShowLoginModal(true)}
       />
     </>
   );

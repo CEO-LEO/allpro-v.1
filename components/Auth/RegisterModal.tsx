@@ -2,81 +2,85 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserCircle, Store, Sparkles, Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useRouter } from 'next/navigation';
+import { X, UserCircle, Store, UserPlus, Lock, Mail, Eye, EyeOff, Loader2, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-interface LoginModalProps {
+interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSwitchToRegister?: () => void;
+  onSwitchToLogin: () => void;
 }
 
 // บทบาทที่เลือกได้
 type SelectedRole = 'USER' | 'MERCHANT' | null;
 
-export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: LoginModalProps) {
-  const router = useRouter();
-  const { loginAsUser, loginAsMerchant } = useAuthStore();
+// ตรวจสอบรูปแบบอีเมลเบื้องต้น
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps) {
   // ฟอร์ม state
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<SelectedRole>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   // รีเซ็ตฟอร์มเมื่อปิด modal
   const handleClose = () => {
+    setName('');
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
     setShowPassword(false);
+    setShowConfirmPassword(false);
     setSelectedRole(null);
     setError('');
     setIsLoading(false);
     onClose();
   };
 
-  // จำลอง API login
-  const handleLogin = async (e: React.FormEvent) => {
+  // สลับไปหน้า Login
+  const handleGoToLogin = () => {
+    handleClose();
+    onSwitchToLogin();
+  };
+
+  // Client-side Validation
+  const validate = (): string | null => {
+    if (!name.trim()) return 'กรุณากรอกชื่อ-นามสกุล';
+    if (!email.trim()) return 'กรุณากรอกอีเมล';
+    if (!EMAIL_REGEX.test(email)) return 'รูปแบบอีเมลไม่ถูกต้อง';
+    if (!password) return 'กรุณากรอกรหัสผ่าน';
+    if (password.length < 6) return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+    if (password !== confirmPassword) return 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน';
+    if (!selectedRole) return 'กรุณาเลือกบทบาท';
+    return null;
+  };
+
+  // จำลอง API register
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Validation
-    if (!email.trim()) {
-      setError('กรุณากรอกอีเมล');
-      return;
-    }
-    if (!password) {
-      setError('กรุณากรอกรหัสผ่าน');
-      return;
-    }
-    if (!selectedRole) {
-      setError('กรุณาเลือกบทบาท');
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // TODO: เปลี่ยนเป็น API จริง — e.g. const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password, role: selectedRole }) });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // TODO: เปลี่ยนเป็น API จริง — e.g. await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, role: selectedRole }) });
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
-      // จำลอง: demo@test.com / password ล็อกอินสำเร็จเสมอ (Demo Mode)
-      if (selectedRole === 'USER') {
-        loginAsUser();
-        toast.success('🎉 ยินดีต้อนรับกลับ Hunter 007!');
-        handleClose();
-      } else {
-        loginAsMerchant();
-        toast.success('✅ ยินดีต้อนรับ Siam Store!');
-        handleClose();
-        setTimeout(() => {
-          router.push('/merchant/dashboard');
-        }, 500);
-      }
+      // สมัครสำเร็จ → ส่งกลับไปหน้า Login
+      toast.success('🎉 สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
+      handleGoToLogin();
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
     } finally {
@@ -104,9 +108,9 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] overflow-y-auto"
             >
-              {/* Header */}
+              {/* Header — Gradient ส้ม-ชมพู เหมือน Login */}
               <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 p-8 text-white">
                 <button
                   onClick={handleClose}
@@ -117,18 +121,18 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
 
                 <div className="flex flex-col items-center text-center">
                   <motion.div
-                    animate={{ rotate: [0, 10, -10, 0] }}
+                    animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <Sparkles className="w-16 h-16 mb-4" />
+                    <UserPlus className="w-16 h-16 mb-4" />
                   </motion.div>
-                  <h2 className="text-display mb-2">Welcome Back!</h2>
-                  <p className="text-white/90 text-body-sm">เข้าสู่ระบบเพื่อดำเนินการต่อ</p>
+                  <h2 className="text-display mb-2">สมัครสมาชิก</h2>
+                  <p className="text-white/90 text-body-sm">สร้างบัญชีเพื่อเริ่มต้นใช้งาน All Pro</p>
                 </div>
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleLogin} className="p-8 space-y-5">
+              <form onSubmit={handleRegister} className="p-8 space-y-5">
                 {/* Error message */}
                 {error && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center">
@@ -136,13 +140,30 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   </div>
                 )}
 
-                {/* Email */}
+                {/* ชื่อ-นามสกุล */}
                 <div>
-                  <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1.5">อีเมล</label>
+                  <label htmlFor="register-name" className="block text-sm font-medium text-gray-700 mb-1.5">ชื่อ-นามสกุล</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="register-name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="กรอกชื่อ-นามสกุล"
+                      autoComplete="name"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                    />
+                  </div>
+                </div>
+
+                {/* อีเมล */}
+                <div>
+                  <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1.5">อีเมล</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
-                      id="login-email"
+                      id="register-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -153,18 +174,18 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   </div>
                 </div>
 
-                {/* Password */}
+                {/* รหัสผ่าน */}
                 <div>
-                  <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1.5">รหัสผ่าน</label>
+                  <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-1.5">รหัสผ่าน</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
-                      id="login-password"
+                      id="register-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
+                      placeholder="อย่างน้อย 6 ตัวอักษร"
+                      autoComplete="new-password"
                       className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
                     />
                     <button
@@ -177,7 +198,31 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   </div>
                 </div>
 
-                {/* Role Selection */}
+                {/* ยืนยันรหัสผ่าน */}
+                <div>
+                  <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700 mb-1.5">ยืนยันรหัสผ่าน</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="register-confirm-password"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="กรอกรหัสผ่านอีกครั้ง"
+                      autoComplete="new-password"
+                      className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* เลือกบทบาท */}
                 <div>
                   <p className="text-sm font-medium text-gray-700 mb-2">เลือกบทบาท</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -212,7 +257,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   </div>
                 </div>
 
-                {/* Submit Button */}
+                {/* ปุ่มสมัครสมาชิก */}
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -221,10 +266,10 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      กำลังเข้าสู่ระบบ...
+                      กำลังสมัครสมาชิก...
                     </>
                   ) : (
-                    'เข้าสู่ระบบ'
+                    'สมัครสมาชิก'
                   )}
                 </button>
 
@@ -234,36 +279,18 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                     <div className="w-full border-t border-gray-200"></div>
                   </div>
                   <div className="relative flex justify-center text-body-sm">
-                    <span className="px-4 bg-white text-gray-500">ยังไม่มีบัญชี?</span>
+                    <span className="px-4 bg-white text-gray-500">มีบัญชีอยู่แล้ว?</span>
                   </div>
                 </div>
 
-                {/* Register Link */}
+                {/* ลิงก์กลับไปหน้า Login */}
                 <button
                   type="button"
-                  onClick={() => {
-                    if (onSwitchToRegister) {
-                      handleClose();
-                      onSwitchToRegister();
-                    }
-                  }}
+                  onClick={handleGoToLogin}
                   className="w-full text-center py-3 text-orange-600 hover:text-orange-700 font-semibold transition-colors"
                 >
-                  สมัครสมาชิกใหม่ →
+                  ← เข้าสู่ระบบ
                 </button>
-
-                {/* Demo Notice */}
-                <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <Lock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-body-sm text-amber-900">Demo Mode</p>
-                      <p className="text-caption text-amber-700 mt-1">
-                        ใช้อีเมลและรหัสผ่านใดก็ได้เพื่อทดลองใช้งาน ระบบจำลองจะล็อกอินอัตโนมัติ
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </form>
             </motion.div>
           </div>
