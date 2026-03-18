@@ -47,7 +47,7 @@ export default function MerchantShopPage() {
         await new Promise(r => setTimeout(r, 500));
 
         // Compute from local store until API is connected
-        const myProducts = products.filter(p => p.shopName === (user?.shopName || 'My Shop'));
+        const myProducts = products.filter(p => p.shopName === user?.shopName);
         const activePromos = myProducts.length;
         const totalViews = myProducts.reduce((sum, p) => sum + ((p.likes || 0) * 10), 0);
         const estimatedRevenue = myProducts.reduce((sum, p) => {
@@ -60,8 +60,9 @@ export default function MerchantShopPage() {
           : 'New';
 
         setShopStats({ activePromos, totalViews, estimatedRevenue, avgRating });
-      } catch (err: any) {
-        setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+        setError(message);
       } finally {
         setIsLoading(false);
       }

@@ -23,10 +23,7 @@ import {
   X
 } from 'lucide-react';
 import { 
-  type AdCampaign, 
-  mockCampaigns, 
-  getCampaignStats,
-  createCampaign 
+  type AdCampaign
 } from '@/lib/adsData';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
@@ -51,6 +48,7 @@ export default function AdsManagerPage() {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const isPro = user?.isPro || false;
 
@@ -65,18 +63,35 @@ export default function AdsManagerPage() {
   const storageKey = `merchant_${merchantId}_campaigns`;
 
   useEffect(() => {
-    // Load campaigns from local storage
-    // TODO: Replace with API call — GET /api/merchant/campaigns
-    // Expected response: AdCampaign[]
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        setCampaigns(JSON.parse(stored));
-      } else {
-        setCampaigns([]);
+    const fetchCampaigns = async () => {
+      try {
+        setIsPageLoading(true);
+        setError(null);
+
+        // TODO: Replace with real API call
+        // const res = await fetch('/api/merchant/campaigns');
+        // if (!res.ok) throw new Error('Failed to fetch campaigns');
+        // const data: AdCampaign[] = await res.json();
+        // setCampaigns(data);
+
+        // Demo Mode: load from localStorage until API is connected
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem(storageKey);
+          if (stored) {
+            setCampaigns(JSON.parse(stored));
+          } else {
+            setCampaigns([]);
+          }
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+        setError(message);
+      } finally {
+        setIsPageLoading(false);
       }
-      setIsPageLoading(false);
-    }
+    };
+
+    fetchCampaigns();
   }, [merchantId, storageKey]);
 
   // Calculate stats from actual campaigns
@@ -130,6 +145,15 @@ export default function AdsManagerPage() {
 
     const updatedCampaigns = [...campaigns, newCampaignData];
     setCampaigns(updatedCampaigns);
+
+    // TODO: Replace with real API call
+    // await fetch('/api/merchant/campaigns', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(newCampaignData),
+    // });
+
+    // Demo Mode: persist to localStorage
     localStorage.setItem(storageKey, JSON.stringify(updatedCampaigns));
 
     confetti({
@@ -205,6 +229,18 @@ export default function AdsManagerPage() {
                 </div>
               ))}
             </div>
+          </div>
+        ) : error ? (
+          /* ═══ Error State ═══ */
+          <div className="py-20 text-center">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h2>
+            <p className="text-gray-500 mb-4">{error}</p>
+            <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+              ลองใหม่อีกครั้ง
+            </button>
           </div>
         ) : (
         /* ═══ Content ═══ */

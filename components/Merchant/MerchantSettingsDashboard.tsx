@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Store, Bell, ShieldCheck, CreditCard, Palette, Globe, Settings2,
   Save, Loader2, CheckCircle, Upload, Camera, AlertTriangle, Trash2,
@@ -201,34 +201,71 @@ export default function MerchantSettingsDashboard() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
+  // ═══ API-Ready State Management ═══
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [settings, setSettings] = useState<SettingsState>({
-    storeName: user?.shopName || 'Siam Store',
-    branchCode: 'BRN-001',
-    managerEmail: user?.email || 'manager@store.com',
-    storeLogo: user?.shopLogo || null,
-    pushNotifications: true,
-    emailNotifications: true,
-    flashSaleAlerts: true,
-    newOrderAlerts: true,
+    storeName: '',
+    branchCode: '',
+    managerEmail: '',
+    storeLogo: null,
+    pushNotifications: false,
+    emailNotifications: false,
+    flashSaleAlerts: false,
+    newOrderAlerts: false,
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
     twoFactorEnabled: false,
-    bankName: 'ธนาคารกสิกรไทย',
-    accountNumber: '•••• •••• 4829',
+    bankName: '',
+    accountNumber: '',
     codEnabled: false,
-    theme: 'dark',
+    theme: 'light',
     language: 'th',
     timezone: 'Asia/Bangkok',
-    autoCleanExpired: true,
+    autoCleanExpired: false,
     // Partner Services
     sevenDelivery: false,
-    allMember: true,
+    allMember: false,
     trueMoneyWallet: false,
     smeShelfSync: false,
   });
 
   const [isEcosystemExpanded, setIsEcosystemExpanded] = useState(false);
+
+  // ═══ Fetch shop settings from API ═══
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // TODO: Replace with real API call
+        // const res = await fetch('/api/merchant/settings');
+        // if (!res.ok) throw new Error('Failed to fetch settings');
+        // const data: SettingsState = await res.json();
+        // setSettings(prev => ({ ...prev, ...data }));
+
+        await new Promise(r => setTimeout(r, 500));
+
+        // Demo Mode: populate from user store until API is connected
+        setSettings(prev => ({
+          ...prev,
+          storeName: user?.shopName || '',
+          managerEmail: user?.email || '',
+          storeLogo: user?.shopLogo || null,
+        }));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [user]);
 
   const update = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -244,12 +281,27 @@ export default function MerchantSettingsDashboard() {
   };
 
   const handleSave = useCallback(async () => {
-    setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
-  }, []);
+    try {
+      setIsSaving(true);
+
+      // TODO: Replace with real API call
+      // const res = await fetch('/api/merchant/settings', {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(settings),
+      // });
+      // if (!res.ok) throw new Error('Failed to save settings');
+
+      await new Promise((r) => setTimeout(r, 1000));
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ';
+      setError(message);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [settings]);
 
   const handleDangerAction = useCallback(() => {
     setDangerModal(null);
@@ -590,6 +642,63 @@ export default function MerchantSettingsDashboard() {
   // ═══════════════════════════════════════════════════════════════════════
   //  RENDER
   // ═══════════════════════════════════════════════════════════════════════
+
+  if (isLoading) {
+    return (
+      <section className="min-h-screen bg-white text-gray-900 pb-24 lg:pb-8">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-gray-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse" />
+          </div>
+        </header>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 md:p-8 animate-pulse space-y-6">
+            <div className="flex gap-8">
+              <div className="hidden lg:block w-60 space-y-3">
+                {[1,2,3,4,5,6,7].map(i => (
+                  <div key={i} className="h-12 bg-gray-200 rounded-xl" />
+                ))}
+              </div>
+              <div className="flex-1 space-y-6">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+                  <div className="flex items-center gap-5">
+                    <div className="w-20 h-20 bg-gray-200 rounded-2xl" />
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-1/3" />
+                      <div className="h-3 bg-gray-200 rounded w-1/4" />
+                    </div>
+                  </div>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="h-14 bg-gray-200 rounded-xl" />
+                    <div className="h-14 bg-gray-200 rounded-xl" />
+                  </div>
+                  <div className="h-14 bg-gray-200 rounded-xl" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="min-h-screen bg-white text-gray-900 flex items-center justify-center">
+        <div className="text-center px-4">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-10 h-10 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h2>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="min-h-screen bg-white text-gray-900 pb-24 lg:pb-8">
       {/* ─── Sticky Header ──────────────────────────────────────────── */}
