@@ -111,10 +111,10 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
               className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] overflow-y-auto"
             >
               {/* Header — Gradient ส้ม-ชมพู เหมือน Login */}
-              <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 p-8 text-white">
+              <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 px-8 pt-8 pb-7 text-white">
                 <button
                   onClick={handleClose}
-                  className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+                  className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors duration-200"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -124,20 +124,24 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <UserPlus className="w-16 h-16 mb-4" />
+                    <UserPlus className="w-14 h-14 mb-3" />
                   </motion.div>
-                  <h2 className="text-display mb-2">สมัครสมาชิก</h2>
-                  <p className="text-white/90 text-body-sm">สร้างบัญชีเพื่อเริ่มต้นใช้งาน All Pro</p>
+                  <h2 className="text-2xl font-bold mb-1">สมัครสมาชิก</h2>
+                  <p className="text-white/80 text-sm">สร้างบัญชีเพื่อเริ่มต้นใช้งาน All Pro</p>
                 </div>
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleRegister} className="p-8 space-y-5">
+              <form onSubmit={handleRegister} className="p-6 sm:p-8 space-y-4">
                 {/* Error message */}
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center font-medium"
+                  >
                     {error}
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* ชื่อ-นามสกุล */}
@@ -229,28 +233,28 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     <button
                       type="button"
                       onClick={() => setSelectedRole('USER')}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
                         selectedRole === 'USER'
-                          ? 'border-green-500 bg-green-50 ring-1 ring-green-200'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-green-500 bg-green-50 ring-1 ring-green-200 shadow-sm'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
                       }`}
                     >
-                      <UserCircle className={`w-8 h-8 ${selectedRole === 'USER' ? 'text-green-600' : 'text-gray-400'}`} />
-                      <span className={`text-sm font-semibold ${selectedRole === 'USER' ? 'text-green-700' : 'text-gray-600'}`}>
+                      <UserCircle className={`w-7 h-7 transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className={`text-sm font-semibold transition-colors duration-200 ${selectedRole === 'USER' ? 'text-green-700' : 'text-gray-600'}`}>
                         ลูกค้า 🎯
                       </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedRole('MERCHANT')}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
                         selectedRole === 'MERCHANT'
-                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200 shadow-sm'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
                       }`}
                     >
-                      <Store className={`w-8 h-8 ${selectedRole === 'MERCHANT' ? 'text-blue-600' : 'text-gray-400'}`} />
-                      <span className={`text-sm font-semibold ${selectedRole === 'MERCHANT' ? 'text-blue-700' : 'text-gray-600'}`}>
+                      <Store className={`w-7 h-7 transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-600' : 'text-gray-400'}`} />
+                      <span className={`text-sm font-semibold transition-colors duration-200 ${selectedRole === 'MERCHANT' ? 'text-blue-700' : 'text-gray-600'}`}>
                         ร้านค้า 🏪
                       </span>
                     </button>
@@ -261,7 +265,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-3.5 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white py-3.5 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
                   {isLoading ? (
                     <>
@@ -274,12 +278,12 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 </button>
 
                 {/* Divider */}
-                <div className="relative py-2">
+                <div className="relative py-1">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200"></div>
                   </div>
-                  <div className="relative flex justify-center text-body-sm">
-                    <span className="px-4 bg-white text-gray-500">มีบัญชีอยู่แล้ว?</span>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-white text-gray-400">มีบัญชีอยู่แล้ว?</span>
                   </div>
                 </div>
 
