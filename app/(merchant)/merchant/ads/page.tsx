@@ -50,6 +50,7 @@ export default function AdsManagerPage() {
   });
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   
   const isPro = user?.isPro || false;
 
@@ -65,13 +66,16 @@ export default function AdsManagerPage() {
 
   useEffect(() => {
     // Load campaigns from local storage
+    // TODO: Replace with API call — GET /api/merchant/campaigns
+    // Expected response: AdCampaign[]
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         setCampaigns(JSON.parse(stored));
       } else {
-        setCampaigns([]); // Start empty for new users
+        setCampaigns([]);
       }
+      setIsPageLoading(false);
     }
   }, [merchantId, storageKey]);
 
@@ -180,7 +184,30 @@ export default function AdsManagerPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
-        {/* Content Card Container */}
+        {isPageLoading ? (
+          /* ═══ Loading Skeleton ═══ */
+          <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 md:p-8 animate-pulse space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="bg-white rounded-2xl p-6 h-28 border border-gray-200"></div>
+              ))}
+            </div>
+            <div className="bg-white rounded-xl h-16 border border-gray-200"></div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 space-y-4">
+              <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+              {[1,2].map(i => (
+                <div key={i} className="flex gap-4 items-center">
+                  <div className="w-20 h-20 bg-gray-200 rounded-xl"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+        /* ═══ Content ═══ */
         <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 md:p-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -279,7 +306,23 @@ export default function AdsManagerPage() {
           </h2>
 
           <div className="space-y-4">
-            {campaigns.map((campaign) => (
+            {campaigns.length === 0 ? (
+              /* ═══ Empty State: No Campaigns ═══ */
+              <div className="py-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <BarChart3 className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-700 mb-2">ยังไม่มีแคมเปญ</h3>
+                <p className="text-sm text-gray-500 mb-4">สร้างแคมเปญแรกของคุณเพื่อเพิ่มยอดขาย</p>
+                <button
+                  onClick={() => setShowCreateWizard(true)}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  + สร้างแคมเปญใหม่
+                </button>
+              </div>
+            ) : (
+            campaigns.map((campaign) => (
               <motion.div
                 key={campaign.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -349,10 +392,12 @@ export default function AdsManagerPage() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            ))
+            )}
           </div>
         </div>
-      </div>{/* End Content Card Container */}
+      </div>
+      )}
       </div>
 
       {/* Create Campaign Wizard */}

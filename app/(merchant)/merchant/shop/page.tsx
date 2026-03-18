@@ -4,26 +4,71 @@ import { Store, Package, TrendingUp, DollarSign, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
+import { useState, useEffect } from 'react';
+
+/**
+ * Shop Data — คาดหวัง data structure จาก API:
+ * GET /api/merchant/shop
+ * Response: {
+ *   activePromos: number,
+ *   totalViews: number,
+ *   estimatedRevenue: number,
+ *   avgRating: string
+ * }
+ */
+interface ShopStats {
+  activePromos: number;
+  totalViews: number;
+  estimatedRevenue: number;
+  avgRating: string;
+}
 
 export default function MerchantShopPage() {
   const { user } = useAuthStore();
   const { products } = useProductStore();
 
-  // Filter products for this merchant
-  const myProducts = products.filter(p => p.shopName === (user?.shopName || 'My Shop'));
-  
-  // Calculate stats
-  const activePromos = myProducts.length;
-  const totalViews = myProducts.reduce((sum, p) => sum + ((p.likes || 0) * 10), 0);
-  const estimatedRevenue = myProducts.reduce((sum, p) => {
-    const price = p.promoPrice || p.originalPrice || 0;
-    const sales = (p.reviews || 0);
-    return sum + (price * sales);
-  }, 0);
-  
-  const avgRating = myProducts.length > 0
-    ? (myProducts.reduce((sum, p) => sum + (p.rating || 0), 0) / myProducts.length).toFixed(1)
-    : 'New';
+  // ═══ API-Ready State Management ═══
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [shopStats, setShopStats] = useState<ShopStats | null>(null);
+
+  useEffect(() => {
+    const fetchShopData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // TODO: Replace with real API call
+        // const res = await fetch('/api/merchant/shop');
+        // if (!res.ok) throw new Error('Failed to fetch shop data');
+        // const data = await res.json();
+        // setShopStats(data);
+
+        await new Promise(r => setTimeout(r, 500));
+
+        // Compute from local store until API is connected
+        const myProducts = products.filter(p => p.shopName === (user?.shopName || 'My Shop'));
+        const activePromos = myProducts.length;
+        const totalViews = myProducts.reduce((sum, p) => sum + ((p.likes || 0) * 10), 0);
+        const estimatedRevenue = myProducts.reduce((sum, p) => {
+          const price = p.promoPrice || p.originalPrice || 0;
+          const sales = (p.reviews || 0);
+          return sum + (price * sales);
+        }, 0);
+        const avgRating = myProducts.length > 0
+          ? (myProducts.reduce((sum, p) => sum + (p.rating || 0), 0) / myProducts.length).toFixed(1)
+          : 'New';
+
+        setShopStats({ activePromos, totalViews, estimatedRevenue, avgRating });
+      } catch (err: any) {
+        setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) fetchShopData();
+  }, [user, products]);
 
   return (
     <div className="min-h-screen">
@@ -41,7 +86,42 @@ export default function MerchantShopPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Content Card Container */}
+        {isLoading ? (
+          /* ═══ Loading Skeleton ═══ */
+          <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 md:p-8 animate-pulse space-y-6">
+            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6">
+              <div className="flex items-start gap-6">
+                <div className="w-24 h-24 bg-gray-200 rounded-2xl"></div>
+                <div className="flex-1 space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="flex gap-3">
+                    <div className="h-10 bg-gray-200 rounded-xl w-32"></div>
+                    <div className="h-10 bg-gray-200 rounded-xl w-32"></div>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="p-4 bg-gray-100 rounded-xl h-24"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : error ? (
+          /* ═══ Error State ═══ */
+          <div className="py-20 text-center">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h2>
+            <p className="text-gray-500 mb-4">{error}</p>
+            <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+              ลองใหม่อีกครั้ง
+            </button>
+          </div>
+        ) : (
         <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 md:p-8">
           {/* Shop Header */}
           <p className="text-gray-500 mb-6">Manage your shop information and settings</p>
@@ -82,11 +162,11 @@ export default function MerchantShopPage() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[
-                { icon: Package, label: 'Active Deals', value: activePromos.toString(), bgColor: 'bg-blue-50', borderColor: 'border-blue-200', iconColor: 'text-blue-500', textColor: 'text-blue-900' },
-                { icon: TrendingUp, label: 'Total Engagement', value: totalViews.toLocaleString(), bgColor: 'bg-green-50', borderColor: 'border-green-200', iconColor: 'text-green-500', textColor: 'text-green-900' },
-                { icon: DollarSign, label: 'Est. Revenue', value: `฿${estimatedRevenue.toLocaleString()}`, bgColor: 'bg-amber-50', borderColor: 'border-amber-200', iconColor: 'text-amber-500', textColor: 'text-amber-900' },
-                { icon: Star, label: 'Avg Rating', value: avgRating, bgColor: 'bg-purple-50', borderColor: 'border-purple-200', iconColor: 'text-purple-500', textColor: 'text-purple-900' }
+              {shopStats ? [
+                { icon: Package, label: 'Active Deals', value: shopStats.activePromos.toString(), bgColor: 'bg-blue-50', borderColor: 'border-blue-200', iconColor: 'text-blue-500', textColor: 'text-blue-900' },
+                { icon: TrendingUp, label: 'Total Engagement', value: shopStats.totalViews.toLocaleString(), bgColor: 'bg-green-50', borderColor: 'border-green-200', iconColor: 'text-green-500', textColor: 'text-green-900' },
+                { icon: DollarSign, label: 'Est. Revenue', value: `฿${shopStats.estimatedRevenue.toLocaleString()}`, bgColor: 'bg-amber-50', borderColor: 'border-amber-200', iconColor: 'text-amber-500', textColor: 'text-amber-900' },
+                { icon: Star, label: 'Avg Rating', value: shopStats.avgRating, bgColor: 'bg-purple-50', borderColor: 'border-purple-200', iconColor: 'text-purple-500', textColor: 'text-purple-900' }
               ].map((stat, index) => {
                 const Icon = stat.icon;
                 return (
@@ -96,7 +176,15 @@ export default function MerchantShopPage() {
                     <div className="text-sm text-gray-500">{stat.label}</div>
                   </div>
                 );
-              })}
+              }) : (
+                <div className="col-span-full py-8 text-center">
+                  <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">📊</span>
+                  </div>
+                  <p className="text-gray-500 font-medium">ยังไม่มีข้อมูลสถิติ</p>
+                  <p className="text-sm text-gray-400 mt-1">ลงโปรโมชั่นเพื่อเริ่มเก็บสถิติ</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -106,6 +194,7 @@ export default function MerchantShopPage() {
             <p className="text-gray-500">Shop customization, product management, and more...</p>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

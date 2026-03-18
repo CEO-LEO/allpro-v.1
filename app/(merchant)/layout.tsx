@@ -14,7 +14,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import CreateDealModal from './merchant/dashboard/CreateDealModal';
 import AuthGuard from '@/components/Common/AuthGuard';
 import { useRouter } from 'next/navigation';

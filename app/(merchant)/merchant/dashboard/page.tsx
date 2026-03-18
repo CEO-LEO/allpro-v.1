@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -103,19 +103,6 @@ function formatRelativeTime(isoDate: string): string {
   return `${Math.floor(diffDay / 30)} เดือน ที่แล้ว`;
 }
 
-// สร้าง ISO timestamp ย้อนหลังตามจำนวนชั่วโมง (สำหรับ mock data)
-function hoursAgo(hours: number): string {
-  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-}
-
-// TODO: Replace with API response — e.g. const { data: activityData } = useSWR('/api/merchant/activity');
-const activityData: ActivityItem[] = [
-  { id: "act-1", type: "view",     title: "มีผู้เข้าชม",       subtitle: 'โปรโมชั่น "กาแฟ 2 แก้ว 50 บาท"',    count: 142,  timestamp: hoursAgo(2) },
-  { id: "act-2", type: "save",     title: "บันทึกโปรโมชั่น",   subtitle: 'โปรโมชั่น "ข้าวกล่อง ลด 10 บาท"',    count: 28,   timestamp: hoursAgo(5) },
-  { id: "act-3", type: "location", title: "กดดูพิกัดร้าน",     subtitle: 'โปรโมชั่น "นมโปรตีน ซื้อ 2 แถม 1"',  count: 67,   timestamp: hoursAgo(24) },
-  { id: "act-4", type: "search",   title: "ปรากฏในการค้นหา",   subtitle: 'คำค้นหา "กาแฟ"',                      count: 1250, timestamp: hoursAgo(30) },
-];
-
 const ACTIVITY_ICON_MAP: Record<ActivityType, string> = {
   view: "👁️",
   save: "❤️",
@@ -134,6 +121,63 @@ export default function MerchantDashboard() {
   const [selectedLocation, setSelectedLocation] = useState("อารีย์");
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const { startFlashSale, endFlashSale, isFlashSale } = useFlashSale();
+
+  // ═══════════════════════════════════════════════════════
+  // API-Ready State Management
+  // ═══════════════════════════════════════════════════════
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Activity Log — คาดหวัง data structure จาก API:
+   * GET /api/merchant/activity
+   * Response: ActivityItem[]
+   * { id: string, type: 'view'|'save'|'location'|'search', title: string, subtitle: string, count: number, timestamp: string (ISO) }
+   */
+  const [activityData, setActivityData] = useState<ActivityItem[]>([]);
+
+  /**
+   * Dashboard Stats — คาดหวัง data structure จาก API:
+   * GET /api/merchant/dashboard/stats
+   * Response: { totalViews: number, totalUsed: number, avgDiscount: number }
+   */
+  const [dashboardStats, setDashboardStats] = useState<{
+    totalViews: number;
+    totalUsed: number;
+    avgDiscount: number;
+  } | null>(null);
+
+  // Fetch dashboard data on mount
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // TODO: Replace with real API calls
+        // const [activityRes, statsRes] = await Promise.all([
+        //   fetch('/api/merchant/activity'),
+        //   fetch('/api/merchant/dashboard/stats'),
+        // ]);
+        // if (!activityRes.ok || !statsRes.ok) throw new Error('Failed to fetch dashboard data');
+        // const activityJson = await activityRes.json();
+        // const statsJson = await statsRes.json();
+        // setActivityData(activityJson);
+        // setDashboardStats(statsJson);
+
+        // Simulate network delay (remove when connecting to real API)
+        await new Promise(r => setTimeout(r, 600));
+        setActivityData([]);
+        setDashboardStats(null);
+      } catch (err: any) {
+        setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) fetchDashboardData();
+  }, [user]);
 
   // Filter products for this merchant
   // Fallback to "Siam Store" or "My Shop" if user has no shopName set
@@ -156,11 +200,10 @@ export default function MerchantDashboard() {
     }
   });
 
-  // Calculate stats
-  // Use likes/reviews as proxies for views/usage since those fields might be missing in Product type
-  const totalViews = myProducts.reduce((sum, p) => sum + (p.likes || 0) * 10, 0); // Estimate views ~ 10x likes
-  const totalUsed = myProducts.reduce((sum, p) => sum + (p.reviews || 0), 0); // Estimate usage ~ reviews
-  const avgDiscount = myProducts.length > 0
+  // Calculate stats (use API data if available, fallback to local product store)
+  const totalViews = dashboardStats?.totalViews ?? myProducts.reduce((sum, p) => sum + (p.likes || 0) * 10, 0);
+  const totalUsed = dashboardStats?.totalUsed ?? myProducts.reduce((sum, p) => sum + (p.reviews || 0), 0);
+  const avgDiscount = dashboardStats?.avgDiscount ?? (myProducts.length > 0
     ? Math.round(
         myProducts.reduce((sum, p) => {
           const price = p.promoPrice || 0;
@@ -168,7 +211,7 @@ export default function MerchantDashboard() {
           return sum + discount;
         }, 0) / myProducts.length
       )
-    : 0;
+    : 0);
 
   const insights = useMemo(() => getSearchInsights(selectedLocation), [selectedLocation]);
 
@@ -189,6 +232,58 @@ export default function MerchantDashboard() {
             <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
             <p className="text-gray-500">This page is for merchants only.</p>
           </div>
+        </div>
+      ) : isLoading ? (
+        /* ═══ Loading Skeleton ═══ */
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 md:p-8 space-y-6 animate-pulse">
+            {/* Create Deal Skeleton */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 h-40"></div>
+            {/* Stats Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[1,2,3].map(i => (
+                <div key={i} className="bg-white rounded-xl p-6 h-24 border border-gray-200"></div>
+              ))}
+            </div>
+            {/* Table Skeleton */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+              <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+              {[1,2,3].map(i => (
+                <div key={i} className="flex gap-4 items-center">
+                  <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Activity Skeleton */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+              <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+              {[1,2,3,4].map(i => (
+                <div key={i} className="flex gap-4 items-center">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : error ? (
+        /* ═══ Error State ═══ */
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 text-center">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h2>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+            ลองใหม่อีกครั้ง
+          </button>
         </div>
       ) : (
         <>

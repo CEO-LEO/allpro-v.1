@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   CheckCircleIcon, 
@@ -22,6 +22,59 @@ export default function MerchantUpgradePage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  // ═══ API-Ready State Management ═══
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Social Proof Stats — GET /api/merchant/upgrade/stats
+   * Response: { views: string, chooseRate: string, avgRevenue: string }
+   */
+  const [proStats, setProStats] = useState<{
+    views: string;
+    chooseRate: string;
+    avgRevenue: string;
+  } | null>(null);
+
+  /**
+   * Testimonials — GET /api/merchant/upgrade/testimonials
+   * Response: { emoji: string, quote: string, author: string }[]
+   */
+  const [testimonials, setTestimonials] = useState<{
+    emoji: string;
+    quote: string;
+    author: string;
+    bgClass: string;
+  }[]>([]);
+
+  useEffect(() => {
+    const fetchUpgradeData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // TODO: Replace with real API calls
+        // const [statsRes, testimonialsRes] = await Promise.all([
+        //   fetch('/api/merchant/upgrade/stats'),
+        //   fetch('/api/merchant/upgrade/testimonials'),
+        // ]);
+        // if (!statsRes.ok || !testimonialsRes.ok) throw new Error('Failed to fetch data');
+        // setProStats(await statsRes.json());
+        // setTestimonials(await testimonialsRes.json());
+
+        await new Promise(r => setTimeout(r, 500));
+        setProStats(null);
+        setTestimonials([]);
+      } catch (err: any) {
+        setError(err.message || 'เกิดข้อผิดพลาด');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUpgradeData();
+  }, []);
 
   const handleUpgradeClick = () => {
     setShowPaymentModal(true);
@@ -90,6 +143,36 @@ export default function MerchantUpgradePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      {isLoading ? (
+        /* ═══ Loading Skeleton ═══ */
+        <div className="animate-pulse">
+          <div className="bg-gradient-to-r from-indigo-200 to-purple-200 h-64"></div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
+            <div className="bg-white rounded-xl shadow-lg p-6 grid grid-cols-3 gap-6">
+              {[1,2,3].map(i => <div key={i} className="h-16 bg-gray-200 rounded"></div>)}
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-white rounded-2xl h-96 border-2 border-gray-200"></div>
+              <div className="bg-gray-100 rounded-2xl h-96"></div>
+            </div>
+          </div>
+        </div>
+      ) : error ? (
+        /* ═══ Error State ═══ */
+        <div className="py-20 text-center">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h2>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      ) : (
+      <>
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
         <div className="absolute inset-0 bg-black/10"></div>
@@ -126,22 +209,24 @@ export default function MerchantUpgradePage() {
       </div>
 
       {/* Stats Banner */}
+      {proStats && (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
         <div className="bg-white rounded-xl shadow-lg p-6 grid grid-cols-3 gap-6">
           <div className="text-center">
-            <div className="text-3xl font-bold text-indigo-600">3.2x</div>
+            <div className="text-3xl font-bold text-indigo-600">{proStats.views}</div>
             <div className="text-sm text-gray-600">More Customer Views</div>
           </div>
           <div className="text-center border-x border-gray-200">
-            <div className="text-3xl font-bold text-purple-600">87%</div>
+            <div className="text-3xl font-bold text-purple-600">{proStats.chooseRate}</div>
             <div className="text-sm text-gray-600">Choose PRO Shops First</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-emerald-600">+฿45K</div>
+            <div className="text-3xl font-bold text-emerald-600">{proStats.avgRevenue}</div>
             <div className="text-sm text-gray-600">Avg Monthly Revenue</div>
           </div>
         </div>
       </div>
+      )}
 
       {/* Billing Toggle */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
@@ -275,40 +360,26 @@ export default function MerchantUpgradePage() {
       </div>
 
       {/* Social Proof */}
+      {testimonials.length > 0 && (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <h3 className="text-2xl font-bold text-center mb-8">What PRO Merchants Say</h3>
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl">
-              <div className="text-4xl mb-3">📈</div>
-              <div className="font-semibold text-gray-900 mb-2">
-                "Sales increased 280% in first month!"
+            {testimonials.map((t, idx) => (
+              <div key={idx} className={`text-center p-6 ${t.bgClass} rounded-xl`}>
+                <div className="text-4xl mb-3">{t.emoji}</div>
+                <div className="font-semibold text-gray-900 mb-2">
+                  "{t.quote}"
+                </div>
+                <div className="text-sm text-gray-600">
+                  - {t.author}
+                </div>
               </div>
-              <div className="text-sm text-gray-600">
-                - Sushi Bar Sukhumvit
-              </div>
-            </div>
-            <div className="text-center p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl">
-              <div className="text-4xl mb-3">⚡</div>
-              <div className="font-semibold text-gray-900 mb-2">
-                "AI chatbot answered 450+ questions automatically"
-              </div>
-              <div className="text-sm text-gray-600">
-                - Café Ari
-              </div>
-            </div>
-            <div className="text-center p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
-              <div className="text-4xl mb-3">🏆</div>
-              <div className="font-semibold text-gray-900 mb-2">
-                "Now ranked #1 in my category!"
-              </div>
-              <div className="text-sm text-gray-600">
-                - Pizza House Bangkok
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
+      )}
 
       {/* Payment Modal */}
       <AnimatePresence>
@@ -382,6 +453,8 @@ export default function MerchantUpgradePage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </>
+      )}
     </div>
   );
 }

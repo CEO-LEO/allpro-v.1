@@ -16,7 +16,7 @@ import {
   Shield,
   Sparkles
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 
 /**
@@ -32,6 +32,42 @@ import confetti from 'canvas-confetti';
 
 export default function MerchantLandingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  // ═══ API-Ready State Management ═══
+  /**
+   * Testimonials — GET /api/merchant/landing/testimonials
+   * Response: { name: string, shop: string, image: string, quote: string, metric: string }[]
+   */
+  const [testimonials, setTestimonials] = useState<{
+    name: string;
+    shop: string;
+    image: string;
+    quote: string;
+    metric: string;
+  }[]>([]);
+  const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(true);
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setIsLoadingTestimonials(true);
+
+        // TODO: Replace with real API call
+        // const res = await fetch('/api/merchant/landing/testimonials');
+        // if (!res.ok) throw new Error('Failed to fetch testimonials');
+        // setTestimonials(await res.json());
+
+        await new Promise(r => setTimeout(r, 400));
+        setTestimonials([]);
+      } catch {
+        setTestimonials([]);
+      } finally {
+        setIsLoadingTestimonials(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
 
   const fadeInUp = {
     initial: { opacity: 0, y: 60 },
@@ -489,29 +525,37 @@ export default function MerchantLandingPage() {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {[
-              {
-                name: 'Somsak Wongkham',
-                shop: 'Somsak Shabu Buffet',
-                image: '👨‍🍳',
-                quote: 'Since upgrading to Pro, my lunch queue is full every day! The AI chatbot brings me customers I never reached before.',
-                metric: '+280% sales'
-              },
-              {
-                name: 'Pranee Sukjai',
-                shop: 'Cafe Latte PRO',
-                image: '👩‍💼',
-                quote: 'The golden badge makes us look professional. Customers trust us more now. Worth every baht!',
-                metric: '+3.2x views'
-              },
-              {
-                name: 'Somchai Tanaka',
-                shop: 'Sushi Master',
-                image: '👨‍🍳',
-                quote: 'Auto-reply bot answers customer questions 24/7. I sleep better knowing my shop is always "open".',
-                metric: '+180% engagement'
-              }
-            ].map((testimonial, i) => (
+            {isLoadingTestimonials ? (
+              [1,2,3].map(i => (
+                <div key={i} className="bg-white border border-gray-200 rounded-2xl p-6 animate-pulse">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, j) => (
+                      <div key={j} className="w-5 h-5 bg-gray-200 rounded"></div>
+                    ))}
+                  </div>
+                  <div className="space-y-2 mb-6">
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                      <div className="h-3 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : testimonials.length === 0 ? (
+              <div className="col-span-3 py-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">💬</span>
+                </div>
+                <p className="text-gray-500 font-medium">ยังไม่มีรีวิวจากผู้ใช้</p>
+                <p className="text-sm text-gray-400 mt-1">รีวิวจะแสดงเมื่อมีผู้ใช้งาน PRO</p>
+              </div>
+            ) : (
+            testimonials.map((testimonial, i) => (
               <motion.div
                 key={i}
                 {...fadeInUp}
@@ -547,7 +591,8 @@ export default function MerchantLandingPage() {
                   <span className="text-green-700 text-sm font-semibold">{testimonial.metric}</span>
                 </div>
               </motion.div>
-            ))}
+            ))
+            )}
           </div>
         </div>
       </section>

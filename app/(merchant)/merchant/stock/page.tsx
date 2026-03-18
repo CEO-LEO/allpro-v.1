@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Store, ChevronRight, MapPin, Package, TrendingUp, Clock } from 'lucide-react';
 import StockGrid from '@/components/Merchant/StockGrid';
@@ -8,6 +8,11 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
 
 
+/**
+ * Branch Data — คาดหวัง data structure จาก API:
+ * GET /api/merchant/branches
+ * Response: Branch[]
+ */
 interface Branch {
   id: string;
   name: string;
@@ -23,23 +28,38 @@ export default function MerchantStockDashboard() {
   const { products } = useProductStore();
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
 
+  // ═══ API-Ready State Management ═══
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [branches, setBranches] = useState<Branch[]>([]);
+
   const myProducts = useMemo(() => {
      return products.filter(p => p.shopName === user?.shopName);
   }, [products, user?.shopName]);
 
-  const branches: Branch[] = useMemo(() => {
-    if (!user) return [];
-    // Simulate a single branch for now
-    return [{
-      id: user.id,
-      name: user.shopName || 'My Shop',
-      address: 'Main Branch', // Could be added to user profile later
-      status: 'online',
-      activePromos: myProducts.length,
-      todayViews: myProducts.reduce((acc, p) => acc + (p.likes || 0) * 10, 0),
-      lastSync: 'Just now'
-    }];
-  }, [user, myProducts]);
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // TODO: Replace with real API call
+        // const res = await fetch('/api/merchant/branches');
+        // if (!res.ok) throw new Error('Failed to fetch branches');
+        // const data = await res.json();
+        // setBranches(data);
+
+        await new Promise(r => setTimeout(r, 500));
+        setBranches([]);
+      } catch (err: any) {
+        setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) fetchBranches();
+  }, [user]);
 
   // Transform products for StockGrid
   const gridProducts = useMemo(() => {
@@ -107,6 +127,44 @@ export default function MerchantStockDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {isLoading ? (
+          /* ═══ Loading Skeleton ═══ */
+          <div className="space-y-6 animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[1,2,3].map(i => (
+                <div key={i} className="bg-white rounded-xl border-2 border-gray-200 p-5 h-24"></div>
+              ))}
+            </div>
+            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1,2].map(i => (
+                <div key={i} className="bg-white rounded-xl border-2 border-gray-200 h-48"></div>
+              ))}
+            </div>
+          </div>
+        ) : error ? (
+          /* ═══ Error State ═══ */
+          <div className="py-20 text-center">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h2>
+            <p className="text-gray-500 mb-4">{error}</p>
+            <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+              ลองใหม่อีกครั้ง
+            </button>
+          </div>
+        ) : branches.length === 0 ? (
+          /* ═══ Empty State ═══ */
+          <div className="py-20 text-center">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Store className="w-10 h-10 text-gray-400" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">ยังไม่มีสาขา</h2>
+            <p className="text-gray-500">เพิ่มสาขาเพื่อเริ่มจัดการสต็อกสินค้า</p>
+          </div>
+        ) : (
+        <>
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl border-2 border-gray-200 p-5 shadow-sm">
@@ -259,6 +317,8 @@ export default function MerchantStockDashboard() {
             </div>
           </div>
         </div>
+        </>
+        )}
       </main>
     </div>
   );
