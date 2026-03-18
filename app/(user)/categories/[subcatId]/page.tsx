@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -8,21 +8,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeftIcon, StarIcon } from '@heroicons/react/24/solid';
 import {
   ShoppingBagIcon,
-  SparklesIcon,
-  CakeIcon,
-  HeartIcon,
-  BeakerIcon,
-  GlobeAltIcon,
   ShieldCheckIcon,
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
   TagIcon,
 } from '@heroicons/react/24/outline';
-import { useAppStore, Product } from '@/store/useAppStore';
+import { Product } from '@/store/useAppStore';
 
 // ============================================
-// SUBCATEGORY METADATA
+// INTERFACES — expected API response shape
 // ============================================
+// TODO: API Response → GET /api/categories/subcategory/:subcatId
+// {
+//   meta: SubcategoryMeta,
+//   products: Product[],
+//   relatedProducts: Product[],
+// }
 
 interface SubcategoryMeta {
   id: string;
@@ -33,96 +34,14 @@ interface SubcategoryMeta {
   keywords: string[];
 }
 
-const ALL_SUBCATEGORIES: SubcategoryMeta[] = [
-  // แฟชั่นผู้หญิง
-  { id: 'รองเท้าผู้หญิง', name: 'รองเท้าผู้หญิง', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['รองเท้า', 'ผู้หญิง', 'shoes', 'women'] },
-  { id: 'รองเท้าแตะ', name: 'รองเท้าแตะ', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['รองเท้าแตะ', 'แตะ', 'sandals'] },
-  { id: 'รองเท้าบูท', name: 'รองเท้าบูท', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['รองเท้าบูท', 'บูท', 'boots'] },
-  { id: 'เสื้อผ้าผู้หญิง', name: 'เสื้อผ้า', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['เสื้อผ้า', 'ผู้หญิง', 'เสื้อ', 'clothes'] },
-  { id: 'เสื้อ', name: 'เสื้อ', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['เสื้อ', 'shirt', 'top'] },
-  { id: 'เสื้ออก', name: 'เสื้ออก', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['เสื้ออก', 'outerwear'] },
-  { id: 'กางเกง', name: 'กางเกง', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['กางเกง', 'pants'] },
-  { id: 'กระโปรง', name: 'กระโปรง', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['กระโปรง', 'skirt'] },
-  { id: 'ชุดเดรส', name: 'ชุดเดรส', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['เดรส', 'dress', 'ชุดเดรส'] },
-  { id: 'เครื่องแต่งกาย', name: 'เครื่องแต่งกาย', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['เครื่องแต่งกาย', 'accessories'] },
-  { id: 'ชุดโม่ง', name: 'ชุดโม่ง', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['ชุดโม่ง'] },
-  { id: 'ชุดชั้นใน', name: 'ชุดชั้นใน', parentGroup: 'แฟชั่นผู้หญิง', parentColor: 'from-purple-500 to-pink-500', parentIcon: SparklesIcon, keywords: ['ชุดชั้นใน', 'underwear'] },
-  // แฟชั่นผู้ชาย
-  { id: 'รองเท้าผู้ชาย', name: 'รองเท้าผู้ชาย', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['รองเท้า', 'ผู้ชาย', 'shoes', 'men'] },
-  { id: 'แตะผู้ชาย', name: 'รองเท้าแตะ', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['รองเท้าแตะ', 'ผู้ชาย', 'แตะ'] },
-  { id: 'รองเท้าบูทชาย', name: 'รองเท้าบูท', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['บูท', 'ผู้ชาย', 'boots'] },
-  { id: 'เสื้อผ้าชาย', name: 'เสื้อผ้า', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['เสื้อผ้า', 'ผู้ชาย'] },
-  { id: 'เสื้อชาย', name: 'เสื้อ', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['เสื้อ', 'ผู้ชาย', 'โปโล'] },
-  { id: 'เสื้ออกชาย', name: 'เสื้ออก', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['เสื้ออก', 'ผู้ชาย'] },
-  { id: 'กางเกงชาย', name: 'กางเกง', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['กางเกง', 'ผู้ชาย'] },
-  { id: 'เครื่องแต่งกายชาย', name: 'เครื่องแต่งกาย', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['เครื่องแต่งกาย', 'ผู้ชาย'] },
-  { id: 'ชุดโม่งชาย', name: 'ชุดโม่ง', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['ชุดโม่ง', 'ผู้ชาย'] },
-  { id: 'ชุดชั้นในชาย', name: 'ชุดชั้นใน', parentGroup: 'แฟชั่นผู้ชาย', parentColor: 'from-indigo-500 to-purple-500', parentIcon: ShoppingBagIcon, keywords: ['ชุดชั้นใน', 'ผู้ชาย'] },
-  // กระเป๋า
-  { id: 'กระเป๋าสตางค์', name: 'กระเป๋าสตางค์', parentGroup: 'กระเป๋า', parentColor: 'from-amber-500 to-orange-600', parentIcon: ShoppingBagIcon, keywords: ['กระเป๋าสตางค์', 'wallet'] },
-  { id: 'กระเป๋าถือ', name: 'กระเป๋าถือ', parentGroup: 'กระเป๋า', parentColor: 'from-amber-500 to-orange-600', parentIcon: ShoppingBagIcon, keywords: ['กระเป๋าถือ', 'handbag'] },
-  { id: 'กระเป๋าเป้', name: 'กระเป๋าเป้', parentGroup: 'กระเป๋า', parentColor: 'from-amber-500 to-orange-600', parentIcon: ShoppingBagIcon, keywords: ['กระเป๋าเป้', 'backpack'] },
-  { id: 'กระเป๋านักเรียน', name: 'กระเป๋านักเรียน', parentGroup: 'กระเป๋า', parentColor: 'from-amber-500 to-orange-600', parentIcon: ShoppingBagIcon, keywords: ['กระเป๋านักเรียน', 'school bag'] },
-  { id: 'กระเป๋าเดินทาง', name: 'กระเป๋าเดินทาง', parentGroup: 'กระเป๋า', parentColor: 'from-amber-500 to-orange-600', parentIcon: ShoppingBagIcon, keywords: ['กระเป๋าเดินทาง', 'luggage'] },
-  { id: 'กระเป๋าสะพาย', name: 'กระเป๋าสะพาย', parentGroup: 'กระเป๋า', parentColor: 'from-amber-500 to-orange-600', parentIcon: ShoppingBagIcon, keywords: ['กระเป๋าสะพาย', 'crossbody'] },
-  { id: 'กระเป๋าคาดเอว', name: 'กระเป๋าคาดเอว', parentGroup: 'กระเป๋า', parentColor: 'from-amber-500 to-orange-600', parentIcon: ShoppingBagIcon, keywords: ['กระเป๋าคาดเอว', 'belt bag'] },
-  // อาหาร
-  { id: 'อาหารญี่ปุ่น', name: 'อาหารญี่ปุ่น', parentGroup: 'อาหาร', parentColor: 'from-pink-500 to-rose-500', parentIcon: CakeIcon, keywords: ['อาหารญี่ปุ่น', 'japanese', 'ซูชิ'] },
-  { id: 'อาหารไทย', name: 'อาหารไทย', parentGroup: 'อาหาร', parentColor: 'from-pink-500 to-rose-500', parentIcon: CakeIcon, keywords: ['อาหารไทย', 'thai'] },
-  { id: 'บุฟเฟ่ต์', name: 'บุฟเฟ่ต์', parentGroup: 'อาหาร', parentColor: 'from-pink-500 to-rose-500', parentIcon: CakeIcon, keywords: ['บุฟเฟ่ต์', 'buffet'] },
-  { id: 'ฟาสต์ฟู้ด', name: 'ฟาสต์ฟู้ด', parentGroup: 'อาหาร', parentColor: 'from-pink-500 to-rose-500', parentIcon: CakeIcon, keywords: ['ฟาสต์ฟู้ด', 'fastfood'] },
-  { id: 'อาหารทะเล', name: 'อาหารทะเล', parentGroup: 'อาหาร', parentColor: 'from-pink-500 to-rose-500', parentIcon: CakeIcon, keywords: ['อาหารทะเล', 'seafood'] },
-  // เครื่องดื่ม
-  { id: 'กาแฟ', name: 'กาแฟ', parentGroup: 'เครื่องดื่ม', parentColor: 'from-blue-500 to-cyan-500', parentIcon: BeakerIcon, keywords: ['กาแฟ', 'coffee'] },
-  { id: 'ชา', name: 'ชา', parentGroup: 'เครื่องดื่ม', parentColor: 'from-blue-500 to-cyan-500', parentIcon: BeakerIcon, keywords: ['ชา', 'tea'] },
-  { id: 'น้ำผลไม้', name: 'น้ำผลไม้', parentGroup: 'เครื่องดื่ม', parentColor: 'from-blue-500 to-cyan-500', parentIcon: BeakerIcon, keywords: ['น้ำผลไม้', 'juice'] },
-  { id: 'นม', name: 'นม', parentGroup: 'เครื่องดื่ม', parentColor: 'from-blue-500 to-cyan-500', parentIcon: BeakerIcon, keywords: ['นม', 'milk', 'โปรตีน'] },
-  // ท่องเที่ยว
-  { id: 'โรงแรม', name: 'โรงแรม', parentGroup: 'ท่องเที่ยว', parentColor: 'from-sky-500 to-blue-600', parentIcon: GlobeAltIcon, keywords: ['โรงแรม', 'hotel'] },
-  { id: 'ตั๋วเครื่องบิน', name: 'ตั๋วเครื่องบิน', parentGroup: 'ท่องเที่ยว', parentColor: 'from-sky-500 to-blue-600', parentIcon: GlobeAltIcon, keywords: ['ตั๋วเครื่องบิน', 'flight', 'เครื่องบิน'] },
-  { id: 'แพ็คเกจทัวร์', name: 'แพ็คเกจทัวร์', parentGroup: 'ท่องเที่ยว', parentColor: 'from-sky-500 to-blue-600', parentIcon: GlobeAltIcon, keywords: ['แพ็คเกจทัวร์', 'tour'] },
-  { id: 'รถเช่า', name: 'รถเช่า', parentGroup: 'ท่องเที่ยว', parentColor: 'from-sky-500 to-blue-600', parentIcon: GlobeAltIcon, keywords: ['รถเช่า', 'car rental'] },
-  // ความงาม
-  { id: 'เครื่องสำอาง', name: 'เครื่องสำอาง', parentGroup: 'ความงาม', parentColor: 'from-pink-500 to-fuchsia-500', parentIcon: HeartIcon, keywords: ['เครื่องสำอาง', 'cosmetics', 'makeup'] },
-  { id: 'ผลิตภัณฑ์ผิว', name: 'ผลิตภัณฑ์ผิว', parentGroup: 'ความงาม', parentColor: 'from-pink-500 to-fuchsia-500', parentIcon: HeartIcon, keywords: ['ผลิตภัณฑ์ผิว', 'skincare', 'ดูแลผิว'] },
-  { id: 'ผลิตภัณฑ์ผม', name: 'ผลิตภัณฑ์ผม', parentGroup: 'ความงาม', parentColor: 'from-pink-500 to-fuchsia-500', parentIcon: HeartIcon, keywords: ['ผลิตภัณฑ์ผม', 'haircare'] },
-  { id: 'สปา', name: 'สปา', parentGroup: 'ความงาม', parentColor: 'from-pink-500 to-fuchsia-500', parentIcon: HeartIcon, keywords: ['สปา', 'spa', 'นวด'] },
-  // สุขภาพ
-  { id: 'อาหารเสริม', name: 'อาหารเสริม', parentGroup: 'สุขภาพ', parentColor: 'from-green-500 to-emerald-500', parentIcon: ShieldCheckIcon, keywords: ['อาหารเสริม', 'supplement', 'วิตามิน'] },
-  { id: 'ฟิตเนส', name: 'ฟิตเนส', parentGroup: 'สุขภาพ', parentColor: 'from-green-500 to-emerald-500', parentIcon: ShieldCheckIcon, keywords: ['ฟิตเนส', 'fitness', 'gym'] },
-  { id: 'โยคะ', name: 'โยคะ', parentGroup: 'สุขภาพ', parentColor: 'from-green-500 to-emerald-500', parentIcon: ShieldCheckIcon, keywords: ['โยคะ', 'yoga'] },
-];
-
-const GROUP_CATEGORY_MAP: Record<string, string[]> = {
-  'แฟชั่นผู้หญิง': ['แฟชั่นผู้หญิง', 'รองเท้า', 'เครื่องประดับ'],
-  'แฟชั่นผู้ชาย': ['แฟชั่นผู้ชาย', 'รองเท้า'],
-  'กระเป๋า': ['กระเป๋า'],
-  'อาหาร': ['อาหาร', 'ร้านอาหาร'],
-  'เครื่องดื่ม': ['เครื่องดื่ม'],
-  'ท่องเที่ยว': ['ท่องเที่ยว', 'โรงแรม'],
-  'ความงาม': ['ความงาม', 'เครื่องสำอาง', 'สปา'],
-  'สุขภาพ': ['สุขภาพ', 'ฟิตเนส'],
-};
-
 type SortMode = 'relevance' | 'discount' | 'price-low' | 'price-high';
 
-function matchProduct(product: Product, meta: SubcategoryMeta): boolean {
-  const titleLower = product.title.toLowerCase();
-  const descLower = (product.description || '').toLowerCase();
-  const catLower = product.category.toLowerCase();
-  const tagsLower = (product.tags || []).map((t) => t.toLowerCase());
-
-  if (catLower === meta.id.toLowerCase()) return true;
-
-  for (const kw of meta.keywords) {
-    const kwLower = kw.toLowerCase();
-    if (titleLower.includes(kwLower)) return true;
-    if (descLower.includes(kwLower)) return true;
-    if (tagsLower.some((t) => t.includes(kwLower))) return true;
-  }
-
-  return false;
-}
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: 'relevance', label: 'แนะนำ' },
+  { value: 'discount', label: 'ลดมากสุด' },
+  { value: 'price-low', label: 'ราคาต่ำ → สูง' },
+  { value: 'price-high', label: 'ราคาสูง → ต่ำ' },
+];
 
 export default function SubcategoryDetailPage() {
   const params = useParams<{ subcatId: string }>();
@@ -130,51 +49,59 @@ export default function SubcategoryDetailPage() {
   const subcatId = decodeURIComponent(params.subcatId || '');
   const groupParam = searchParams.get('group') || '';
 
-  const { products } = useAppStore();
-
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('relevance');
   const [showSortMenu, setShowSortMenu] = useState(false);
 
-  const subcatMeta = useMemo(() => {
-    const direct = ALL_SUBCATEGORIES.find((s) => s.id === subcatId);
-    if (direct) return direct;
+  // ── API-Ready State ──
+  const [subcatMeta, setSubcatMeta] = useState<SubcategoryMeta>({
+    id: subcatId,
+    name: subcatId,
+    parentGroup: groupParam || subcatId,
+    parentColor: 'from-red-500 to-pink-500',
+    parentIcon: ShoppingBagIcon,
+    keywords: [subcatId],
+  });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    const groupCategories = GROUP_CATEGORY_MAP[subcatId];
-    if (groupCategories) {
-      return {
-        id: subcatId,
-        name: subcatId,
-        parentGroup: subcatId,
-        parentColor: ALL_SUBCATEGORIES.find((s) => s.parentGroup === subcatId)?.parentColor || 'from-gray-500 to-gray-700',
-        parentIcon: ALL_SUBCATEGORIES.find((s) => s.parentGroup === subcatId)?.parentIcon || ShoppingBagIcon,
-        keywords: groupCategories,
-      } as SubcategoryMeta;
-    }
-
-    return {
-      id: subcatId,
-      name: subcatId,
-      parentGroup: groupParam || subcatId,
-      parentColor: 'from-red-500 to-pink-500',
-      parentIcon: ShoppingBagIcon,
-      keywords: [subcatId],
-    } as SubcategoryMeta;
+  // TODO: Replace with API call → GET /api/categories/subcategory/:subcatId
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // const res = await fetch(`/api/categories/subcategory/${encodeURIComponent(subcatId)}?group=${encodeURIComponent(groupParam)}`);
+        // const data = await res.json();
+        // setSubcatMeta(data.meta);
+        // setProducts(data.products);
+        // setRelatedProducts(data.relatedProducts);
+        await new Promise(r => setTimeout(r, 400));
+        setSubcatMeta({
+          id: subcatId,
+          name: subcatId,
+          parentGroup: groupParam || subcatId,
+          parentColor: 'from-red-500 to-pink-500',
+          parentIcon: ShoppingBagIcon,
+          keywords: [subcatId],
+        });
+        setProducts([]);
+        setRelatedProducts([]);
+      } catch {
+        setProducts([]);
+        setRelatedProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, [subcatId, groupParam]);
 
   const Icon = subcatMeta.parentIcon;
 
+  // Client-side filtering (search + sort) on fetched products
   const filteredProducts = useMemo(() => {
-    let items: Product[];
-
-    const groupCategories = GROUP_CATEGORY_MAP[subcatId];
-    if (groupCategories && !ALL_SUBCATEGORIES.find((s) => s.id === subcatId)) {
-      items = products.filter((p) =>
-        groupCategories.some((cat) => p.category.includes(cat) || cat.includes(p.category))
-      );
-    } else {
-      items = products.filter((p) => matchProduct(p, subcatMeta));
-    }
+    let items = [...products];
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -187,33 +114,53 @@ export default function SubcategoryDetailPage() {
     }
 
     if (sortMode === 'discount') {
-      items = [...items].sort((a, b) => (b.discount || 0) - (a.discount || 0));
+      items.sort((a, b) => (b.discount || 0) - (a.discount || 0));
     } else if (sortMode === 'price-low') {
-      items = [...items].sort((a, b) => a.price - b.price);
+      items.sort((a, b) => a.price - b.price);
     } else if (sortMode === 'price-high') {
-      items = [...items].sort((a, b) => b.price - a.price);
+      items.sort((a, b) => b.price - a.price);
     }
 
     return items;
-  }, [products, subcatId, subcatMeta, searchQuery, sortMode]);
+  }, [products, searchQuery, sortMode]);
 
-  const relatedProducts = useMemo(() => {
-    const groupCategories = GROUP_CATEGORY_MAP[subcatMeta.parentGroup] || [];
-    return products
-      .filter(
-        (p) =>
-          groupCategories.some((cat) => p.category.includes(cat) || cat.includes(p.category)) &&
-          !filteredProducts.some((fp) => fp.id === p.id)
-      )
-      .slice(0, 6);
-  }, [products, subcatMeta.parentGroup, filteredProducts]);
-
-  const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-    { value: 'relevance', label: 'แนะนำ' },
-    { value: 'discount', label: 'ลดมากสุด' },
-    { value: 'price-low', label: 'ราคาต่ำ → สูง' },
-    { value: 'price-high', label: 'ราคาสูง → ต่ำ' },
-  ];
+  // ── Loading Skeleton ──
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <div className={`bg-gradient-to-r ${subcatMeta.parentColor} text-white relative z-10 shadow-lg`}>
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-white/20 rounded-lg animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 w-32 bg-white/30 rounded animate-pulse" />
+                <div className="h-3 w-20 bg-white/20 rounded animate-pulse" />
+              </div>
+              <div className="h-7 w-20 bg-white/20 rounded-full animate-pulse" />
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex gap-3 mb-6">
+            <div className="flex-1 h-11 bg-gray-200 rounded-xl animate-pulse" />
+            <div className="w-24 h-11 bg-gray-200 rounded-xl animate-pulse" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
+                <div className="aspect-square bg-gray-200" />
+                <div className="p-3 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-5 bg-gray-200 rounded w-1/2" />
+                  <div className="h-3 bg-gray-200 rounded w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -315,13 +262,13 @@ export default function SubcategoryDetailPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
             <div className="max-w-md mx-auto">
               <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <MagnifyingGlassIcon className="w-10 h-10 text-gray-400" />
+                <ShoppingBagIcon className="w-10 h-10 text-gray-400" />
               </div>
               <h2 className="text-lg font-bold text-gray-900 mb-2">
                 ยังไม่มีสินค้าใน &quot;{subcatMeta.name}&quot;
               </h2>
               <p className="text-gray-500 mb-6 text-sm">
-                สินค้าในหมวดย่อยนี้จะเพิ่มเข้ามาเร็วๆ นี้
+                ข้อมูลสินค้าจะแสดงเมื่อเชื่อมต่อ API
               </p>
               <Link
                 href="/categories"

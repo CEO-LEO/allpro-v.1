@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,23 +15,12 @@ import {
   BeakerIcon,
   ShieldCheckIcon,
   BuildingStorefrontIcon,
-  PaperAirplaneIcon,
-  TruckIcon,
-  HomeIcon,
-  CurrencyDollarIcon,
-  ScissorsIcon,
-  ClipboardDocumentListIcon,
-  ComputerDesktopIcon,
-  MusicalNoteIcon,
-  CameraIcon,
-  WrenchScrewdriverIcon,
   FireIcon,
   TagIcon,
 } from '@heroicons/react/24/outline';
-import { getPromotions } from '@/lib/getPromotions';
 
 // ============================================
-// CATEGORY META (route → display info)
+// CATEGORY META (route → display info) — lightweight, keep client-side
 // ============================================
 const CATEGORY_META = {
   all: { label: 'ทั้งหมด', labelEn: 'All', color: 'from-red-600 to-pink-600', icon: ShoppingBagIcon },
@@ -45,8 +34,14 @@ const CATEGORY_META = {
 type CategoryKey = keyof typeof CATEGORY_META;
 
 // ============================================
-// SUBCATEGORY GROUPS per main category
+// INTERFACES — expected API response shape
 // ============================================
+// TODO: API Response → GET /api/categories/:categoryKey
+// {
+//   categoryGroups: CategoryGroup[],
+//   brands: Brand[],
+// }
+
 interface SubcategoryItem {
   id: string;
   name: string;
@@ -61,205 +56,6 @@ interface CategoryGroup {
   subcategories: SubcategoryItem[];
 }
 
-const ALL_CATEGORY_GROUPS: Record<string, CategoryGroup[]> = {
-  Fashion: [
-    {
-      id: 'แฟชั่นผู้หญิง',
-      name: 'แฟชั่นผู้หญิง',
-      icon: SparklesIcon,
-      color: 'from-purple-500 to-pink-500',
-      subcategories: [
-        { id: 'รองเท้าผู้หญิง', name: 'รองเท้าผู้หญิง', icon: ShoppingBagIcon },
-        { id: 'รองเท้าแตะ', name: 'รองเท้าแตะ', icon: ShoppingBagIcon },
-        { id: 'รองเท้าบูท', name: 'รองเท้าบูท', icon: ShoppingBagIcon },
-        { id: 'เสื้อผ้าผู้หญิง', name: 'เสื้อผ้า', icon: SparklesIcon },
-        { id: 'เสื้อ', name: 'เสื้อ', icon: SparklesIcon },
-        { id: 'เสื้ออก', name: 'เสื้ออก', icon: ShoppingBagIcon },
-        { id: 'กางเกง', name: 'กางเกง', icon: ShoppingBagIcon },
-        { id: 'กระโปรง', name: 'กระโปรง', icon: SparklesIcon },
-        { id: 'ชุดเดรส', name: 'ชุดเดรส', icon: SparklesIcon },
-        { id: 'เครื่องแต่งกาย', name: 'เครื่องแต่งกาย', icon: ShoppingBagIcon },
-        { id: 'ชุดโม่ง', name: 'ชุดโม่ง', icon: ShoppingBagIcon },
-        { id: 'ชุดชั้นใน', name: 'ชุดชั้นใน', icon: HeartIcon },
-      ],
-    },
-    {
-      id: 'แฟชั่นผู้ชาย',
-      name: 'แฟชั่นผู้ชาย',
-      icon: ShoppingBagIcon,
-      color: 'from-indigo-500 to-purple-500',
-      subcategories: [
-        { id: 'รองเท้าผู้ชาย', name: 'รองเท้าผู้ชาย', icon: ShoppingBagIcon },
-        { id: 'แตะผู้ชาย', name: 'รองเท้าแตะ', icon: ShoppingBagIcon },
-        { id: 'รองเท้าบูทชาย', name: 'รองเท้าบูท', icon: ShoppingBagIcon },
-        { id: 'เสื้อผ้าชาย', name: 'เสื้อผ้า', icon: ShoppingBagIcon },
-        { id: 'เสื้อชาย', name: 'เสื้อ', icon: ShoppingBagIcon },
-        { id: 'เสื้ออกชาย', name: 'เสื้ออก', icon: ShoppingBagIcon },
-        { id: 'กางเกงชาย', name: 'กางเกง', icon: ShoppingBagIcon },
-        { id: 'เครื่องแต่งกายชาย', name: 'เครื่องแต่งกาย', icon: ShoppingBagIcon },
-        { id: 'ชุดโม่งชาย', name: 'ชุดโม่ง', icon: ShoppingBagIcon },
-        { id: 'ชุดชั้นในชาย', name: 'ชุดชั้นใน', icon: ShoppingBagIcon },
-      ],
-    },
-    {
-      id: 'กระเป๋า',
-      name: 'กระเป๋า',
-      icon: ShoppingBagIcon,
-      color: 'from-amber-500 to-orange-600',
-      subcategories: [
-        { id: 'กระเป๋าสตางค์', name: 'กระเป๋าสตางค์', icon: CurrencyDollarIcon },
-        { id: 'กระเป๋าถือ', name: 'กระเป๋าถือ', icon: ShoppingBagIcon },
-        { id: 'กระเป๋าเป้', name: 'กระเป๋าเป้', icon: ShoppingBagIcon },
-        { id: 'กระเป๋านักเรียน', name: 'กระเป๋านักเรียน', icon: ShoppingBagIcon },
-        { id: 'กระเป๋าเดินทาง', name: 'กระเป๋าเดินทาง', icon: TruckIcon },
-        { id: 'กระเป๋าสะพาย', name: 'กระเป๋าสะพาย', icon: ShoppingBagIcon },
-        { id: 'กระเป๋าคาดเอว', name: 'กระเป๋าคาดเอว', icon: ShoppingBagIcon },
-      ],
-    },
-  ],
-  Food: [
-    {
-      id: 'อาหาร',
-      name: 'อาหาร',
-      icon: CakeIcon,
-      color: 'from-pink-500 to-rose-500',
-      subcategories: [
-        { id: 'อาหารญี่ปุ่น', name: 'อาหารญี่ปุ่น', icon: CakeIcon },
-        { id: 'อาหารไทย', name: 'อาหารไทย', icon: CakeIcon },
-        { id: 'บุฟเฟ่ต์', name: 'บุฟเฟ่ต์', icon: ClipboardDocumentListIcon },
-        { id: 'ฟาสต์ฟู้ด', name: 'ฟาสต์ฟู้ด', icon: CakeIcon },
-        { id: 'อาหารทะเล', name: 'อาหารทะเล', icon: CakeIcon },
-        { id: 'อาหารอิตาเลียน', name: 'อาหารอิตาเลียน', icon: CakeIcon },
-        { id: 'สตรีทฟู้ด', name: 'สตรีทฟู้ด', icon: BuildingStorefrontIcon },
-      ],
-    },
-    {
-      id: 'เครื่องดื่ม',
-      name: 'เครื่องดื่ม',
-      icon: BeakerIcon,
-      color: 'from-blue-500 to-cyan-500',
-      subcategories: [
-        { id: 'กาแฟ', name: 'กาแฟ', icon: BeakerIcon },
-        { id: 'ชา', name: 'ชา', icon: BeakerIcon },
-        { id: 'น้ำผลไม้', name: 'น้ำผลไม้', icon: BeakerIcon },
-        { id: 'นม', name: 'นม', icon: BeakerIcon },
-        { id: 'สมูทตี้', name: 'สมูทตี้', icon: BeakerIcon },
-      ],
-    },
-    {
-      id: 'ขนมและเบเกอรี่',
-      name: 'ขนมและเบเกอรี่',
-      icon: CakeIcon,
-      color: 'from-amber-400 to-orange-500',
-      subcategories: [
-        { id: 'เค้ก', name: 'เค้ก', icon: CakeIcon },
-        { id: 'คุกกี้', name: 'คุกกี้', icon: CakeIcon },
-        { id: 'ขนมไทย', name: 'ขนมไทย', icon: CakeIcon },
-        { id: 'ไอศกรีม', name: 'ไอศกรีม', icon: CakeIcon },
-      ],
-    },
-  ],
-  Travel: [
-    {
-      id: 'ท่องเที่ยว',
-      name: 'ท่องเที่ยว',
-      icon: GlobeAltIcon,
-      color: 'from-sky-500 to-blue-600',
-      subcategories: [
-        { id: 'โรงแรม', name: 'โรงแรม', icon: BuildingStorefrontIcon },
-        { id: 'ตั๋วเครื่องบิน', name: 'ตั๋วเครื่องบิน', icon: PaperAirplaneIcon },
-        { id: 'แพ็คเกจทัวร์', name: 'แพ็คเกจทัวร์', icon: GlobeAltIcon },
-        { id: 'รถเช่า', name: 'รถเช่า', icon: TruckIcon },
-        { id: 'ประกันเดินทาง', name: 'ประกันเดินทาง', icon: ShieldCheckIcon },
-      ],
-    },
-    {
-      id: 'กิจกรรมท่องเที่ยว',
-      name: 'กิจกรรมท่องเที่ยว',
-      icon: GlobeAltIcon,
-      color: 'from-teal-500 to-green-500',
-      subcategories: [
-        { id: 'สวนสนุก', name: 'สวนสนุก', icon: SparklesIcon },
-        { id: 'ดำน้ำ', name: 'ดำน้ำ', icon: GlobeAltIcon },
-        { id: 'ปีนเขา', name: 'ปีนเขา', icon: GlobeAltIcon },
-        { id: 'ล่องเรือ', name: 'ล่องเรือ', icon: PaperAirplaneIcon },
-        { id: 'แคมป์ปิ้ง', name: 'แคมป์ปิ้ง', icon: HomeIcon },
-      ],
-    },
-  ],
-  Gadget: [
-    {
-      id: 'มือถือและแท็บเล็ต',
-      name: 'มือถือและแท็บเล็ต',
-      icon: DevicePhoneMobileIcon,
-      color: 'from-indigo-500 to-blue-600',
-      subcategories: [
-        { id: 'มือถือ', name: 'มือถือ', icon: DevicePhoneMobileIcon },
-        { id: 'แท็บเล็ต', name: 'แท็บเล็ต', icon: DevicePhoneMobileIcon },
-        { id: 'เคสมือถือ', name: 'เคสมือถือ', icon: ShieldCheckIcon },
-        { id: 'สายชาร์จ', name: 'สายชาร์จ', icon: WrenchScrewdriverIcon },
-        { id: 'หูฟัง', name: 'หูฟัง', icon: MusicalNoteIcon },
-      ],
-    },
-    {
-      id: 'คอมพิวเตอร์',
-      name: 'คอมพิวเตอร์',
-      icon: ComputerDesktopIcon,
-      color: 'from-gray-700 to-gray-900',
-      subcategories: [
-        { id: 'โน้ตบุ๊ก', name: 'โน้ตบุ๊ก', icon: ComputerDesktopIcon },
-        { id: 'เดสก์ท็อป', name: 'เดสก์ท็อป', icon: ComputerDesktopIcon },
-        { id: 'จอมอนิเตอร์', name: 'จอมอนิเตอร์', icon: ComputerDesktopIcon },
-        { id: 'คีย์บอร์ด', name: 'คีย์บอร์ด', icon: WrenchScrewdriverIcon },
-        { id: 'เมาส์', name: 'เมาส์', icon: WrenchScrewdriverIcon },
-      ],
-    },
-    {
-      id: 'กล้องและอุปกรณ์',
-      name: 'กล้องและอุปกรณ์',
-      icon: CameraIcon,
-      color: 'from-orange-500 to-red-500',
-      subcategories: [
-        { id: 'กล้อง DSLR', name: 'กล้อง DSLR', icon: CameraIcon },
-        { id: 'กล้อง Mirrorless', name: 'กล้อง Mirrorless', icon: CameraIcon },
-        { id: 'เลนส์', name: 'เลนส์', icon: CameraIcon },
-        { id: 'ขาตั้งกล้อง', name: 'ขาตั้งกล้อง', icon: WrenchScrewdriverIcon },
-        { id: 'โดรน', name: 'โดรน', icon: PaperAirplaneIcon },
-      ],
-    },
-  ],
-  Beauty: [
-    {
-      id: 'ความงาม',
-      name: 'ความงาม',
-      icon: HeartIcon,
-      color: 'from-pink-500 to-fuchsia-500',
-      subcategories: [
-        { id: 'เครื่องสำอาง', name: 'เครื่องสำอาง', icon: SparklesIcon },
-        { id: 'ผลิตภัณฑ์ผิว', name: 'ผลิตภัณฑ์ผิว', icon: HeartIcon },
-        { id: 'ผลิตภัณฑ์ผม', name: 'ผลิตภัณฑ์ผม', icon: ScissorsIcon },
-        { id: 'สปา', name: 'สปา', icon: HomeIcon },
-        { id: 'น้ำหอม', name: 'น้ำหอม', icon: SparklesIcon },
-      ],
-    },
-    {
-      id: 'สุขภาพ',
-      name: 'สุขภาพ',
-      icon: ShieldCheckIcon,
-      color: 'from-green-500 to-emerald-500',
-      subcategories: [
-        { id: 'อาหารเสริม', name: 'อาหารเสริม', icon: ShieldCheckIcon },
-        { id: 'ฟิตเนส', name: 'ฟิตเนส', icon: ShieldCheckIcon },
-        { id: 'โยคะ', name: 'โยคะ', icon: ShieldCheckIcon },
-        { id: 'วิตามิน', name: 'วิตามิน', icon: ShieldCheckIcon },
-      ],
-    },
-  ],
-};
-
-// ============================================
-// BRAND DATA
-// ============================================
 type BrandCategory = 'แฟชั่น' | 'อาหาร' | 'เครื่องดื่ม' | 'อิเล็กทรอนิกส์' | 'ความงาม' | 'ซูเปอร์มาร์เก็ต' | 'ท่องเที่ยว' | 'สุขภาพ';
 
 interface Brand {
@@ -284,9 +80,6 @@ const BRAND_CATEGORIES: { id: BrandCategory; label: string; icon: React.Componen
   { id: 'ท่องเที่ยว', label: 'ท่องเที่ยว', icon: GlobeAltIcon },
   { id: 'สุขภาพ', label: 'สุขภาพ', icon: ShieldCheckIcon },
 ];
-
-// TODO: Replace with API call -> GET /api/brands
-const BRANDS: Brand[] = [];
 
 // Map route category to brand categories for filtering
 const CATEGORY_TO_BRAND: Record<string, BrandCategory[]> = {
@@ -322,27 +115,42 @@ export default function CategoryDetailPage() {
   const [selectedTab, setSelectedTab] = useState('สินค้า');
   const [brandFilter, setBrandFilter] = useState<BrandCategory | 'ทั้งหมด'>('ทั้งหมด');
 
-  // Get promotions count for the badge
-  const promotions = useMemo(() => {
-    const items = getPromotions();
-    if (activeCategory === 'all') return items;
-    return items.filter((p) => p.category === activeCategory);
-  }, [activeCategory]);
+  // ── API-Ready State ──
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [itemCount, setItemCount] = useState(0);
 
-  // Get category groups for current route
-  const categoryGroups = useMemo(() => {
-    if (activeCategory === 'all') {
-      return Object.values(ALL_CATEGORY_GROUPS).flat();
-    }
-    return ALL_CATEGORY_GROUPS[activeCategory] || [];
+  // TODO: Replace with API call → GET /api/categories/:activeCategory
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // const res = await fetch(`/api/categories/${activeCategory}`);
+        // const data = await res.json();
+        // setCategoryGroups(data.categoryGroups);
+        // setBrands(data.brands);
+        // setItemCount(data.totalItems ?? 0);
+        await new Promise(r => setTimeout(r, 500));
+        setCategoryGroups([]);
+        setBrands([]);
+        setItemCount(0);
+      } catch {
+        setCategoryGroups([]);
+        setBrands([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, [activeCategory]);
 
   // Filter brands for current category
   const relevantBrandCategories = CATEGORY_TO_BRAND[activeCategory] || [];
 
   const allRelevantBrands = useMemo(
-    () => BRANDS.filter((b) => relevantBrandCategories.includes(b.category)),
-    [activeCategory]
+    () => brands.filter((b) => relevantBrandCategories.includes(b.category)),
+    [brands, activeCategory]
   );
 
   const filteredBrands = useMemo(() => {
@@ -366,6 +174,41 @@ export default function CategoryDetailPage() {
     router.push(`/category/${encodeURIComponent(key === 'all' ? 'all' : key)}`);
   };
 
+  // ── Loading Skeleton ──
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <div className={`bg-gradient-to-r ${categoryMeta.color} text-white relative z-10`}>
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-white/20 rounded-lg animate-pulse" />
+              <div className="h-6 w-20 bg-white/30 rounded animate-pulse flex-1" />
+              <div className="h-7 w-20 bg-white/20 rounded-full animate-pulse" />
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
+          {Array.from({ length: 3 }).map((_, gi) => (
+            <div key={gi}>
+              <div className="flex items-center gap-3 mb-5 px-2">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
+                <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white border border-gray-200 animate-pulse">
+                    <div className="w-14 h-14 bg-gray-200 rounded-lg" />
+                    <div className="h-3 w-12 bg-gray-200 rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Red Header */}
@@ -377,7 +220,7 @@ export default function CategoryDetailPage() {
             </Link>
             <h1 className="text-xl font-bold flex-1">All Pro</h1>
             <span className="bg-white/20 text-sm px-3 py-1 rounded-full font-medium">
-              {promotions.length} รายการ
+              {itemCount} รายการ
             </span>
           </div>
         </div>
@@ -512,8 +355,13 @@ export default function CategoryDetailPage() {
                   );
                 })
               ) : (
-                <div className="text-center py-20">
-                  <p className="text-gray-500">ไม่พบหมวดหมู่ย่อย</p>
+                /* Empty State — สินค้า */
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ShoppingBagIcon className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีสินค้า/โปรโมชั่นในหมวดหมู่นี้</h3>
+                  <p className="text-sm text-gray-500">ข้อมูลหมวดหมู่จะแสดงเมื่อเชื่อมต่อ API</p>
                 </div>
               )}
             </motion.div>
@@ -604,44 +452,57 @@ export default function CategoryDetailPage() {
 
               {/* All Brands Grid */}
               <div className="mb-8">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">
-                  {brandFilter === 'ทั้งหมด' ? 'แบรนด์ทั้งหมด' : `แบรนด์ — ${brandFilter}`}
-                  <span className="text-sm text-gray-400 font-normal ml-2">({filteredBrands.length})</span>
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {filteredBrands.map((brand, index) => (
-                    <motion.div
-                      key={brand.id}
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      layout
-                    >
-                      <Link
-                        href={`/search?brand=${brand.id}`}
-                        className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white border border-gray-200 hover:border-red-300 hover:shadow-lg transition-all group relative"
-                      >
-                        <div className={`w-14 h-14 rounded-xl ${brand.color} flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all overflow-hidden`}>
-                          <img src={brand.logo} alt={brand.name} className="w-10 h-10 object-contain rounded-md" onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.name)}&background=EF4444&color=fff&size=128`; }} />
-                        </div>
-                        <div className="text-center w-full">
-                          <p className="text-sm font-semibold text-gray-800 group-hover:text-red-600 transition-colors truncate">{brand.name}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{brand.category}</p>
-                          {brand.discount && (
-                            <div className="mt-1.5 bg-red-50 text-red-600 text-[11px] font-semibold py-1 px-2 rounded-full inline-block">{brand.discount}</div>
-                          )}
-                          <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                            <StarIcon className="w-3 h-3 text-yellow-400" />
-                            <span className="text-xs text-gray-500">{brand.rating}</span>
-                            <span className="text-xs text-gray-300">|</span>
-                            <span className="text-xs text-gray-500">{brand.promoCount} โปร</span>
-                          </div>
-                        </div>
-                        {brand.isHot && <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
+                {filteredBrands.length > 0 ? (
+                  <>
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">
+                      {brandFilter === 'ทั้งหมด' ? 'แบรนด์ทั้งหมด' : `แบรนด์ — ${brandFilter}`}
+                      <span className="text-sm text-gray-400 font-normal ml-2">({filteredBrands.length})</span>
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                      {filteredBrands.map((brand, index) => (
+                        <motion.div
+                          key={brand.id}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.02 }}
+                          layout
+                        >
+                          <Link
+                            href={`/search?brand=${brand.id}`}
+                            className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white border border-gray-200 hover:border-red-300 hover:shadow-lg transition-all group relative"
+                          >
+                            <div className={`w-14 h-14 rounded-xl ${brand.color} flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all overflow-hidden`}>
+                              <img src={brand.logo} alt={brand.name} className="w-10 h-10 object-contain rounded-md" onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.name)}&background=EF4444&color=fff&size=128`; }} />
+                            </div>
+                            <div className="text-center w-full">
+                              <p className="text-sm font-semibold text-gray-800 group-hover:text-red-600 transition-colors truncate">{brand.name}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{brand.category}</p>
+                              {brand.discount && (
+                                <div className="mt-1.5 bg-red-50 text-red-600 text-[11px] font-semibold py-1 px-2 rounded-full inline-block">{brand.discount}</div>
+                              )}
+                              <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                                <StarIcon className="w-3 h-3 text-yellow-400" />
+                                <span className="text-xs text-gray-500">{brand.rating}</span>
+                                <span className="text-xs text-gray-300">|</span>
+                                <span className="text-xs text-gray-500">{brand.promoCount} โปร</span>
+                              </div>
+                            </div>
+                            {brand.isHot && <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  /* Empty State — แบรนด์ */
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <TagIcon className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีข้อมูลแบรนด์</h3>
+                    <p className="text-sm text-gray-500">ข้อมูลจะแสดงเมื่อเชื่อมต่อ API</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
