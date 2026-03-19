@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowLeftIcon, FunnelIcon } from '@heroicons/react/24/solid';
 import { Search } from 'lucide-react';
 import PromoCard from '@/components/PromoCard';
+import ShopSearchBar from '@/components/Common/ShopSearchBar';
 import { getPromotions } from '@/lib/getPromotions';
 import { Promotion } from '@/lib/types';
 
@@ -240,6 +241,14 @@ export default function SearchPage() {
             )}
           </AnimatePresence>
         </div>
+      </div>
+
+      {/* ── Shop Search Section ── */}
+      <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
+        <div className="flex items-center gap-3 mb-3">
+          <p className="text-sm font-medium text-gray-700">ค้นหาร้านค้า</p>
+        </div>
+        <ShopSearchBar />
       </div>
 
       {/* ── Results ── */}

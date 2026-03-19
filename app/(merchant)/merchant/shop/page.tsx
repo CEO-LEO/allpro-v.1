@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
 import { useState, useEffect } from 'react';
+import EditShopModal from '@/components/Merchant/EditShopModal';
 
 /**
  * Shop Data — คาดหวัง data structure จาก API:
@@ -31,6 +32,7 @@ export default function MerchantShopPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shopStats, setShopStats] = useState<ShopStats | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     const fetchShopData = async () => {
@@ -151,12 +153,18 @@ export default function MerchantShopPage() {
                   <span className="text-gray-500">Member since {new Date(user?.createdAt || Date.now()).getFullYear()}</span>
                 </p>
                 <div className="flex gap-3">
-                  <button className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium shadow-sm">
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium shadow-sm"
+                  >
                     Edit Shop Info
                   </button>
-                  <button className="px-6 py-2.5 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium border border-gray-200">
+                  <Link
+                    href={`/shop/${encodeURIComponent(user?.shopName || '')}`}
+                    className="px-6 py-2.5 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium border border-gray-200 inline-flex items-center"
+                  >
                     View Public Page
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -197,6 +205,9 @@ export default function MerchantShopPage() {
         </div>
         )}
       </div>
+
+      {/* Edit Shop Modal */}
+      <EditShopModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} />
     </div>
   );
 }
