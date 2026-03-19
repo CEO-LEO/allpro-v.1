@@ -14,6 +14,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useProductStore } from '@/store/useProductStore';
 
 interface PromoCardProps {
   promo: Promotion;
@@ -32,22 +34,21 @@ const getIconByCategory = (category: string) => {
 };
 
 export default function PromoCard({ promo }: PromoCardProps) {
-  // Mock auth - สามารถแทนที่ด้วย AuthContext จริงได้ในอนาคต
-  const [isFav, setIsFav] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+  const { savedProductIds, toggleSave } = useProductStore();
+  const isFav = savedProductIds.includes(promo.id);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Mock: แสดงข้อความให้ login (สามารถเปลี่ยนเป็นเช็ค auth จริงได้)
-    const isAuthenticated = false;
     if (!isAuthenticated) {
       setShowLoginPrompt(true);
       setTimeout(() => setShowLoginPrompt(false), 3000);
       return;
     }
 
-    setIsFav(!isFav);
+    toggleSave(promo.id);
   };
   return (
     <Link href={`/promo/${promo.id}`}>

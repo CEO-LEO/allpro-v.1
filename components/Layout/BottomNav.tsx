@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Gift, Wallet, User, Heart } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useProductStore } from "@/store/useProductStore";
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { isAuthenticated } = useAppStore();
+  const { isAuthenticated } = useAuthStore();
+  const { setSelectedCategory } = useAppStore();
   const savedProductIds = useProductStore((state) => state.savedProductIds);
 
   // Don't show on merchant pages
@@ -22,6 +24,7 @@ export default function BottomNav() {
       icon: Home,
       href: '/',
       active: pathname === '/',
+      onClick: () => setSelectedCategory('All'),
     },
     {
       label: 'ที่บันทึก',
@@ -56,6 +59,7 @@ export default function BottomNav() {
             <Link
               key={item.label}
               href={item.href}
+              onClick={'onClick' in item && item.onClick ? item.onClick as () => void : undefined}
               className={`relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${
                 isActive
                   ? 'text-orange-500'

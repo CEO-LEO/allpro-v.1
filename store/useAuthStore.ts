@@ -32,7 +32,7 @@ interface AuthState {
   login: (user: User) => void;
   loginAsUser: () => void; // Quick login as customer
   loginAsMerchant: () => void; // Quick login as merchant
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   updateProfile: (updates: { name?: string; phone?: string }) => void;
   switchRole: (role: UserRole) => void; // For demo/testing
@@ -83,9 +83,13 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: true
       }),
       
-      logout: () => {
-        signOut(); // Sign out from Supabase (fire-and-forget)
+      logout: async () => {
         set({ user: null, isAuthenticated: false });
+        try {
+          await signOut();
+        } catch {
+          // Ignore signOut errors — state is already cleared
+        }
       },
       
       updateUser: (updates) => set((state) => ({

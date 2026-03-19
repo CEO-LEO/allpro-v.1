@@ -72,9 +72,10 @@ export default function Navbar() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
     setShowUserMenu(false);
+    await logout();
+    setSelectedCategory('All');
     router.push('/');
   };
 
@@ -90,7 +91,7 @@ export default function Navbar() {
           {/* Top Bar */}
           <div className="flex items-center justify-between h-12">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-1.5 flex-shrink-0">
+            <Link href="/" onClick={() => setSelectedCategory('All')} className="flex items-center gap-1.5 flex-shrink-0">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
                 <Package className="w-4 h-4 text-white" />
               </div>
@@ -117,6 +118,7 @@ export default function Navbar() {
             <div className="hidden lg:flex items-center gap-1 mr-2">
               <Link 
                 href="/" 
+                onClick={() => setSelectedCategory('All')}
                 className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 text-sm ${
                   pathname === '/' ? 'text-orange-600 font-semibold' : 'text-gray-600'
                 }`}
@@ -332,7 +334,10 @@ export default function Navbar() {
                   <Link
                     key={href}
                     href={href}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (href === '/') setSelectedCategory('All');
+                    }}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                       pathname === href ? 'text-orange-600 bg-orange-50 font-semibold' : 'text-gray-600 hover:bg-gray-50'
                     }`}

@@ -99,10 +99,12 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         if (result.error?.includes('ไม่ถูกต้อง')) {
           setShowAccountNotFound(true);
         }
+        setIsLoading(false);
         return;
       }
 
       // Login สำเร็จ → AuthListener จะ set user ให้อัตโนมัติผ่าน onAuthStateChange
+      setIsLoading(false);
       if (selectedRole === 'MERCHANT') {
         toast.success(`✅ ยินดีต้อนรับ ${result.user?.name}!`);
         handleClose();
@@ -113,7 +115,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       }
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
-    } finally {
       setIsLoading(false);
     }
   };
