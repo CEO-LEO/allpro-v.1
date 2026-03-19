@@ -59,6 +59,9 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     e.preventDefault();
     setError('');
 
+    // 🔍 DEBUG: ตรวจสอบค่า state ที่จับได้
+    console.log('🔍 Login attempt:', { email, password: password ? `[${password.length} chars]` : '(empty)', selectedRole });
+
     // Validation
     if (!email.trim()) {
       setError('กรุณากรอกอีเมล');
@@ -93,7 +96,9 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       }
 
       // ── Supabase Auth — Login จริง ──
+      console.log('🔐 Calling signIn with:', { email, passwordLength: password.length });
       const result = await signIn(email, password);
+      console.log('📦 signIn result:', { success: result.success, error: result.error, userName: result.user?.name });
 
       if (!result.success) {
         setError(result.error || 'เข้าสู่ระบบไม่สำเร็จ');
