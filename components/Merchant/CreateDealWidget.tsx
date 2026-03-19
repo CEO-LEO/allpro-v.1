@@ -175,7 +175,7 @@ export default function CreateDealWidget() {
         {/* Image Section */}
         <div className="bg-white rounded-2xl p-6 border border-blue-100">
           <label className="block text-sm font-bold text-slate-700 mb-4">
-            📸 รูปสินค้า
+            รูปสินค้า
           </label>
 
           <div className="flex gap-4 mb-4">
@@ -311,7 +311,7 @@ export default function CreateDealWidget() {
         <div className="grid grid-cols-1 gap-4">
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              🏷️ หมวดหมู่
+              หมวดหมู่
             </label>
             <select
               value={formData.category}
@@ -322,11 +322,11 @@ export default function CreateDealWidget() {
             >
               {CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
-                  {cat === 'Food' ? '🍔 อาหาร' :
-                   cat === 'Fashion' ? '👗 แฟชั่น' :
-                   cat === 'Travel' ? '✈️ ท่องเที่ยว' :
-                   cat === 'Gadget' ? '📱 แกดเจ็ต' :
-                   cat === 'Beauty' ? '💄 ความงาม' : cat}
+                  {cat === 'Food' ? 'อาหาร' :
+                   cat === 'Fashion' ? 'แฟชั่น' :
+                   cat === 'Travel' ? 'ท่องเที่ยว' :
+                   cat === 'Gadget' ? 'แกดเจ็ต' :
+                   cat === 'Beauty' ? 'ความงาม' : cat}
                 </option>
               ))}
             </select>
@@ -334,7 +334,7 @@ export default function CreateDealWidget() {
 
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              💳 ข้อมูลการชำระเงิน
+              ข้อมูลการชำระเงิน
             </label>
             <input
               type="text"
@@ -368,7 +368,7 @@ export default function CreateDealWidget() {
                 className="w-5 h-5 rounded accent-red-500"
               />
               <span className="text-sm font-medium text-slate-700">
-                Flash Sale ⚡
+                Flash Sale
               </span>
             </label>
             <p className="text-xs text-slate-500 mt-2">เพิ่มความดึงดูด</p>
@@ -381,7 +381,7 @@ export default function CreateDealWidget() {
           disabled={isLoading}
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
         >
-          {isLoading ? "⏳ กำลังโพสต์..." : "📤 ลงประกาศตอนนี้"}
+          {isLoading ? "กำลังโพสต์..." : "ลงประกาศตอนนี้"}
         </button>
       </form>
     </div>

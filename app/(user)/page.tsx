@@ -163,19 +163,19 @@ export default function Home() {
       {/* Debug Navigation */}
       <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-h4 text-orange-600">🔥 Pro Hunter</Link>
+          <Link href="/" className="text-h4 text-orange-600">Pro Hunter</Link>
           <div className="flex gap-2">
             <Link 
               href="/debug-promo"
               className="text-caption bg-yellow-200 text-yellow-800 px-3 py-1.5 rounded-full hover:bg-yellow-300 transition-colors font-medium"
             >
-              🔧 Debug Promo
+              Debug Promo
             </Link>
             <Link 
               href="/rewards"
               className="text-caption bg-purple-200 text-purple-800 px-3 py-1.5 rounded-full hover:bg-purple-300 transition-colors font-medium"
             >
-              🎁 Rewards
+              Rewards
             </Link>
           </div>
         </div>
@@ -403,7 +403,7 @@ export default function Home() {
               >
                 <div className="inline-block bg-gradient-to-r from-green-100 to-emerald-100 px-6 py-3 rounded-full">
                   <p className="text-green-800 font-bold">
-                    🎉 คุณดูครบทั้งหมดแล้ว!
+                    คุณดูครบทั้งหมดแล้ว!
                   </p>
                 </div>
               </motion.div>

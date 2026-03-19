@@ -103,11 +103,11 @@ function formatRelativeTime(isoDate: string): string {
   return `${Math.floor(diffDay / 30)} เดือน ที่แล้ว`;
 }
 
-const ACTIVITY_ICON_MAP: Record<ActivityType, string> = {
-  view: "👁️",
-  save: "❤️",
-  location: "📍",
-  search: "🔍",
+const ACTIVITY_ICON_MAP: Record<ActivityType, React.ReactNode> = {
+  view: <EyeIcon className="w-7 h-7 text-blue-500" />,
+  save: <CheckCircleIcon className="w-7 h-7 text-red-500" />,
+  location: <MapPinIcon className="w-7 h-7 text-green-500" />,
+  search: <SparklesIcon className="w-7 h-7 text-purple-500" />,
 };
 
 export default function MerchantDashboard() {
@@ -474,7 +474,7 @@ export default function MerchantDashboard() {
 
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-[#FF5722] to-[#FF7043] rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white mb-6 sm:mb-8">
-          <h2 className="text-lg sm:text-2xl font-bold mb-2">สวัสดี คุณเจ้าของร้าน! 👋</h2>
+          <h2 className="text-lg sm:text-2xl font-bold mb-2">สวัสดี คุณเจ้าของร้าน!</h2>
           <p className="text-sm sm:text-base text-white/90 mb-4">
             ยินดีต้อนรับสู่แดชบอร์ดที่จะช่วยให้คุณเข้าใจลูกค้าและเพิ่มยอดขายได้ดีขึ้น
           </p>
@@ -580,7 +580,7 @@ export default function MerchantDashboard() {
                 >
                   <p className="text-sm font-semibold text-gray-900 mb-1">{keyword.keyword}</p>
                   <p className="text-xs text-gray-600">
-                    🔥 {keyword.volume.toLocaleString()} searches
+                    {keyword.volume.toLocaleString()} searches
                   </p>
                   {idx < 3 && (
                     <span className="inline-block mt-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
@@ -592,7 +592,7 @@ export default function MerchantDashboard() {
             </div>
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-900">
-                💡 <strong>Insight:</strong> คนในย่าน{selectedLocation}กำลังค้นหา "นมโปรตีน" เพิ่มขึ้น 50% 
+                <strong>Insight:</strong> คนในย่าน{selectedLocation}กำลังค้นหา "นมโปรตีน" เพิ่มขึ้น 50% 
                 - ลองสร้างโปรโมชั่นที่เกี่ยวข้องเพื่อดึงดูดลูกค้า!
               </p>
             </div>
@@ -633,7 +633,7 @@ export default function MerchantDashboard() {
               >
                 {pkg.popular && (
                   <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-center py-2 text-sm font-semibold">
-                    🌟 ยอดนิยม
+                    ยอดนิยม
                   </div>
                 )}
                 <div className={`bg-gradient-to-r ${pkg.color} p-6 text-white`}>
@@ -667,8 +667,8 @@ export default function MerchantDashboard() {
 
           {selectedPackage && (
             <div className="mt-6 card p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200">
-              <p className="text-lg font-bold text-green-900 mb-2">
-                ✅ คุณได้เลือกแพ็กเกจ {seoPackages.find(p => p.id === selectedPackage)?.name}
+              <p className="text-lg font-bold text-green-900 mb-2 flex items-center gap-2">
+                <CheckCircleIcon className="w-6 h-6 text-green-600" /> คุณได้เลือกแพ็กเกจ {seoPackages.find(p => p.id === selectedPackage)?.name}
               </p>
               <p className="text-sm text-green-700 mb-4">
                 กดปุ่มด้านล่างเพื่อชำระเงินและเปิดใช้งาน SEO Ranking ทันที
@@ -682,11 +682,14 @@ export default function MerchantDashboard() {
 
         {/* Activity Log */}
         <div className="mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">📊 Activity Log - กิจกรรมล่าสุด</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <ChartBarIcon className="w-6 h-6 text-[#FF5722]" />
+            Activity Log - กิจกรรมล่าสุด
+          </h3>
 
           {activityData.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
-              <p className="text-2xl font-semibold text-gray-900 mb-2">📭 ยังไม่มีกิจกรรมล่าสุด</p>
+              <p className="text-2xl font-semibold text-gray-900 mb-2">ยังไม่มีกิจกรรมล่าสุด</p>
               <p className="text-sm text-gray-500">กิจกรรมและการเคลื่อนไหวของร้านค้าจะแสดงที่นี่</p>
             </div>
           ) : (
@@ -694,7 +697,7 @@ export default function MerchantDashboard() {
               {activityData.map((activity) => (
                 <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start gap-4">
-                    <span className="text-3xl">{ACTIVITY_ICON_MAP[activity.type]}</span>
+                    <span className="flex-shrink-0">{ACTIVITY_ICON_MAP[activity.type]}</span>
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900">{activity.title}</p>
                       <p className="text-sm text-gray-600">{activity.subtitle}</p>
@@ -713,13 +716,13 @@ export default function MerchantDashboard() {
         {/* Info Banner */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h4 className="text-lg font-bold text-blue-700 mb-2">
-            🚀 Unfair Advantage: ทำไมต้อง Pro Hunter?
+            Unfair Advantage: ทำไมต้อง Pro Hunter?
           </h4>
           <ul className="space-y-2 text-sm text-gray-600">
-            <li>✅ Data Insights แบบเรียลไทม์ - รู้ว่าลูกค้าต้องการอะไร</li>
-            <li>✅ Predictive Analytics ด้วย AI - ทำนายเทรนด์ล่วงหน้า</li>
-            <li>✅ SEO Ranking ที่โปร่งใส - จ่ายเท่าไหร่ ได้อันดับชัดเจน</li>
-            <li>✅ ระบบตรวจสอบ Verified - สร้างความน่าเชื่อถือ</li>
+            <li className="flex items-start gap-2"><CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" /> Data Insights แบบเรียลไทม์ - รู้ว่าลูกค้าต้องการอะไร</li>
+            <li className="flex items-start gap-2"><CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" /> Predictive Analytics ด้วย AI - ทำนายเทรนด์ล่วงหน้า</li>
+            <li className="flex items-start gap-2"><CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" /> SEO Ranking ที่โปร่งใส - จ่ายเท่าไหร่ ได้อันดับชัดเจน</li>
+            <li className="flex items-start gap-2"><CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" /> ระบบตรวจสอบ Verified - สร้างความน่าเชื่อถือ</li>
           </ul>
         </div>
       </div>{/* End Content Card Container */}

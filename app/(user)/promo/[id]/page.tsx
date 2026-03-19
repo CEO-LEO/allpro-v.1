@@ -10,7 +10,9 @@ import {
   ShareIcon,
   HeartIcon,
   ExclamationTriangleIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ShoppingBagIcon,
+  ArchiveBoxIcon
 } from '@heroicons/react/24/solid';
 import { getPromotionById, getPromotions } from '@/lib/getPromotions';
 import { useProductStore } from '@/store/useProductStore';
@@ -150,7 +152,10 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
             {promo.image ? (
               <img src={promo.image} alt={promo.title} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-6xl sm:text-8xl md:text-9xl">{getEmojiByCategory(promo.category)}</span>
+              <div className="flex flex-col items-center justify-center text-gray-300">
+                <ShoppingBagIcon className="w-20 h-20 sm:w-28 sm:h-28" />
+                <p className="text-sm mt-2">ไม่มีรูปภาพ</p>
+              </div>
             )}
             
             {/* Discount Badge */}
@@ -179,8 +184,9 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
         {/* Content */}
         <div className="card p-6 mb-6">
           {/* Shop Name */}
-          <Link href={`/shop/${encodeURIComponent(promo.shop_name)}`} className="text-sm text-blue-600 font-medium mb-2 hover:underline inline-block">
-            🏪 {promo.shop_name}
+          <Link href={`/shop/${encodeURIComponent(promo.shop_name)}`} className="text-sm text-blue-600 font-medium mb-2 hover:underline inline-flex items-center gap-1">
+            <MapPinIcon className="w-4 h-4" />
+            {promo.shop_name}
           </Link>
           
           {/* Title */}
@@ -266,13 +272,10 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                 {/* Animated Background */}
                 <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-pink-400/20 animate-pulse"></div>
                 
-                {/* Sparkle Effect */}
-                <div className="absolute top-2 right-2 text-2xl animate-bounce">✨</div>
-                
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl backdrop-blur-sm">
-                      🛍️
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                      <ShoppingBagIcon className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-bold mb-1">จ้างคนหิ้ว Fastwork</h3>
@@ -283,15 +286,15 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 mb-4">
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
-                        <div className="text-2xl font-bold">⚡</div>
+                        <ClockIcon className="w-6 h-6 mx-auto mb-1" />
                         <div className="text-xs text-white/80">รวดเร็ว</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold">✅</div>
+                        <ShieldCheckIcon className="w-6 h-6 mx-auto mb-1" />
                         <div className="text-xs text-white/80">ตรวจสอบ</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold">📦</div>
+                        <ArchiveBoxIcon className="w-6 h-6 mx-auto mb-1" />
                         <div className="text-xs text-white/80">ส่งถึงบ้าน</div>
                       </div>
                     </div>
@@ -328,7 +331,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                 href={`/shop/${encodeURIComponent(promo.shop_name)}`}
                 className="flex-1 btn-primary py-4 text-lg text-center flex items-center justify-center gap-2"
               >
-                🏪 ดูร้านค้า
+                ดูร้านค้า
               </Link>
               <button 
                 className="btn-secondary px-6"
@@ -423,15 +426,4 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
   );
 }
 
-function getEmojiByCategory(category: string): string {
-  const emojiMap: Record<string, string> = {
-    'อาหาร': '🍜',
-    'เครื่องดื่ม': '☕',
-    'แฟชั่น': '👕',
-    'ของใช้': '🧴',
-    'ขนม': '🍪',
-    'ของหวาน': '🍰',
-    'ไอที': '💻'
-  };
-  return emojiMap[category] || '🎁';
-}
+

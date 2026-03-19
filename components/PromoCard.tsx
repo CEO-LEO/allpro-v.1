@@ -2,8 +2,9 @@
 
 import { Promotion } from '@/lib/types';
 import Link from 'next/link';
-import { CheckBadgeIcon, MapPinIcon, CalendarIcon } from '@heroicons/react/24/solid';
+import { CheckBadgeIcon, MapPinIcon, CalendarIcon, TrophyIcon } from '@heroicons/react/24/solid';
 import { 
+  EyeIcon,
   ShareIcon,
   ShoppingCartIcon,
   SparklesIcon,
@@ -86,7 +87,7 @@ export default function PromoCard({ promo }: PromoCardProps) {
           <div className="absolute top-2 left-2 flex gap-2">
             {promo.isPro && (
               <span className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1 border-2 border-yellow-300 animate-pulse">
-                👑 PRO
+                <TrophyIcon className="w-3.5 h-3.5" /> PRO
               </span>
             )}
             {promo.is_verified && (
@@ -101,7 +102,7 @@ export default function PromoCard({ promo }: PromoCardProps) {
             )}
             {promo.is_sponsored && (
               <span className="badge-sponsored">
-                ⭐ แนะนำ
+                <SparklesIcon className="w-3.5 h-3.5 inline" /> แนะนำ
               </span>
             )}
           </div>
@@ -213,7 +214,7 @@ export default function PromoCard({ promo }: PromoCardProps) {
                 year: 'numeric'
               })}
             </span>
-            <span className="text-[#FF5722]">👁️ {promo.search_volume.toLocaleString()}</span>
+            <span className="text-[#FF5722] flex items-center gap-1"><EyeIcon className="w-3.5 h-3.5" /> {promo.search_volume.toLocaleString()}</span>
           </div>
         </div>
 
