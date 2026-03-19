@@ -128,11 +128,11 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
           />
 
-          {/* Modal */}
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Modal — z-[60] ต่ำกว่า Navbar z-[70] เพื่อไม่ให้ทับเมนู */}
+          <div className="fixed inset-0 z-[60] flex items-start justify-center pt-20 p-4 overflow-y-auto">
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}

@@ -48,11 +48,20 @@ export async function signUp(
 
   if (error) {
     // Map common Supabase errors to Thai messages
-    if (error.message.includes('already registered')) {
-      return { success: false, error: 'อีเมลนี้ถูกใช้งานแล้ว' };
+    if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+      return { success: false, error: 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบแทน' };
     }
-    if (error.message.includes('Password')) {
+    if (error.message.includes('Password') || error.message.includes('password')) {
       return { success: false, error: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' };
+    }
+    if (error.message.includes('rate limit') || error.message.includes('Rate limit')) {
+      return { success: false, error: 'ส่งคำขอบ่อยเกินไป กรุณารอ 1 นาทีแล้วลองใหม่' };
+    }
+    if (error.message.includes('invalid') && error.message.includes('email')) {
+      return { success: false, error: 'รูปแบบอีเมลไม่ถูกต้อง กรุณาใช้อีเมลจริง เช่น name@gmail.com' };
+    }
+    if (error.message.includes('signup_disabled')) {
+      return { success: false, error: 'ระบบสมัครสมาชิกปิดอยู่ชั่วคราว' };
     }
     return { success: false, error: error.message };
   }
@@ -90,11 +99,14 @@ export async function signIn(
   });
 
   if (error) {
-    if (error.message.includes('Invalid login')) {
+    if (error.message.includes('Invalid login') || error.message.includes('invalid_credentials')) {
       return { success: false, error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };
     }
-    if (error.message.includes('Email not confirmed')) {
-      return { success: false, error: 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ' };
+    if (error.message.includes('Email not confirmed') || error.message.includes('email_not_confirmed')) {
+      return { success: false, error: 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ (ตรวจสอบกล่องจดหมาย)' };
+    }
+    if (error.message.includes('rate limit') || error.message.includes('Rate limit')) {
+      return { success: false, error: 'ล็อคอินบ่อยเกินไป กรุณารอ 1 นาทีแล้วลองใหม่' };
     }
     return { success: false, error: error.message };
   }
