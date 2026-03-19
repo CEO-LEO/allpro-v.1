@@ -4,7 +4,10 @@ import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeftIcon, StarIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, StarIcon, MapPinIcon, CalendarIcon } from '@heroicons/react/24/solid';
+import { useProductStore, type Product } from '@/store/useProductStore';
+import { getPromotions } from '@/lib/getPromotions';
+import { Promotion } from '@/lib/types';
 import {
   ShoppingBagIcon,
   CakeIcon,
@@ -115,26 +118,55 @@ export default function CategoryDetailPage() {
   const [selectedTab, setSelectedTab] = useState('สินค้า');
   const [brandFilter, setBrandFilter] = useState<BrandCategory | 'ทั้งหมด'>('ทั้งหมด');
 
-  // ── API-Ready State ──
+  // ── Product Data: merge store products + static promotions ──
+  const storeProducts = useProductStore((s) => s.products);
+
+  const allPromotions = useMemo(() => {
+    // Convert store products → Promotion format
+    const storePromos: Promotion[] = storeProducts.map((p) => ({
+      id: p.id,
+      shop_name: p.shopName,
+      title: p.title,
+      description: p.description,
+      price: p.promoPrice,
+      discount_rate: p.discount,
+      category: p.category,
+      is_verified: p.verified,
+      is_sponsored: false,
+      location: p.distance || 'ทุกสาขา',
+      search_volume: 0,
+      image: p.image,
+      valid_until: p.validUntil,
+      views: p.likes || 0,
+      saves: 0,
+      tags: p.tags,
+    }));
+    // Merge: store first, then static (dedup by id)
+    const staticData = getPromotions();
+    const ids = new Set(storePromos.map((p) => p.id));
+    return [...storePromos, ...staticData.filter((p) => !ids.has(p.id))];
+  }, [storeProducts]);
+
+  // Filter by active category
+  const filteredProducts = useMemo(() => {
+    if (activeCategory === 'all') return allPromotions;
+    return allPromotions.filter((p) => p.category === activeCategory);
+  }, [allPromotions, activeCategory]);
+
+  const itemCount = filteredProducts.length;
+
+  // ── API-Ready State (brands/groups) ──
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [itemCount, setItemCount] = useState(0);
 
-  // TODO: Replace with API call → GET /api/categories/:activeCategory
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // const res = await fetch(`/api/categories/${activeCategory}`);
-        // const data = await res.json();
-        // setCategoryGroups(data.categoryGroups);
-        // setBrands(data.brands);
-        // setItemCount(data.totalItems ?? 0);
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 300));
         setCategoryGroups([]);
         setBrands([]);
-        setItemCount(0);
       } catch {
         setCategoryGroups([]);
         setBrands([]);
@@ -285,75 +317,64 @@ export default function CategoryDetailPage() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.2 }}
             >
-              {categoryGroups.length > 0 ? (
-                categoryGroups.map((group, groupIndex) => {
-                  const GIcon = group.icon;
-                  return (
-                    <div key={group.id} className="mb-10">
-                      {/* Group Header */}
-                      <div className="flex items-center justify-between mb-5 px-2">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${group.color} flex items-center justify-center shadow-md`}>
-                            <GIcon className="w-6 h-6 text-white" />
+              {filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {filteredProducts.map((promo, index) => (
+                    <motion.div
+                      key={promo.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(index * 0.03, 0.3) }}
+                    >
+                      <Link href={`/promo/${encodeURIComponent(promo.id)}`}>
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg transition-all group">
+                          {/* Image */}
+                          <div className="relative h-44 bg-gradient-to-br from-orange-50 to-red-50 overflow-hidden">
+                            {promo.image ? (
+                              <img src={promo.image} alt={promo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ShoppingBagIcon className="w-16 h-16 text-gray-300" />
+                              </div>
+                            )}
+                            {promo.discount_rate > 0 && (
+                              <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
+                                -{promo.discount_rate}%
+                              </span>
+                            )}
+                            {promo.is_verified && (
+                              <span className="absolute top-3 right-3 bg-blue-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                ✓ Verified
+                              </span>
+                            )}
                           </div>
-                          <h3 className="text-lg font-bold text-gray-800">{group.name}</h3>
-                        </div>
-                        <Link
-                          href={`/categories/${encodeURIComponent(group.id)}?group=${encodeURIComponent(group.id)}`}
-                          className="text-sm text-red-600 hover:text-red-700 transition-colors flex items-center gap-1"
-                        >
-                          ดูทั้งหมด →
-                        </Link>
-                      </div>
-
-                      {/* Subcategories Grid */}
-                      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 xl:grid-cols-12 gap-4">
-                        {group.subcategories.map((subcat, index) => {
-                          const SubIcon = subcat.icon;
-                          return (
-                            <motion.div
-                              key={subcat.id}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: groupIndex * 0.05 + index * 0.02 }}
-                            >
-                              <Link
-                                href={`/categories/${encodeURIComponent(subcat.id)}?group=${encodeURIComponent(group.id)}`}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all group"
-                              >
-                                <div className={`w-14 h-14 rounded-lg bg-gray-100 group-hover:bg-gradient-to-br group-hover:${group.color} flex items-center justify-center transition-all shadow-sm`}>
-                                  <SubIcon className="w-7 h-7 text-gray-600 group-hover:text-white transition-colors" />
-                                </div>
-                                <span className="text-xs font-medium text-center leading-tight text-gray-700 group-hover:text-red-600 transition-colors">
-                                  {subcat.name}
-                                </span>
-                              </Link>
-                            </motion.div>
-                          );
-                        })}
-
-                        {/* "อื่นๆ" button */}
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: groupIndex * 0.05 + group.subcategories.length * 0.02 }}
-                        >
-                          <Link
-                            href={`/categories/${encodeURIComponent(group.id)}?group=${encodeURIComponent(group.id)}`}
-                            className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all group"
-                          >
-                            <div className="w-14 h-14 rounded-lg bg-red-50 group-hover:bg-gradient-to-br group-hover:from-red-100 group-hover:to-pink-100 flex items-center justify-center transition-all">
-                              <span className="text-lg font-bold text-red-600">+</span>
+                          {/* Info */}
+                          <div className="p-4">
+                            <p className="text-xs text-gray-500 mb-1 truncate">🏪 {promo.shop_name}</p>
+                            <h3 className="text-sm font-bold text-gray-900 line-clamp-2 mb-2 min-h-[2.5rem] group-hover:text-red-600 transition-colors">
+                              {promo.title}
+                            </h3>
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                <span className="text-lg font-bold text-red-600">฿{promo.price?.toLocaleString()}</span>
+                              </div>
+                              <span className="text-xs text-gray-500 flex items-center gap-1">
+                                <MapPinIcon className="w-3 h-3 text-red-400" />
+                                {promo.location?.split(' ')[0] || 'ทุกสาขา'}
+                              </span>
                             </div>
-                            <span className="text-xs font-bold text-center leading-tight text-red-600">
-                              อื่นๆ
-                            </span>
-                          </Link>
-                        </motion.div>
-                      </div>
-                    </div>
-                  );
-                })
+                            {promo.valid_until && (
+                              <p className="text-xs text-gray-400 flex items-center gap-1">
+                                <CalendarIcon className="w-3 h-3" />
+                                ถึง {new Date(promo.valid_until).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
               ) : (
                 /* Empty State — สินค้า */
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
@@ -361,7 +382,7 @@ export default function CategoryDetailPage() {
                     <ShoppingBagIcon className="w-10 h-10 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีสินค้า/โปรโมชั่นในหมวดหมู่นี้</h3>
-                  <p className="text-sm text-gray-500">ข้อมูลหมวดหมู่จะแสดงเมื่อเชื่อมต่อ API</p>
+                  <p className="text-sm text-gray-500">ลองเปลี่ยนหมวดหมู่หรือค้นหาด้วยคำอื่น</p>
                 </div>
               )}
             </motion.div>
