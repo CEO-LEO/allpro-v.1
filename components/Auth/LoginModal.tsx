@@ -21,7 +21,7 @@ type SelectedRole = 'USER' | 'MERCHANT' | null;
 
 export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: LoginModalProps) {
   const router = useRouter();
-  const { loginAsUser, loginAsMerchant } = useAuthStore();
+  const { login, loginAsUser, loginAsMerchant } = useAuthStore();
 
   // ฟอร์ม state
   const [email, setEmail] = useState('');
@@ -89,9 +89,11 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         } else {
           loginAsMerchant();
           toast.success('✅ Demo Mode — Merchant Dashboard');
-          setTimeout(() => router.push('/merchant/dashboard'), 500);
         }
         handleClose();
+        if (selectedRole === 'MERCHANT') {
+          router.push('/merchant/dashboard');
+        }
         return;
       }
 
@@ -108,11 +110,22 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         return; // finally จะ setIsLoading(false)
       }
 
-      // Login สำเร็จ → AuthListener จะ set user ให้อัตโนมัติผ่าน onAuthStateChange
+      // Login สำเร็จ → set store ทันทีเพื่อให้ AuthGuard เห็น role ก่อน redirect
+      login({
+        id: result.user!.id,
+        email: result.user!.email,
+        name: result.user!.name,
+        role: selectedRole, // ใช้ role ที่ผู้ใช้เลือกจาก Modal
+        avatar: result.user!.avatar,
+        xp: result.user!.xp,
+        coins: result.user!.coins,
+        level: result.user!.level,
+      });
+
       if (selectedRole === 'MERCHANT') {
         toast.success(`✅ ยินดีต้อนรับ ${result.user?.name}!`);
         handleClose();
-        setTimeout(() => router.push('/merchant/dashboard'), 500);
+        router.push('/merchant/dashboard');
       } else {
         toast.success(`🎉 ยินดีต้อนรับกลับ ${result.user?.name}!`);
         handleClose();

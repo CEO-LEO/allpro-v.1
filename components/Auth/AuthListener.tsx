@@ -10,7 +10,7 @@ import { useAuthStore, UserRole } from '@/store/useAuthStore';
  * วางไว้ใน root layout เพื่อ auto-restore session เมื่อ refresh หน้า
  */
 export default function AuthListener() {
-  const { login, logout } = useAuthStore();
+  const { login, logout, user: currentUser, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -26,7 +26,10 @@ export default function AuthListener() {
             id: session.user.id,
             email: session.user.email || '',
             name: metadata.name || profile?.username || 'ผู้ใช้',
-            role: (metadata.role as UserRole) || 'USER',
+            // ถ้า LoginModal set role ไว้แล้ว → ใช้ค่าเดิม (ไม่ override)
+            role: (isAuthenticated && currentUser?.role) 
+              ? currentUser.role 
+              : (metadata.role as UserRole) || 'USER',
             avatar: metadata.avatar_url || profile?.avatar_url || undefined,
             xp: profile?.xp ?? 0,
             coins: profile?.coins ?? 100,
