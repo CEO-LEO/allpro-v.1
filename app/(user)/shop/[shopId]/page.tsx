@@ -241,7 +241,7 @@ export default function PublicShopPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                 >
-                  <Link href={`/product/${product.id}`}>
+                  <Link href={`/promo/${product.id}`}>
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all group">
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">

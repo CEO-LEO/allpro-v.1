@@ -13,6 +13,8 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/solid';
 import { getPromotionById, getPromotions } from '@/lib/getPromotions';
+import { useProductStore } from '@/store/useProductStore';
+import { Promotion } from '@/lib/types';
 import BranchAvailability from '@/components/BranchAvailability';
 import PriceHistory from '@/components/Product/PriceHistory';
 import NotifyButton from '@/components/Product/NotifyButton';
@@ -23,7 +25,35 @@ import Reviews from '@/components/Product/Reviews';
 
 export default function PromoDetail({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const promo = getPromotionById(decodeURIComponent(resolvedParams.id));
+  const decodedId = decodeURIComponent(resolvedParams.id);
+  const storeProducts = useProductStore((s) => s.products);
+
+  // Try static data first, then fallback to product store
+  let promo: Promotion | undefined = getPromotionById(decodedId);
+
+  if (!promo) {
+    const storeProduct = storeProducts.find((p) => p.id === decodedId);
+    if (storeProduct) {
+      promo = {
+        id: storeProduct.id,
+        shop_name: storeProduct.shopName,
+        title: storeProduct.title,
+        description: storeProduct.description,
+        price: storeProduct.promoPrice,
+        discount_rate: storeProduct.discount,
+        category: storeProduct.category,
+        is_verified: storeProduct.verified,
+        is_sponsored: false,
+        location: storeProduct.distance || 'ทุกสาขา',
+        search_volume: 0,
+        image: storeProduct.image,
+        valid_until: storeProduct.validUntil,
+        views: storeProduct.likes || 0,
+        saves: 0,
+        tags: storeProduct.tags,
+      };
+    }
+  }
 
   if (!promo) {
     // Get popular promos as fallback
@@ -116,8 +146,12 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
       <main className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Main Image */}
         <div className="card overflow-hidden mb-4 sm:mb-6">
-          <div className="relative h-56 sm:h-72 md:h-80 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center">
-            <span className="text-6xl sm:text-8xl md:text-9xl">{getEmojiByCategory(promo.category)}</span>
+          <div className="relative h-56 sm:h-72 md:h-80 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center overflow-hidden">
+            {promo.image ? (
+              <img src={promo.image} alt={promo.title} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-6xl sm:text-8xl md:text-9xl">{getEmojiByCategory(promo.category)}</span>
+            )}
             
             {/* Discount Badge */}
             <div className="absolute top-4 right-4 bg-red-500 text-white font-bold px-6 py-3 rounded-full text-2xl shadow-lg">
@@ -145,7 +179,9 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
         {/* Content */}
         <div className="card p-6 mb-6">
           {/* Shop Name */}
-          <p className="text-sm text-gray-500 font-medium mb-2">{promo.shop_name}</p>
+          <Link href={`/shop/${encodeURIComponent(promo.shop_name)}`} className="text-sm text-blue-600 font-medium mb-2 hover:underline inline-block">
+            🏪 {promo.shop_name}
+          </Link>
           
           {/* Title */}
           <h1 className="text-3xl font-bold text-gray-900 mb-4">{promo.title}</h1>
@@ -288,17 +324,24 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
             />
 
             <div className="flex gap-3">
-              <button 
-                className="flex-1 btn-primary py-4 text-lg"
-                onClick={() => alert('เปิดแผนที่นำทาง Google Maps...')}
+              <Link 
+                href={`/shop/${encodeURIComponent(promo.shop_name)}`}
+                className="flex-1 btn-primary py-4 text-lg text-center flex items-center justify-center gap-2"
               >
-                📍 ดูแผนที่ร้านค้า
-              </button>
+                🏪 ดูร้านค้า
+              </Link>
               <button 
                 className="btn-secondary px-6"
-                onClick={() => alert('บันทึกโปรโมชั่นแล้ว!')}
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: promo.title, text: promo.description, url: window.location.href }).catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    alert('คัดลอกลิงก์แล้ว!');
+                  }
+                }}
               >
-                <HeartIcon className="w-6 h-6" />
+                <ShareIcon className="w-6 h-6" />
               </button>
             </div>
           </div>

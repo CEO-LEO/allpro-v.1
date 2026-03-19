@@ -219,18 +219,16 @@ export default function PromoCard({ promo }: PromoCardProps) {
 
         {/* Action Buttons */}
         <div className="px-4 sm:px-5 pb-4 sm:pb-5 flex gap-2">
-          <button 
+          <Link 
+            href={`/shop/${encodeURIComponent(promo.shop_name)}`}
             className="flex-1 bg-gradient-to-r from-[#FF5722] to-[#FF7043] hover:from-[#E64A19] hover:to-[#FF5722] text-white py-2.5 px-4 rounded-xl text-sm sm:text-base font-semibold transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0 touch-manipulation flex items-center justify-center gap-2"
-            onClick={(e) => {
-              e.preventDefault();
-              alert('เปิดแผนที่นำทาง...');
-            }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
               <MapPinIcon className="w-3.5 h-3.5" />
             </div>
             ดูร้านค้า
-          </button>
+          </Link>
           <button
             onClick={(e) => {
               e.preventDefault();
