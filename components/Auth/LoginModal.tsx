@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, Store, Sparkles, Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { signIn } from '@/lib/supabase/auth';
+import { signIn, signOut as supabaseSignOut } from '@/lib/supabase/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
@@ -97,10 +97,10 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         return;
       }
 
-      // ── Supabase Auth — Login จริง ──
-      console.log('🔐 Calling signIn with:', { email, passwordLength: password.length });
+      // ── Supabase Auth — ขั้นที่ 1: Authenticate ก่อน (ไม่สน role) ──
+      console.log('🔐 Step 1: Authenticating...', { email, passwordLength: password.length });
       const result = await signIn(email, password);
-      console.log('📦 signIn result:', { success: result.success, error: result.error, userName: result.user?.name });
+      console.log('📦 signIn result:', { success: result.success, error: result.error, userName: result.user?.name, dbRole: result.user?.role });
 
       if (!result.success) {
         setError(result.error || 'เข้าสู่ระบบไม่สำเร็จ');
@@ -110,19 +110,38 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         return; // finally จะ setIsLoading(false)
       }
 
-      // Login สำเร็จ → set store ทันทีเพื่อให้ AuthGuard เห็น role ก่อน redirect
+      // ── ขั้นที่ 2: เช็ค Role จาก Database vs แท็บที่เลือก ──
+      const dbRole = result.user!.role; // role จาก user_metadata ที่ตั้งไว้ตอน signUp
+      console.log('🔍 Step 2: Role check', { selectedRole, dbRole });
+
+      if (selectedRole === 'MERCHANT' && dbRole !== 'MERCHANT') {
+        // เลือกแท็บร้านค้า แต่บัญชีเป็นลูกค้า → sign out + แจ้ง error
+        await supabaseSignOut();
+        setError('บัญชีนี้ไม่ใช่บัญชีร้านค้า กรุณาสมัครสมาชิกเป็นร้านค้าก่อน');
+        setShowAccountNotFound(true);
+        return;
+      }
+
+      if (selectedRole === 'USER' && dbRole === 'MERCHANT') {
+        // เลือกแท็บลูกค้า แต่บัญชีเป็นร้านค้า → sign out + แจ้ง error
+        await supabaseSignOut();
+        setError('บัญชีนี้เป็นบัญชีร้านค้า กรุณาเลือกแท็บ "ร้านค้า" เพื่อเข้าสู่ระบบ');
+        return;
+      }
+
+      // ── Role ตรงกัน → set store + redirect ──
       login({
         id: result.user!.id,
         email: result.user!.email,
         name: result.user!.name,
-        role: selectedRole, // ใช้ role ที่ผู้ใช้เลือกจาก Modal
+        role: dbRole, // ใช้ role จาก DB (เชื่อถือได้กว่า UI)
         avatar: result.user!.avatar,
         xp: result.user!.xp,
         coins: result.user!.coins,
         level: result.user!.level,
       });
 
-      if (selectedRole === 'MERCHANT') {
+      if (dbRole === 'MERCHANT') {
         toast.success(`✅ ยินดีต้อนรับ ${result.user?.name}!`);
         handleClose();
         router.push('/merchant/dashboard');
