@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, Store, UserPlus, Lock, Mail, Eye, EyeOff, Loader2, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -112,7 +113,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     }
   };
 
-  return (
+  const portalContent = (
     <AnimatePresence>
       {isOpen && (
         <>
@@ -122,11 +123,11 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999]"
           />
 
-          {/* Modal — z-[60] ต่ำกว่า Navbar z-[70] เพื่อไม่ให้ทับเมนู */}
-          <div className="fixed inset-0 z-[60] flex items-start justify-center pt-20 p-4 overflow-y-auto">
+          {/* Modal — Portal ไปที่ body เพื่อให้เงาคลุมเมนูด้านบน */}
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -326,4 +327,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       )}
     </AnimatePresence>
   );
+
+  if (typeof window === 'undefined') return null;
+  return createPortal(portalContent, document.body);
 }
