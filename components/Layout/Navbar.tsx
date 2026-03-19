@@ -74,6 +74,8 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setShowUserMenu(false);
+    setShowLoginModal(false);
+    setShowRegisterModal(false);
     await logout();
     setSelectedCategory('All');
     router.push('/');

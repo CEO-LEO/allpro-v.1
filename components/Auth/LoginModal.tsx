@@ -58,11 +58,12 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setShowAccountNotFound(false);
 
     // 🔍 DEBUG: ตรวจสอบค่า state ที่จับได้
     console.log('🔍 Login attempt:', { email, password: password ? `[${password.length} chars]` : '(empty)', selectedRole });
 
-    // Validation
+    // Validation — ไม่ต้อง set loading ถ้า validate ไม่ผ่าน
     if (!email.trim()) {
       setError('กรุณากรอกอีเมล');
       return;
@@ -77,7 +78,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     }
 
     setIsLoading(true);
-    setShowAccountNotFound(false);
 
     try {
       // ── ถ้า Supabase ยังไม่ได้ตั้งค่า → ใช้ Demo Mode ──
@@ -105,12 +105,10 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         if (result.error?.includes('ไม่ถูกต้อง')) {
           setShowAccountNotFound(true);
         }
-        setIsLoading(false);
-        return;
+        return; // finally จะ setIsLoading(false)
       }
 
       // Login สำเร็จ → AuthListener จะ set user ให้อัตโนมัติผ่าน onAuthStateChange
-      setIsLoading(false);
       if (selectedRole === 'MERCHANT') {
         toast.success(`✅ ยินดีต้อนรับ ${result.user?.name}!`);
         handleClose();
@@ -119,8 +117,11 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         toast.success(`🎉 ยินดีต้อนรับกลับ ${result.user?.name}!`);
         handleClose();
       }
-    } catch {
+    } catch (err) {
+      console.error('❌ Login error:', err);
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      // ✅ ไม่ว่าจะสำเร็จหรือ error — isLoading จะถูก reset เสมอ
       setIsLoading(false);
     }
   };

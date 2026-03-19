@@ -97,7 +97,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       }
 
       // ── Supabase Auth — Register จริง ──
+      console.log('📝 Calling signUp with:', { email, name, selectedRole });
       const result = await signUp(email, password, name, selectedRole);
+      console.log('📦 signUp result:', { success: result.success, error: result.error });
 
       if (!result.success) {
         setError(result.error || 'สมัครสมาชิกไม่สำเร็จ');
@@ -106,7 +108,8 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
       toast.success('🎉 สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
       handleGoToLogin();
-    } catch {
+    } catch (err) {
+      console.error('❌ Register error:', err);
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
     } finally {
       setIsLoading(false);
