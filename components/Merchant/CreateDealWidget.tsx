@@ -3,11 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { useProductStore } from "@/store/useProductStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Upload, X, Zap } from "lucide-react";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1505252585461-04db1267ae5b?w=500&q=80";
+
+const CATEGORIES = ['Food', 'Fashion', 'Travel', 'Gadget', 'Beauty'] as const;
 
 export default function CreateDealWidget() {
   const addProduct = useProductStore((s) => s.addProduct);
@@ -29,6 +32,8 @@ export default function CreateDealWidget() {
     productName: "",
     originalPrice: "",
     discountedPrice: "",
+    category: "Food" as string,
+    paymentInfo: "",
     isFlashSale: false,
   });
 
@@ -85,7 +90,7 @@ export default function CreateDealWidget() {
         finalImage = imageUrl;
       }
 
-      // Add product to store
+      // Add product to local store
       addProduct({
         title: formData.productName,
         description: `ลดราคาถึง ${calculateDiscount()}% สำหรับคำสั่งซื้อทั้งหมด`,
@@ -93,13 +98,36 @@ export default function CreateDealWidget() {
         promoPrice: discounted,
         discount: calculateDiscount(),
         image: finalImage,
-        category: "Food",
+        category: formData.category as 'Food' | 'Fashion' | 'Travel' | 'Gadget' | 'Beauty' | 'Service' | 'Electronics' | 'Fitness' | 'Other',
         shopName: user?.shopName || user?.name || "My Shop",
         shopLogo: "",
         verified: true,
         tags: formData.isFlashSale ? ["Flash Sale", "Limited Time"] : ["Special Offer"],
         validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       });
+
+      // Also save to Supabase products table
+      if (isSupabaseConfigured) {
+        const shopName = user?.shopName || user?.name || 'My Shop';
+        const { error: dbError } = await supabase.from('products').insert({
+          title: formData.productName,
+          description: `ลดราคาถึง ${calculateDiscount()}%${formData.paymentInfo ? ' | ชำระเงิน: ' + formData.paymentInfo : ''}`,
+          "promoPrice": discounted,
+          "originalPrice": original,
+          image: finalImage,
+          category: formData.category,
+          "shopName": shopName,
+          "shopId": user?.id || 'unknown',
+          discount: calculateDiscount(),
+          location: 'กรุงเทพฯ',
+          conditions: formData.isFlashSale ? 'Flash Sale - เวลาจำกัด' : 'โปรโมชั่นพิเศษ',
+        });
+        if (dbError) {
+          console.error('❌ Supabase insert error:', dbError);
+        } else {
+          console.log('✅ Saved to Supabase products table');
+        }
+      }
 
       // Success feedback
       confetti({
@@ -115,6 +143,8 @@ export default function CreateDealWidget() {
         productName: "",
         originalPrice: "",
         discountedPrice: "",
+        category: "Food",
+        paymentInfo: "",
         isFlashSale: false,
       });
       setImageFile(null);
@@ -274,6 +304,47 @@ export default function CreateDealWidget() {
                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Category & Payment Info */}
+        <div className="grid grid-cols-1 gap-4">
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              🏷️ หมวดหมู่
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat === 'Food' ? '🍔 อาหาร' :
+                   cat === 'Fashion' ? '👗 แฟชั่น' :
+                   cat === 'Travel' ? '✈️ ท่องเที่ยว' :
+                   cat === 'Gadget' ? '📱 แกดเจ็ต' :
+                   cat === 'Beauty' ? '💄 ความงาม' : cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              💳 ข้อมูลการชำระเงิน
+            </label>
+            <input
+              type="text"
+              placeholder="เช่น โอนผ่านธนาคาร / PromptPay / บัตรเครดิต"
+              value={formData.paymentInfo}
+              onChange={(e) =>
+                setFormData({ ...formData, paymentInfo: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
         </div>
 

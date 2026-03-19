@@ -9,14 +9,36 @@ import { Search } from 'lucide-react';
 import PromoCard from '@/components/PromoCard';
 import ShopSearchBar from '@/components/Common/ShopSearchBar';
 import { getPromotions } from '@/lib/getPromotions';
+import { useProductStore, Product } from '@/store/useProductStore';
 import { Promotion } from '@/lib/types';
 
 /*
  * Search Results Page — /search?q=xxx&category=xxx
  *
- * Data Source: getPromotions() from promotions.json (local)
- * TODO: Replace with API call — GET /api/promotions/search?q=xxx&category=xxx
+ * Data Source: getPromotions() + useProductStore (merchant-created products)
  */
+
+// Convert Product (from store) to Promotion (used by UI components)
+function productToPromotion(p: Product): Promotion {
+  return {
+    id: p.id,
+    shop_name: p.shopName,
+    title: p.title,
+    description: p.description,
+    price: p.promoPrice,
+    discount_rate: p.discount,
+    category: p.category,
+    is_verified: p.verified,
+    is_sponsored: false,
+    location: p.distance || 'ทุกสาขา',
+    search_volume: 0,
+    image: p.image,
+    valid_until: p.validUntil,
+    views: 0,
+    saves: 0,
+    tags: p.tags,
+  };
+}
 
 const SORT_OPTIONS = [
   { value: 'popular', label: 'ยอดนิยม' },
@@ -43,9 +65,16 @@ export default function SearchPage() {
   const [filterBy, setFilterBy] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const storeProducts = useProductStore((s) => s.products);
 
-  // โหลดข้อมูลโปรโมชั่นทั้งหมดจาก getPromotions
-  const allPromotions = useMemo(() => getPromotions(), []);
+  // Merge static promotions + store products (merchant-created)
+  const allPromotions = useMemo(() => {
+    const staticData = getPromotions();
+    const storePromos = storeProducts.map(productToPromotion);
+    const ids = new Set(storePromos.map((p) => p.id));
+    const staticOnly = staticData.filter((p) => !ids.has(p.id));
+    return [...storePromos, ...staticOnly];
+  }, [storeProducts]);
 
   // จำลอง loading delay (ลบเมื่อเชื่อม API จริง)
   useEffect(() => {

@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { ArrowRight, Store, Search, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
+import { useProductStore, Product } from '@/store/useProductStore';
 import { getPromotions } from '@/lib/getPromotions';
+import { Promotion } from '@/lib/types';
 import TrendingTags from '@/components/TrendingTags';
 import HomeSearchInput from '@/components/Home/HomeSearchInput';
 import EnhancedPromoCard from '@/components/Home/EnhancedPromoCard';
@@ -54,13 +56,36 @@ const NAVBAR_CATEGORIES = ['All', 'Food', 'Fashion', 'Travel', 'Gadget', 'Beauty
 
 const ITEMS_PER_PAGE = 6;
 
+// Convert Product (from store) to Promotion (used by UI components)
+function productToPromotion(p: Product): Promotion {
+  return {
+    id: p.id,
+    shop_name: p.shopName,
+    title: p.title,
+    description: p.description,
+    price: p.promoPrice,
+    discount_rate: p.discount,
+    category: p.category,
+    is_verified: p.verified,
+    is_sponsored: false,
+    location: p.distance || 'ทุกสาขา',
+    search_volume: 0,
+    image: p.image,
+    valid_until: p.validUntil,
+    views: 0,
+    saves: 0,
+    tags: p.tags,
+  };
+}
+
 export default function Home() {
   const { user, checkAuth, selectedCategory, setSelectedCategory } = useAppStore();
+  const storeProducts = useProductStore((s) => s.products);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [promotions, setPromotions] = useState<ReturnType<typeof getPromotions>>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
 
   // Fetch promotions on mount
   useEffect(() => {
@@ -68,14 +93,9 @@ export default function Home() {
     async function fetchPromotions() {
       setIsLoading(true);
       try {
-        // TODO: Replace with real API call
-        // const res = await fetch('/api/promotions');
-        // const data = await res.json();
-        // setPromotions(data);
-        
-        // Temporary: load from local data (will be empty until API is connected)
-        const data = getPromotions();
-        setPromotions(data);
+        // Load static promotions
+        const staticData = getPromotions();
+        setPromotions(staticData);
       } catch (err) {
         console.error('Failed to fetch promotions:', err);
       } finally {
@@ -85,7 +105,15 @@ export default function Home() {
     fetchPromotions();
   }, [checkAuth]);
 
-  const allPromotions = promotions;
+  // Merge static promotions + store products (merchant-created)
+  const allPromotions = useMemo(() => {
+    const storePromos = storeProducts.map(productToPromotion);
+    // Put store products first (newest), then static data
+    // Deduplicate by id
+    const ids = new Set(storePromos.map((p) => p.id));
+    const staticOnly = promotions.filter((p) => !ids.has(p.id));
+    return [...storePromos, ...staticOnly];
+  }, [storeProducts, promotions]);
 
   // Filter promotions with memoization
   const filteredProducts = useMemo(() => {
