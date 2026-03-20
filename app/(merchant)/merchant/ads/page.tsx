@@ -34,7 +34,11 @@ import { useProductStore } from '@/store/useProductStore';
 export default function AdsManagerPage() {
   const { user } = useAuthStore();
   const { products } = useProductStore();
-  const merchantProducts = products.filter(p => p.shopName === user?.shopName);
+  // Match by shopName plus include all merchant-created products (product- prefix)
+  const possibleNames = [user?.shopName, user?.name, 'My Shop'].filter(Boolean);
+  const merchantProducts = products.filter(
+    p => possibleNames.includes(p.shopName) || p.id.startsWith('product-')
+  );
 
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [stats, setStats] = useState({
@@ -527,8 +531,8 @@ export default function AdsManagerPage() {
                     <div className="space-y-3 mb-6">
                       {merchantProducts.length === 0 ? (
                         <div className="text-center p-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-                          <p className="text-gray-500 mb-2">No products found for {user?.shopName || 'your shop'}.</p>
-                          <Link href="/merchant/products/add" className="text-blue-600 font-bold hover:underline">
+                          <p className="text-gray-500 mb-2">No products found for your shop.</p>
+                          <Link href="/merchant/dashboard" className="text-blue-600 font-bold hover:underline">
                             + Add a product first
                           </Link>
                         </div>

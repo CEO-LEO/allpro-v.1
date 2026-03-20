@@ -20,9 +20,13 @@ export default function BoostPromotionModal({ isOpen, onClose }: BoostPromotionM
   const [confirming, setConfirming] = useState<string | null>(null);
 
   // Filter only this merchant's products
+  // Match by shopName, user name, or "My Shop" fallback
+  // Also include all merchant-created products (product- prefix) in case shopName changed
   const shopName = user?.shopName || "";
   const possibleNames = [shopName, user?.name, "My Shop"].filter(Boolean);
-  const myProducts = products.filter((p) => possibleNames.includes(p.shopName));
+  const myProducts = products.filter(
+    (p) => possibleNames.includes(p.shopName) || p.id.startsWith("product-")
+  );
 
   const handleBoost = (product: Product) => {
     setConfirming(product.id);
