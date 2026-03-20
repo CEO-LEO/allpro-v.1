@@ -13,6 +13,7 @@ import {
   SparklesIcon,
   PresentationChartLineIcon,
   TrashIcon,
+  RocketLaunchIcon,
 } from "@heroicons/react/24/outline";
 import { getSearchInsights } from "@/lib/getPromotions";
 import { Package as PackageIcon } from "lucide-react";
@@ -23,6 +24,7 @@ import { useProductStore } from "@/store/useProductStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
 import CreateDealWidget from "@/components/Merchant/CreateDealWidget";
+import BoostPromotionModal from "@/components/Merchant/BoostPromotionModal";
 
 // Dynamic Imports for Heavy Components (Charts/Analytics)
 const PredictiveInsights = dynamic(() => import("@/components/PredictiveInsights"), { ssr: false });
@@ -121,6 +123,7 @@ export default function MerchantDashboard() {
   const [selectedLocation, setSelectedLocation] = useState("อารีย์");
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const { startFlashSale, endFlashSale, isFlashSale } = useFlashSale();
+  const [showBoostModal, setShowBoostModal] = useState(false);
 
   // ═══════════════════════════════════════════════════════
   // API-Ready State Management
@@ -314,6 +317,49 @@ export default function MerchantDashboard() {
         <div className="mb-8">
           <CreateDealWidget />
         </div>
+
+        {/* Boost Your Sales Card */}
+        <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-2xl p-5 sm:p-6 mb-8 shadow-lg relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+          
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <RocketLaunchIcon className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Boost Your Sales</h3>
+                  <p className="text-white/80 text-sm">ดันโพสต์โปรโมชั่นให้ลูกค้าเห็นก่อนใคร</p>
+                </div>
+              </div>
+              {myProducts.filter(p => p.isBoosted).length > 0 && (
+                <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                  {myProducts.filter(p => p.isBoosted).length} Active
+                </span>
+              )}
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <button
+                onClick={() => setShowBoostModal(true)}
+                className="inline-flex items-center gap-2 bg-white text-orange-600 px-5 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl text-sm"
+              >
+                <RocketLaunchIcon className="w-5 h-5" />
+                เลือกโปรโมชั่นที่จะ Boost
+              </button>
+              <div className="flex items-center gap-2 text-white/90 text-sm">
+                <CheckCircleIcon className="w-5 h-5" />
+                <span>แสดงอันดับ 1 ในหน้า Feed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Boost Modal */}
+        <BoostPromotionModal isOpen={showBoostModal} onClose={() => setShowBoostModal(false)} />
 
         {/* My Active Deals Section */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">

@@ -68,6 +68,8 @@ function productToPromotion(p: Product): Promotion {
     category: p.category,
     is_verified: p.verified,
     is_sponsored: false,
+    is_boosted: p.isBoosted || false,
+    boosted_at: p.boostedAt,
     location: p.distance || 'ทุกสาขา',
     search_volume: 0,
     image: p.image,
@@ -106,13 +108,22 @@ export default function Home() {
   }, [checkAuth]);
 
   // Merge static promotions + store products (merchant-created)
+  // Sort boosted promotions to the top, then by creation date
   const allPromotions = useMemo(() => {
     const storePromos = storeProducts.map(productToPromotion);
-    // Put store products first (newest), then static data
     // Deduplicate by id
     const ids = new Set(storePromos.map((p) => p.id));
     const staticOnly = promotions.filter((p) => !ids.has(p.id));
-    return [...storePromos, ...staticOnly];
+    const merged = [...storePromos, ...staticOnly];
+    // Sort: boosted first (by boosted_at desc), then rest by newest
+    return merged.sort((a, b) => {
+      if (a.is_boosted && !b.is_boosted) return -1;
+      if (!a.is_boosted && b.is_boosted) return 1;
+      if (a.is_boosted && b.is_boosted) {
+        return new Date(b.boosted_at || 0).getTime() - new Date(a.boosted_at || 0).getTime();
+      }
+      return 0; // keep original order for non-boosted
+    });
   }, [storeProducts, promotions]);
 
   // Filter promotions with memoization

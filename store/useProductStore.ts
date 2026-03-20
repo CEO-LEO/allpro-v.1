@@ -21,6 +21,8 @@ export interface Product {
   validUntil: string;
   createdAt: string;
   tags: string[];
+  isBoosted?: boolean;
+  boostedAt?: string;
 }
 
 interface ProductStore {
@@ -33,6 +35,8 @@ interface ProductStore {
   deleteProduct: (id: string) => void;
   resetProducts: () => void;
   setSelectedCategory: (category: string) => void;
+  boostProduct: (id: string) => void;
+  unboostProduct: (id: string) => void;
 }
 
 // Mock initial data
@@ -292,6 +296,22 @@ export const useProductStore = create<ProductStore>()(
       
       deleteProduct: (id) => set((state) => ({
         products: state.products.filter((product) => product.id !== id)
+      })),
+      
+      boostProduct: (id) => set((state) => ({
+        products: state.products.map((product) =>
+          product.id === id
+            ? { ...product, isBoosted: true, boostedAt: new Date().toISOString() }
+            : product
+        )
+      })),
+      
+      unboostProduct: (id) => set((state) => ({
+        products: state.products.map((product) =>
+          product.id === id
+            ? { ...product, isBoosted: false, boostedAt: undefined }
+            : product
+        )
       })),
       
       resetProducts: () => set({

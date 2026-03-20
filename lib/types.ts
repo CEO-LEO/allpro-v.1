@@ -27,6 +27,9 @@ export interface Promotion {
   flashPrice?: number;
   flashEndTime?: Date;
   flashClaimedPercentage?: number;
+  // Boost fields
+  is_boosted?: boolean;
+  boosted_at?: string;
 }
 
 export interface MerchantStats {
