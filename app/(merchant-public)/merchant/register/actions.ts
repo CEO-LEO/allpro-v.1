@@ -130,9 +130,12 @@ export async function registerMerchantAction(
     metaPatch.logo_url = logoUrl;
   }
 
-  await supabase.auth.updateUser({
+  const { error: updateError } = await supabase.auth.updateUser({
     data: metaPatch,
   });
+  if (updateError) {
+    console.error('updateUser error:', updateError);
+  }
 
   return {
     success: true,

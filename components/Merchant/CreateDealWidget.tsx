@@ -123,9 +123,8 @@ export default function CreateDealWidget() {
           conditions: formData.isFlashSale ? 'Flash Sale - เวลาจำกัด' : 'โปรโมชั่นพิเศษ',
         });
         if (dbError) {
-          console.error('❌ Supabase insert error:', dbError);
-        } else {
-          console.log('✅ Saved to Supabase products table');
+          console.error('Supabase insert error:', dbError);
+          toast.error('บันทึกลง Supabase ไม่สำเร็จ: ' + dbError.message);
         }
       }
 

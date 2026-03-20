@@ -180,8 +180,10 @@ export default function MerchantDashboard() {
   }, [user]);
 
   // Filter products for this merchant
+  // Match by shopName first, fallback to user name or "My Shop" (same logic as CreateDealWidget)
   const shopName = user?.shopName || '';
-  const myProducts = products.filter((p) => shopName && p.shopName === shopName);
+  const possibleNames = [shopName, user?.name, 'My Shop'].filter(Boolean);
+  const myProducts = products.filter((p) => possibleNames.includes(p.shopName));
 
   // Sort products
   const sortedProducts = [...myProducts].sort((a, b) => {

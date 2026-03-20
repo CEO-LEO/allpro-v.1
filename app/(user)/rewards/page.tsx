@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Coins, Sparkles, Gift, AlertCircle, Check, ShoppingBag, TrendingUp, ChevronRight } from 'lucide-react';
+import { Coins, Sparkles, Gift, AlertCircle, Check, ShoppingBag, TrendingUp, ChevronRight, Flame, Pizza, Film, ShoppingCart, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import LoginModal from '@/components/Auth/LoginModal';
@@ -44,11 +44,11 @@ interface RewardItem {
 type CategoryType = 'all' | 'food-drink' | 'entertainment' | 'shopping' | 'wellness';
 
 const categories = [
-  { id: 'all', label: 'All Rewards', icon: '🎁' },
-  { id: 'food-drink', label: 'Food & Drink', icon: '🍕' },
-  { id: 'entertainment', label: 'Entertainment', icon: '🎬' },
-  { id: 'shopping', label: 'Shopping', icon: '🛍️' },
-  { id: 'wellness', label: 'Wellness', icon: '💆' },
+  { id: 'all', label: 'All Rewards' },
+  { id: 'food-drink', label: 'Food & Drink' },
+  { id: 'entertainment', label: 'Entertainment' },
+  { id: 'shopping', label: 'Shopping' },
+  { id: 'wellness', label: 'Wellness' },
 ];
 
 export default function RewardsPage() {
@@ -207,7 +207,7 @@ export default function RewardsPage() {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-h2 text-gray-900">
-              🎁 Rewards
+              Rewards
             </Link>
             <Link 
               href="/profile/wallet"
@@ -257,21 +257,21 @@ export default function RewardsPage() {
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3 mt-4">
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-            <div className="text-h2 mb-1">🎁</div>
+            <div className="mb-1 flex justify-center"><Gift className="w-7 h-7 text-orange-500" /></div>
             <p className="text-body-sm text-gray-600">แลกได้</p>
             <p className="text-h4 text-gray-900">
               {rewardsCatalog.filter(r => r.pointsCost <= pointsBalance).length}
             </p>
           </div>
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-            <div className="text-h2 mb-1">🔥</div>
+            <div className="mb-1 flex justify-center"><Flame className="w-7 h-7 text-red-500" /></div>
             <p className="text-body-sm text-gray-600">ดีลเด็ด</p>
             <p className="text-h4 text-gray-900">
               {rewardsCatalog.filter(r => r.featured).length}
             </p>
           </div>
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-            <div className="text-h2 mb-1">✨</div>
+            <div className="mb-1 flex justify-center"><Sparkles className="w-7 h-7 text-purple-500" /></div>
             <p className="text-body-sm text-gray-600">ของรางวัล</p>
             <p className="text-h4 text-gray-900">{rewardsCatalog.length}</p>
           </div>
@@ -292,7 +292,6 @@ export default function RewardsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <span>{cat.icon}</span>
                 <span>{cat.label}</span>
               </button>
             ))}
@@ -408,7 +407,7 @@ export default function RewardsPage() {
                 {/* Featured Badge */}
                 {reward.featured && (
                   <div className="absolute top-4 left-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-2 py-1 rounded-full text-caption font-bold">
-                    ⭐ Featured
+                    Featured
                   </div>
                 )}
               </motion.div>
@@ -424,7 +423,7 @@ export default function RewardsPage() {
               <Sparkles className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-h4 text-gray-900 mb-2">💡 How to Earn More Points</h3>
+              <h3 className="text-h4 text-gray-900 mb-2">How to Earn More Points</h3>
               <ul className="text-body text-gray-600 space-y-1">
                 <li>• Complete daily check-ins (+10 points)</li>
                 <li>• Share promotions with friends (+5 points each)</li>
@@ -439,7 +438,7 @@ export default function RewardsPage() {
         {/* Redeemed Count */}
         <div className="mt-8 text-center">
           <p className="text-body text-gray-600">
-            You have redeemed <span className="font-bold text-gray-900">{redeemedRewards.length}</span> reward{redeemedRewards.length !== 1 ? 's' : ''} so far! 🎉
+            You have redeemed <span className="font-bold text-gray-900">{redeemedRewards.length}</span> reward{redeemedRewards.length !== 1 ? 's' : ''} so far!
           </p>
         </div>
       </div>

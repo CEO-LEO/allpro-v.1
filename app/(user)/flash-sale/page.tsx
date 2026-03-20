@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, ClockIcon, FireIcon, BoltIcon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/solid';
 import { MapPinIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { useProductStore } from '@/store/useProductStore';
 
 /*
  * Expected API Response: GET /api/flash-sales
@@ -180,33 +181,31 @@ export default function FlashSalePage() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<FlashSaleItem | null>(null);
 
-  // ── API-Ready State ──
-  const [flashSales, setFlashSales] = useState<FlashSaleItem[]>([]);
+  // ── Load flash sale products from product store ──
+  const products = useProductStore((s) => s.products);
   const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+  const [isError] = useState(false);
 
-  // TODO: Replace with actual API call
-  // useEffect(() => {
-  //   const fetchFlashSales = async () => {
-  //     setIsLoading(true);
-  //     setIsError(false);
-  //     try {
-  //       const res = await fetch('/api/flash-sales');
-  //       if (!res.ok) throw new Error('Failed to fetch');
-  //       const data = await res.json();
-  //       // Convert endTime strings to Date objects
-  //       setFlashSales(data.sales.map((s: any) => ({ ...s, endTime: new Date(s.endTime) })));
-  //     } catch {
-  //       setIsError(true);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   fetchFlashSales();
-  // }, []);
+  // Convert product-store items tagged "Flash Sale" into FlashSaleItem[]
+  const flashSales: FlashSaleItem[] = products
+    .filter((p) => p.tags?.includes('Flash Sale'))
+    .map((p, idx) => ({
+      id: idx + 1,
+      title: p.title,
+      merchant: p.shopName,
+      discount: p.discount || Math.round(((p.originalPrice - p.promoPrice) / p.originalPrice) * 100),
+      originalPrice: p.originalPrice,
+      salePrice: p.promoPrice,
+      image: p.image,
+      endTime: new Date(p.validUntil),
+      claimed: p.reviews || 0,
+      total: Math.max(p.likes || 50, (p.reviews || 0) + 10),
+      location: p.distance || 'กรุงเทพฯ',
+      category: p.category,
+    }));
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
+    const timer = setTimeout(() => setIsLoading(false), 400);
     return () => clearTimeout(timer);
   }, []);
 

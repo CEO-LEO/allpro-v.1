@@ -693,11 +693,6 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                     : 'bg-white text-gray-500 hover:bg-purple-50 hover:text-purple-600 shadow-sm border border-gray-200'
                 }`}
               >
-                {tag === 'ทั้งหมด' && '🏷️ '}
-                {tag === 'ของกิน' && '🍜 '}
-                {tag === 'เสื้อผ้า' && '👗 '}
-                {tag === 'การท่องเที่ยว' && '✈️ '}
-                {tag === 'โปรพิเศษ' && '🔥 '}
                 {tag}
               </button>
             ))}
@@ -717,7 +712,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
             height={40}
             className="rounded-full ring-2 ring-orange-200 flex-shrink-0"
           />
-          <span className="text-gray-400 text-[15px]">💬 แชร์ดีลดีๆ ที่เจอ...</span>
+          <span className="text-gray-400 text-[15px]">แชร์ดีลดีๆ ที่เจอ...</span>
         </button>
 
         {/* ─── Feed ─────────────────────────────────────────────────── */}
@@ -738,7 +733,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
 
       {/* ═══ Create Post Modal ═══════════════════════════════════════ */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -790,7 +785,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
               {/* Tag selector */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
-                  🏷️ เลือกหมวดหมู่ <span className="text-red-500">*</span>
+                  เลือกหมวดหมู่ <span className="text-red-500">*</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORY_TAGS.map((tag) => (
@@ -804,10 +799,6 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                           : 'bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600 border border-gray-200'
                       }`}
                     >
-                      {tag === 'ของกิน' && '🍜 '}
-                      {tag === 'เสื้อผ้า' && '👗 '}
-                      {tag === 'การท่องเที่ยว' && '✈️ '}
-                      {tag === 'โปรพิเศษ' && '🔥 '}
                       {tag}
                     </button>
                   ))}

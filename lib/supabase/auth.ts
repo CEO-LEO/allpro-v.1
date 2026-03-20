@@ -139,7 +139,11 @@ export async function signIn(
  */
 export async function signOut(): Promise<void> {
   if (!isSupabaseConfigured) return;
-  await supabase.auth.signOut();
+  try {
+    await supabase.auth.signOut();
+  } catch (err) {
+    console.error('signOut error:', err);
+  }
 }
 
 /**

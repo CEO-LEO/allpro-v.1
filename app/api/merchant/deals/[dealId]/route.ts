@@ -142,7 +142,10 @@ export async function PATCH(
 
     // Update branch links if provided
     if (branch_ids !== undefined) {
-      await supabase.from('promotion_branches').delete().eq('promotion_id', dealId);
+      const { error: deleteError } = await supabase.from('promotion_branches').delete().eq('promotion_id', dealId);
+      if (deleteError) {
+        console.error('[PATCH branch delete]', deleteError);
+      }
 
       if (branch_ids.length > 0) {
         const { data: validBranches } = await supabase
@@ -152,9 +155,12 @@ export async function PATCH(
           .in('id', branch_ids);
 
         if (validBranches?.length) {
-          await supabase
+          const { error: insertError } = await supabase
             .from('promotion_branches')
             .insert(validBranches.map(b => ({ promotion_id: dealId, branch_id: b.id })));
+          if (insertError) {
+            console.error('[PATCH branch insert]', insertError);
+          }
         }
       }
     }
