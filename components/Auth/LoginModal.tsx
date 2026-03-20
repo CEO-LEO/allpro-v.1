@@ -60,9 +60,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     setError('');
     setShowAccountNotFound(false);
 
-    // 🔍 DEBUG: ตรวจสอบค่า state ที่จับได้
-    console.log('🔍 Login attempt:', { email, password: password ? `[${password.length} chars]` : '(empty)', selectedRole });
-
     // Validation — ไม่ต้อง set loading ถ้า validate ไม่ผ่าน
     if (!email.trim()) {
       setError('กรุณากรอกอีเมล');
@@ -85,10 +82,10 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         await new Promise((resolve) => setTimeout(resolve, 600));
         if (selectedRole === 'USER') {
           loginAsUser();
-          toast.success('🎉 Demo Mode — ยินดีต้อนรับ!');
+          toast.success('Demo Mode — ยินดีต้อนรับ!');
         } else {
           loginAsMerchant();
-          toast.success('✅ Demo Mode — Merchant Dashboard');
+          toast.success('Demo Mode — Merchant Dashboard');
         }
         handleClose();
         if (selectedRole === 'MERCHANT') {
@@ -97,25 +94,28 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         return;
       }
 
-      // ── Supabase Auth — ขั้นที่ 1: Authenticate ก่อน (ไม่สน role) ──
-      console.log('🔐 Step 1: Authenticating...', { email, passwordLength: password.length });
-      const result = await signIn(email, password);
-      console.log('📦 signIn result:', { success: result.success, error: result.error, userName: result.user?.name, dbRole: result.user?.role });
+      // ── Supabase Auth — timeout protection (15s) ──
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+      );
+
+      const result = await Promise.race([
+        signIn(email.trim(), password),
+        timeoutPromise,
+      ]);
 
       if (!result.success) {
         setError(result.error || 'เข้าสู่ระบบไม่สำเร็จ');
-        if (result.error?.includes('ไม่ถูกต้อง')) {
+        if (result.error?.includes('ไม่ถูกต้อง') || result.error?.includes('ไม่พบ')) {
           setShowAccountNotFound(true);
         }
-        return; // finally จะ setIsLoading(false)
+        return;
       }
 
-      // ── ขั้นที่ 2: เช็ค Role จาก Database vs แท็บที่เลือก ──
-      const dbRole = result.user!.role; // role จาก user_metadata ที่ตั้งไว้ตอน signUp
-      console.log('🔍 Step 2: Role check', { selectedRole, dbRole });
+      // ── เช็ค Role จาก Database vs แท็บที่เลือก ──
+      const dbRole = result.user!.role;
 
       if (selectedRole === 'MERCHANT' && dbRole !== 'MERCHANT') {
-        // เลือกแท็บร้านค้า แต่บัญชีเป็นลูกค้า → sign out + แจ้ง error
         await supabaseSignOut();
         setError('บัญชีนี้ไม่ใช่บัญชีร้านค้า กรุณาสมัครสมาชิกเป็นร้านค้าก่อน');
         setShowAccountNotFound(true);
@@ -123,7 +123,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       }
 
       if (selectedRole === 'USER' && dbRole === 'MERCHANT') {
-        // เลือกแท็บลูกค้า แต่บัญชีเป็นร้านค้า → sign out + แจ้ง error
         await supabaseSignOut();
         setError('บัญชีนี้เป็นบัญชีร้านค้า กรุณาเลือกแท็บ "ร้านค้า" เพื่อเข้าสู่ระบบ');
         return;
@@ -134,7 +133,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         id: result.user!.id,
         email: result.user!.email,
         name: result.user!.name,
-        role: dbRole, // ใช้ role จาก DB (เชื่อถือได้กว่า UI)
+        role: dbRole,
         avatar: result.user!.avatar,
         xp: result.user!.xp,
         coins: result.user!.coins,
@@ -142,18 +141,21 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       });
 
       if (dbRole === 'MERCHANT') {
-        toast.success(`✅ ยินดีต้อนรับ ${result.user?.name}!`);
+        toast.success(`ยินดีต้อนรับ ${result.user?.name}!`);
         handleClose();
         router.push('/merchant/dashboard');
       } else {
-        toast.success(`🎉 ยินดีต้อนรับกลับ ${result.user?.name}!`);
+        toast.success(`ยินดีต้อนรับกลับ ${result.user?.name}!`);
         handleClose();
       }
     } catch (err) {
-      console.error('❌ Login error:', err);
-      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      console.error('Login error:', err);
+      if (err instanceof Error && err.message === 'TIMEOUT') {
+        setError('เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่อีกครั้ง');
+      } else {
+        setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      }
     } finally {
-      // ✅ ไม่ว่าจะสำเร็จหรือ error — isLoading จะถูก reset เสมอ
       setIsLoading(false);
     }
   };
