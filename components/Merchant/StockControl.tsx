@@ -1,32 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, CheckCircle, AlertCircle, TrendingDown } from 'lucide-react';
-
-// --- Data Structure คาดว่าจะได้รับจาก API ---
-// {
-//   id: string;
-//   name: string;
-//   branch: string;
-//   status: 'in_stock' | 'out_of_stock';
-//   quantity: number;
-//   isFlashSale: boolean;
-//   isActive: boolean;
-//   updatedAt: string;        // ISO date string
-//   lowStockThreshold?: number;
-// }
-
-interface Product {
-  id: string;
-  name: string;
-  branch: string;
-  status: 'in_stock' | 'out_of_stock';
-  quantity: number;
-  isFlashSale: boolean;
-  isActive: boolean;
-  updatedAt: string;
-  lowStockThreshold?: number;
-}
+import { Package, CheckCircle, AlertCircle, TrendingDown, Plus, Trash2 } from 'lucide-react';
+import { useStockStore } from '@/store/useStockStore';
+import toast from 'react-hot-toast';
 
 type FilterTab = 'all' | 'in_stock' | 'out_of_stock';
 
@@ -38,9 +15,27 @@ interface StockControlProps {
 export default function StockControl({ merchantId, merchantName }: StockControlProps) {
   void merchantId;
 
-  // TODO: เชื่อมต่อ API จริง — เรียก fetch แล้ว setProducts(data)
-  const [products] = useState<Product[]>([]);
+  const items = useStockStore((s) => s.items);
+  const addItem = useStockStore((s) => s.addItem);
+  const updateQuantity = useStockStore((s) => s.updateQuantity);
+  const removeItem = useStockStore((s) => s.removeItem);
+
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItem, setNewItem] = useState({ name: '', branch: '', category: '', quantity: '', image: '' });
+
+  // Map stock items to display format
+  const products = items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    branch: item.branch,
+    status: (item.quantity > 0 ? 'in_stock' : 'out_of_stock') as 'in_stock' | 'out_of_stock',
+    quantity: item.quantity,
+    isFlashSale: false,
+    isActive: item.quantity > 0,
+    updatedAt: item.updatedAt,
+    lowStockThreshold: item.lowStockThreshold,
+  }));
 
   // --- Summary คำนวณจาก State ---
   const totalItems = products.length;
@@ -106,22 +101,105 @@ export default function StockControl({ merchantId, merchantName }: StockControlP
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              activeTab === tab.key
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {tab.label} ({tab.count})
-          </button>
-        ))}
+      {/* Filter Tabs + Add Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          เพิ่มสินค้า
+        </button>
       </div>
+
+      {/* Add Item Form */}
+      {showAddForm && (
+        <div className="bg-white rounded-2xl border border-blue-200 shadow-sm p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">เพิ่มสินค้าในสต็อก</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="ชื่อสินค้า"
+              value={newItem.name}
+              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+              className="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="text"
+              placeholder="สาขา"
+              value={newItem.branch}
+              onChange={(e) => setNewItem({ ...newItem, branch: e.target.value })}
+              className="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="text"
+              placeholder="หมวดหมู่"
+              value={newItem.category}
+              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+              className="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="number"
+              placeholder="จำนวน"
+              value={newItem.quantity}
+              onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
+              className="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="text"
+              placeholder="ลิงค์รูปภาพ (ไม่บังคับ)"
+              value={newItem.image}
+              onChange={(e) => setNewItem({ ...newItem, image: e.target.value })}
+              className="md:col-span-2 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => {
+                if (!newItem.name || !newItem.quantity) {
+                  toast.error('กรุณากรอกชื่อสินค้าและจำนวน');
+                  return;
+                }
+                addItem({
+                  name: newItem.name,
+                  branch: newItem.branch || 'Main',
+                  category: newItem.category || 'Other',
+                  quantity: parseInt(newItem.quantity) || 0,
+                  lowStockThreshold: 10,
+                  image: newItem.image || undefined,
+                });
+                setNewItem({ name: '', branch: '', category: '', quantity: '', image: '' });
+                setShowAddForm(false);
+                toast.success('เพิ่มสินค้าสำเร็จ');
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              บันทึก
+            </button>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Product List or Empty State */}
       {filteredProducts.length > 0 ? (
@@ -172,23 +250,36 @@ export default function StockControl({ merchantId, merchantName }: StockControlP
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Quantity:</span>
-                    <span
-                      className={`px-3 py-1 rounded-lg text-sm font-semibold border ${
+                    <input
+                      type="number"
+                      min="0"
+                      value={product.quantity}
+                      onChange={(e) => updateQuantity(product.id, parseInt(e.target.value) || 0)}
+                      className={`w-20 px-3 py-1 rounded-lg text-sm font-semibold border text-center ${
                         product.quantity === 0
                           ? 'bg-red-50 text-red-600 border-red-200'
                           : 'bg-white text-gray-900 border-gray-200'
                       }`}
-                    >
-                      {product.quantity}
-                    </span>
+                    />
                   </div>
                 </div>
 
-                {product.isActive && (
-                  <span className="flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
-                    ⚡ 🔥 Active
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {product.isActive && (
+                    <span className="flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
+                      Active
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      removeItem(product.id);
+                      toast.success('ลบสินค้าแล้ว');
+                    }}
+                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {product.isFlashSale && (
@@ -214,6 +305,13 @@ export default function StockControl({ merchantId, merchantName }: StockControlP
               คุณยังไม่ได้เพิ่มสินค้าใดๆ ในสต็อก<br />
               เพิ่มสินค้าเพื่อเริ่มต้นจัดการสต็อกแบบเรียลไทม์
             </p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="mt-4 inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              เพิ่มสินค้าตัวแรก
+            </button>
           </div>
         </div>
       )}
