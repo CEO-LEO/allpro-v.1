@@ -18,9 +18,17 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
   // ═══ Controlled Form State ═══
   const [formData, setFormData] = useState({
     shopName: user?.shopName || '',
-    description: '',
+    description: user?.shopDescription || '',
     phone: user?.phone || '',
     email: user?.email || '',
+    address: user?.shopAddress || '',
+    category: user?.shopCategory || '',
+    openingHours: user?.shopOpeningHours || '',
+    paymentMethods: user?.shopPaymentMethods || '',
+    socialLine: user?.shopSocialLine || '',
+    socialFacebook: user?.shopSocialFacebook || '',
+    socialInstagram: user?.shopSocialInstagram || '',
+    socialWebsite: user?.shopSocialWebsite || '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -53,6 +61,15 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
         phone: formData.phone || undefined,
         email: formData.email || undefined,
         shopLogo: logoPreview || user?.shopLogo || undefined,
+        shopDescription: formData.description || undefined,
+        shopAddress: formData.address || undefined,
+        shopCategory: formData.category || undefined,
+        shopOpeningHours: formData.openingHours || undefined,
+        shopPaymentMethods: formData.paymentMethods || undefined,
+        shopSocialLine: formData.socialLine || undefined,
+        shopSocialFacebook: formData.socialFacebook || undefined,
+        shopSocialInstagram: formData.socialInstagram || undefined,
+        shopSocialWebsite: formData.socialWebsite || undefined,
       });
 
       setSaveSuccess(true);
@@ -193,6 +210,95 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="0xx-xxx-xxxx"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ที่อยู่ร้านค้า</label>
+                <textarea
+                  value={formData.address}
+                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="เลขที่ ถนน แขวง เขต จังหวัด"
+                  rows={2}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all resize-none"
+                />
+              </div>
+
+              {/* Category & Opening Hours */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">ประเภทร้านค้า</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                  >
+                    <option value="">เลือกประเภท</option>
+                    <option value="อาหารและเครื่องดื่ม">อาหารและเครื่องดื่ม</option>
+                    <option value="แฟชั่นและเครื่องแต่งกาย">แฟชั่นและเครื่องแต่งกาย</option>
+                    <option value="สุขภาพและความงาม">สุขภาพและความงาม</option>
+                    <option value="อิเล็กทรอนิกส์และแกดเจ็ต">อิเล็กทรอนิกส์และแกดเจ็ต</option>
+                    <option value="ท่องเที่ยวและบริการ">ท่องเที่ยวและบริการ</option>
+                    <option value="อื่นๆ">อื่นๆ</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">เวลาทำการ</label>
+                  <input
+                    type="text"
+                    value={formData.openingHours}
+                    onChange={(e) => setFormData(prev => ({ ...prev, openingHours: e.target.value }))}
+                    placeholder="เช่น 09:00 - 21:00"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ช่องทางชำระเงิน</label>
+                <input
+                  type="text"
+                  value={formData.paymentMethods}
+                  onChange={(e) => setFormData(prev => ({ ...prev, paymentMethods: e.target.value }))}
+                  placeholder="เช่น โอนผ่านธนาคาร, PromptPay, บัตรเครดิต"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                />
+              </div>
+
+              {/* Social Links */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">ช่องทางโซเชียล</label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input
+                    type="text"
+                    value={formData.socialLine}
+                    onChange={(e) => setFormData(prev => ({ ...prev, socialLine: e.target.value }))}
+                    placeholder="LINE ID"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                  />
+                  <input
+                    type="text"
+                    value={formData.socialFacebook}
+                    onChange={(e) => setFormData(prev => ({ ...prev, socialFacebook: e.target.value }))}
+                    placeholder="Facebook"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                  />
+                  <input
+                    type="text"
+                    value={formData.socialInstagram}
+                    onChange={(e) => setFormData(prev => ({ ...prev, socialInstagram: e.target.value }))}
+                    placeholder="Instagram"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                  />
+                  <input
+                    type="text"
+                    value={formData.socialWebsite}
+                    onChange={(e) => setFormData(prev => ({ ...prev, socialWebsite: e.target.value }))}
+                    placeholder="เว็บไซต์"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
                   />
                 </div>

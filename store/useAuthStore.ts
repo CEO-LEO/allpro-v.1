@@ -22,6 +22,15 @@ interface User {
   shopLogo?: string;
   verified?: boolean;
   isPro?: boolean;
+  shopDescription?: string;
+  shopAddress?: string;
+  shopCategory?: string;
+  shopOpeningHours?: string;
+  shopPaymentMethods?: string;
+  shopSocialLine?: string;
+  shopSocialFacebook?: string;
+  shopSocialInstagram?: string;
+  shopSocialWebsite?: string;
 }
 
 interface AuthState {
