@@ -10,6 +10,7 @@ import {
   ChevronDown, Network, Truck, Award, Wallet, PackageCheck
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import StoreLocations, { type LocationData } from '@/components/Merchant/StoreLocations';
 
 // ═════════════════════════════════════════════════════════════════════════════
 //  TYPES
@@ -233,6 +234,7 @@ export default function MerchantSettingsDashboard() {
   });
 
   const [isEcosystemExpanded, setIsEcosystemExpanded] = useState(false);
+  const [locations, setLocations] = useState<LocationData[]>([]);
 
   // ═══ Fetch shop settings from API ═══
   useEffect(() => {
@@ -361,6 +363,11 @@ export default function MerchantSettingsDashboard() {
         <Input label="รหัสสาขา" icon={Building2} value={settings.branchCode} onChange={(e) => update('branchCode', e.target.value)} placeholder="เช่น BRN-001" />
       </div>
       <Input label="อีเมลผู้จัดการ" icon={Mail} type="email" value={settings.managerEmail} onChange={(e) => update('managerEmail', e.target.value)} placeholder="manager@store.com" />
+
+      <Divider />
+
+      {/* Store Locations Section */}
+      <StoreLocations locations={locations} onChange={setLocations} />
     </div>
   );
 
