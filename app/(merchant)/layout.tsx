@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -19,6 +19,7 @@ import { toast } from 'react-hot-toast';
 import CreateDealModal from './merchant/dashboard/CreateDealModal';
 import AuthGuard from '@/components/Common/AuthGuard';
 import { useRouter } from 'next/navigation';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // Shared profile completeness check
 function isMerchantProfileComplete(user: { shopName?: string; shopLogo?: string; shopAddress?: string; phone?: string; merchantProfileComplete?: boolean } | null): boolean {
@@ -163,6 +164,74 @@ export default function MerchantLayout({
   children: React.ReactNode;
 }) {
   const [showCreateDeal, setShowCreateDeal] = useState(false);
+  const { user, updateUser } = useAuthStore();
+  const syncDone = useRef(false);
+
+  // ═══ Safety Net: ถ้า profile ว่างแต่ DB มีข้อมูล → ดึงมาเติม ═══
+  // แก้ปัญหา: หลังล็อคอิน/รีเฟรช ข้อมูลจาก DB ยังไม่โหลดทัน
+  useEffect(() => {
+    if (syncDone.current) return;
+    if (!user || user.role !== 'MERCHANT') return;
+    if (!isSupabaseConfigured) return;
+
+    // ถ้ามีข้อมูลครบแล้ว → ไม่ต้อง sync
+    const hasData = !!(
+      user.shopName?.trim() &&
+      user.shopLogo &&
+      user.shopAddress?.trim() &&
+      user.phone?.trim()
+    );
+    if (hasData) {
+      syncDone.current = true;
+      return;
+    }
+
+    // Profile ยังว่าง → ดึงจาก merchant_profiles table
+    syncDone.current = true;
+    (async () => {
+      try {
+        // หา user_id จาก Supabase session หรือใช้ user.id
+        let userId = user.id;
+        if (isSupabaseConfigured) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.id) userId = session.user.id;
+          } catch { /* ใช้ user.id fallback */ }
+        }
+
+        const { data, error } = await supabase
+          .from('merchant_profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        if (error || !data) {
+          console.log('[MerchantLayout] No merchant_profiles in DB — first time setup needed');
+          return;
+        }
+
+        console.log('[MerchantLayout] DB sync — found merchant data:', data.shop_name);
+        updateUser({
+          shopName: data.shop_name || undefined,
+          shopLogo: data.shop_logo || undefined,
+          shopAddress: data.shop_address || undefined,
+          phone: data.phone || undefined,
+          shopSocialLine: data.line_id || undefined,
+          shopSocialFacebook: data.facebook || undefined,
+          shopSocialInstagram: data.instagram || undefined,
+          shopSocialWebsite: data.website || undefined,
+          merchantProfileComplete: !!(
+            data.shop_name?.trim() &&
+            data.shop_logo &&
+            data.shop_address?.trim() &&
+            data.phone?.trim() && data.phone.trim().length >= 9
+          ),
+        });
+      } catch (err) {
+        console.warn('[MerchantLayout] DB sync error:', err);
+      }
+    })();
+  }, [user, updateUser]);
 
   return (
     <AuthGuard requiredRole="merchant">
