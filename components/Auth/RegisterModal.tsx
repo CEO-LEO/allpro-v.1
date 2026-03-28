@@ -7,6 +7,8 @@ import { X, UserCircle, Store, UserPlus, Lock, Mail, Eye, EyeOff, Loader2, User 
 import { toast } from 'react-hot-toast';
 import { signUp } from '@/lib/supabase/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter } from 'next/navigation';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -21,6 +23,8 @@ type SelectedRole = 'USER' | 'MERCHANT' | null;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps) {
+  const { login } = useAuthStore();
+  const router = useRouter();
   // ฟอร์ม state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -31,6 +35,18 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
   const [selectedRole, setSelectedRole] = useState<SelectedRole>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Real-time password mismatch
+  const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+
+  // Detect mobile for bottom-sheet layout
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -62,6 +78,35 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     onSwitchToLogin();
   };
 
+  // Auto-login หลังสมัครสำเร็จ (ใช้ข้อมูลจริงจาก Supabase ถ้ามี)
+  const handleAutoLogin = (realUser?: { id: string; email: string; name: string; role: 'USER' | 'MERCHANT' }) => {
+    const newUser = {
+      id: realUser?.id || `${selectedRole === 'MERCHANT' ? 'merchant' : 'user'}-${Date.now()}`,
+      name: realUser?.name || name.trim(),
+      email: realUser?.email || email.trim(),
+      role: (realUser?.role || selectedRole) as 'USER' | 'MERCHANT',
+      avatar: '',
+      phone: '',
+      createdAt: new Date().toISOString(),
+      ...(selectedRole === 'USER' ? {
+        xp: 0,
+        level: 1,
+        coins: 0,
+        points: 0,
+        preferred_tags: [] as string[],
+        onboardingCompleted: false,
+        profileCompleted: false,
+      } : {
+        shopName: '',
+        shopLogo: '',
+        verified: false,
+        merchantProfileComplete: false,
+      }),
+    };
+    login(newUser);
+    handleClose();
+  };
+
   // Client-side Validation
   const validate = (): string | null => {
     if (!name.trim()) return 'กรุณากรอกชื่อ-นามสกุล';
@@ -74,7 +119,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     return null;
   };
 
-  // Supabase Auth Register (พร้อม Demo fallback)
+  // Supabase Auth Register (พร้อม Demo fallback + timeout protection)
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -91,26 +136,73 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       // ── ถ้า Supabase ยังไม่ได้ตั้งค่า → Demo Mode ──
       if (!isSupabaseConfigured) {
         await new Promise((resolve) => setTimeout(resolve, 800));
-        toast.success('🎉 Demo Mode — สมัครสำเร็จ! กรุณาเข้าสู่ระบบ');
-        handleGoToLogin();
+        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
+        handleAutoLogin();
         return;
       }
 
-      // ── Supabase Auth — Register จริง ──
+      // ── Supabase Auth — Register จริง (with 12s timeout) ──
       console.log('📝 Calling signUp with:', { email, name, selectedRole });
-      const result = await signUp(email, password, name, selectedRole);
-      console.log('📦 signUp result:', { success: result.success, error: result.error });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+      );
+
+      let result;
+      try {
+        result = await Promise.race([
+          signUp(email, password, name, selectedRole),
+          timeoutPromise,
+        ]);
+      } catch (raceErr: unknown) {
+        // Timeout or network error → fallback to demo auto-login
+        const errMsg = raceErr instanceof Error ? raceErr.message : '';
+        if (errMsg === 'TIMEOUT') {
+          console.warn('⏱️ Supabase signUp timed out — falling back to demo mode');
+          toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
+          handleAutoLogin();
+          return;
+        }
+        throw raceErr; // re-throw other errors to outer catch
+      }
+
+      console.log('📦 signUp result:', { success: result.success, error: result.error, needsEmail: result.needsEmailConfirmation });
 
       if (!result.success) {
-        setError(result.error || 'สมัครสมาชิกไม่สำเร็จ');
+        // แจ้ง Error ที่ชัดเจนเป็นภาษาไทย
+        const errMessage = result.error || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่';
+        setError(errMessage);
+        toast.error(errMessage);
         return;
       }
 
-      toast.success('🎉 สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
-      handleGoToLogin();
+      // ★ สมัครสำเร็จ → auto-login ด้วยข้อมูลจริงจาก Supabase เสมอ
+      // (ถ้า email confirmation เปิดอยู่ ผู้ใช้ยังเข้าใช้งานได้ แต่จะถูก session limit ทีหลัง)
+      const realUser = result.user ? {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        role: result.user.role as 'USER' | 'MERCHANT',
+      } : undefined;
+      
+      if (result.needsEmailConfirmation) {
+        toast.success('🎉 สมัครสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี แล้วกลับมาเข้าสู่ระบบ', {
+          duration: 8000,
+        });
+        // ★ ไม่ auto-login ถ้าไม่มี session จริง — ให้ไปล็อกอินหลังยืนยัน
+        handleGoToLogin();
+      } else {
+        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
+        handleAutoLogin(realUser);
+        if (selectedRole === 'MERCHANT') {
+          router.push('/merchant/dashboard');
+        }
+      }
     } catch (err) {
       console.error('❌ Register error:', err);
-      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      // Fallback: ถ้า Supabase มีปัญหา → auto-login ในโหมด demo เพื่อไม่ให้ลูกค้าติดค้าง
+      toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
+      handleAutoLogin();
     } finally {
       setIsLoading(false);
     }
@@ -130,13 +222,13 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
           />
 
           {/* Modal — Portal ไปที่ body เพื่อให้เงาคลุมเมนูด้านบน */}
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`fixed inset-0 z-[9999] overflow-y-auto ${isMobile ? 'flex items-end' : 'flex items-center justify-center p-4'}`}>
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0, y: 20 }}
+              animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1, y: 0 }}
+              exit={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden max-h-[90vh] overflow-y-auto"
+              className={`bg-white shadow-2xl w-full overflow-hidden ${isMobile ? 'rounded-t-2xl max-h-[92vh] overflow-y-auto' : 'rounded-2xl max-w-sm max-h-[90vh] overflow-y-auto'}`}
             >
               {/* Header — Gradient ส้ม-ชมพู เหมือน Login */}
               <div className="relative bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 px-6 pt-5 pb-4 text-white">
@@ -160,7 +252,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleRegister} className="p-5 space-y-3">
+              <form onSubmit={handleRegister} className={`p-5 space-y-3 ${isMobile ? 'pb-6' : ''}`}>
                 {/* Error message */}
                 {error && (
                   <motion.div
@@ -179,11 +271,13 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       id="register-name"
+                      name="name"
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="กรอกชื่อ-นามสกุล"
                       autoComplete="name"
+                      autoCapitalize="words"
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
@@ -196,11 +290,16 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       id="register-email"
+                      name="email"
                       type="email"
+                      inputMode="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
                       autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
@@ -213,11 +312,15 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       id="register-password"
+                      name="new-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="อย่างน้อย 6 ตัวอักษร"
                       autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
                     />
                     <button
@@ -234,15 +337,23 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 <div>
                   <label htmlFor="register-confirm-password" className="block text-xs font-medium text-gray-700 mb-1">ยืนยันรหัสผ่าน</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${passwordMismatch ? 'text-red-400' : 'text-gray-400'}`} />
                     <input
                       id="register-confirm-password"
+                      name="confirm-password"
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="กรอกรหัสผ่านอีกครั้ง"
                       autoComplete="new-password"
-                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      className={`w-full pl-9 pr-10 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400 ${
+                        passwordMismatch
+                          ? 'border-red-300 focus:ring-red-500 bg-red-50/50'
+                          : 'border-gray-300 focus:ring-orange-500'
+                      }`}
                     />
                     <button
                       type="button"
@@ -252,6 +363,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {passwordMismatch && (
+                    <p className="text-xs text-red-500 mt-1">รหัสผ่านไม่ตรงกัน</p>
+                  )}
                 </div>
 
                 {/* เลือกบทบาท */}

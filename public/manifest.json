@@ -1,12 +1,15 @@
 {
-  "name": "All Pro",
-  "short_name": "AllPro",
+  "name": "All Pro - โปรโมชั่นทั่วไทย",
+  "short_name": "All Pro",
   "description": "Hunt the best deals and promotions in Thailand. Food, Fashion, Services & more!",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#f59e0b",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
   "orientation": "portrait-primary",
+  "id": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.png",

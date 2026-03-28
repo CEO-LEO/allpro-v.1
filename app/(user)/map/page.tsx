@@ -15,9 +15,9 @@ const PromoMap = dynamic(
     loading: () => (
       <div className="w-full h-full flex items-center justify-center bg-gray-100">
         <div className="text-center">
-          <MapPin className="w-12 h-12 text-red-600 mx-auto mb-3 animate-pulse" />
-          <p className="text-gray-900 font-bold text-lg">Loading Promo Map...</p>
-          <p className="text-gray-600 text-sm mt-1">Finding nearby stores</p>
+          <MapPin className="w-12 h-12 text-orange-500 mx-auto mb-3 animate-pulse" />
+          <p className="text-gray-900 font-bold text-lg">กำลังโหลดแผนที่…</p>
+          <p className="text-gray-600 text-sm mt-1">กำลังค้นหาร้านค้าใกล้เคียง</p>
         </div>
       </div>
     )
@@ -35,21 +35,21 @@ export default function MapPage() {
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-8 bg-red-600 rounded-full" />
+              <div className="w-1 h-8 bg-orange-500 rounded-full" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <MapPin className="w-6 h-6 text-red-600" />
+                  <MapPin className="w-6 h-6 text-orange-500" />
                   Promo Map
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  Find nearby stores with active promotions
+                  ค้นหาร้านค้าใกล้เคียงที่มีโปรโมชั่น
                 </p>
               </div>
             </div>
             <div className="hidden md:flex items-center gap-2 text-sm">
               <TrendingUp className="w-4 h-4 text-green-600" />
               <span className="text-gray-600">
-                <span className="font-bold text-gray-900">{mockStores.length}</span> stores found
+                <span className="font-bold text-gray-900">{mockStores.length}</span> ร้านค้า
               </span>
             </div>
           </div>

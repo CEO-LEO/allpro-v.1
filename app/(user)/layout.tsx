@@ -1,10 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Layout/Navbar';
 import BottomNav from '@/components/Layout/BottomNav';
 import Footer from '@/components/Footer';
 import AIChatbot from '@/components/AIChatbot';
 import QRScanner from '@/components/QRScanner';
+import ProfileCompletionModal from '@/components/Onboarding/ProfileCompletionModal';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Toaster } from 'sonner';
 
 export default function UserLayout({
@@ -12,8 +15,19 @@ export default function UserLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { user, isAuthenticated } = useAuthStore();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Show profile completion modal for authenticated users who haven't filled demographics
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'USER' && !user?.profileCompleted) {
+      const timer = setTimeout(() => setShowProfileModal(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, user?.role, user?.profileCompleted]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
+    <div className="min-h-screen bg-white">
       {/* Skip to content link for keyboard navigation */}
       <a href="#main-content" className="skip-link">
         ข้ามไปยังเนื้อหาหลัก
@@ -39,6 +53,14 @@ export default function UserLayout({
 
       {/* Toast Notifications */}
       <Toaster position="top-center" richColors />
+
+      {/* Profile Completion Onboarding */}
+      {showProfileModal && (
+        <ProfileCompletionModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </div>
   );
 }

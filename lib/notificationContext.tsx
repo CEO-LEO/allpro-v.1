@@ -11,7 +11,7 @@ interface Notification {
   message: string;
   timestamp: Date;
   read: boolean;
-  type: 'restock' | 'welcome' | 'promo';
+  type: 'restock' | 'welcome' | 'promo' | 'deal';
 }
 
 interface Subscription {
@@ -32,6 +32,7 @@ interface NotificationContextType {
   unsubscribe: (productId: string) => void;
   isSubscribed: (productId: string) => boolean;
   triggerRestockNotification: (productId: string, branchName: string) => void;
+  triggerPromoNotification: (promoTitle: string, shopName: string, tags: string[]) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -99,6 +100,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     window.addEventListener('stockUpdated' as any, handleStockUpdate);
     return () => window.removeEventListener('stockUpdated' as any, handleStockUpdate);
   }, [subscriptions]);
+
+  // Listen for new promo created events from merchant dashboard
+  useEffect(() => {
+    const handleNewPromo = (event: CustomEvent) => {
+      const { title, shopName, tags, category } = event.detail;
+      const allTags = [...(tags || []), category].filter(Boolean);
+      triggerPromoNotification(title, shopName, allTags);
+    };
+
+    window.addEventListener('newPromoCreated' as any, handleNewPromo);
+    return () => window.removeEventListener('newPromoCreated' as any, handleNewPromo);
+  });
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -175,6 +188,41 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
+  // Trigger notification when a new promo matches user's preferred_tags
+  const triggerPromoNotification = (promoTitle: string, shopName: string, tags: string[]) => {
+    // ดึง preferred_tags จาก auth store ผ่าน localStorage (เพราะ context ไม่ access Zustand โดยตรง)
+    try {
+      const stored = localStorage.getItem('auth-storage');
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      const preferredTags: string[] = parsed?.state?.user?.preferred_tags || [];
+      const userRole = parsed?.state?.user?.role;
+
+      if (userRole !== 'USER' || preferredTags.length === 0) return;
+
+      const preferredLower = preferredTags.map(t => t.toLowerCase());
+      const promoTagsLower = tags.map(t => t.toLowerCase());
+
+      const hasMatch = promoTagsLower.some(t => preferredLower.includes(t));
+
+      if (hasMatch) {
+        addNotification({
+          productId: `promo-${Date.now()}`,
+          productName: promoTitle,
+          branchName: shopName,
+          message: `🎉 โปรใหม่ที่คุณอาจสนใจ! ${promoTitle} จาก ${shopName}`,
+          type: 'promo'
+        });
+
+        // Animate bell icon
+        const bellEvent = new CustomEvent('bellShake');
+        window.dispatchEvent(bellEvent);
+      }
+    } catch {
+      // silently ignore parse errors
+    }
+  };
+
   return (
     <NotificationContext.Provider
       value={{
@@ -187,7 +235,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         subscribe,
         unsubscribe,
         isSubscribed,
-        triggerRestockNotification
+        triggerRestockNotification,
+        triggerPromoNotification
       }}
     >
       {children}

@@ -16,30 +16,30 @@ export default function CommunityPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white pt-20 pb-8 px-6">
+      <div className="bg-gradient-to-r from-purple-600 to-violet-500 text-white pt-14 pb-5 px-6">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <UserGroupIcon className="w-8 h-8" /> 
+          <h1 className="text-xl font-bold mb-0.5 flex items-center gap-2">
+            <UserGroupIcon className="w-6 h-6" /> 
             Hunter Community
           </h1>
-          <p className="text-purple-100 text-lg">แชร์ดีล ช่วยเหลือ และรับรางวัล!</p>
+          <p className="text-purple-200 text-xs">แชร์ดีล ช่วยเหลือ และรับรางวัล!</p>
           
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-6">
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
-              <ArrowTrendingUpIcon className="w-6 h-6 mx-auto mb-2" />
-              <div className="text-2xl font-bold">1,234</div>
-              <div className="text-xs text-purple-100">Active Hunters</div>
+          <div className="grid grid-cols-3 gap-2.5 mt-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 text-center">
+              <ArrowTrendingUpIcon className="w-4 h-4 mx-auto mb-1 text-white/70" />
+              <div className="text-base font-semibold">1,234</div>
+              <div className="text-[10px] text-purple-300">Active Hunters</div>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
-              <ChatBubbleLeftRightIcon className="w-6 h-6 mx-auto mb-2" />
-              <div className="text-2xl font-bold">8,567</div>
-              <div className="text-xs text-purple-100">Posts Today</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 text-center">
+              <ChatBubbleLeftRightIcon className="w-4 h-4 mx-auto mb-1 text-white/70" />
+              <div className="text-base font-semibold">8,567</div>
+              <div className="text-[10px] text-purple-300">Posts Today</div>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
-              <TrophyIcon className="w-6 h-6 mx-auto mb-2" />
-              <div className="text-2xl font-bold">256</div>
-              <div className="text-xs text-purple-100">Top Contributors</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 text-center">
+              <TrophyIcon className="w-4 h-4 mx-auto mb-1 text-white/70" />
+              <div className="text-base font-semibold">256</div>
+              <div className="text-[10px] text-purple-300">Top Contributors</div>
             </div>
           </div>
         </div>
@@ -50,7 +50,7 @@ export default function CommunityPage() {
         {/* Create Post Button */}
         <button
           onClick={() => setShowCreatePost(true)}
-          className="w-full bg-white border-2 border-dashed border-gray-300 rounded-xl p-4 mb-6 hover:border-purple-500 hover:bg-purple-50 transition-all flex items-center gap-3 justify-center"
+          className="w-full bg-white border border-dashed border-gray-300 rounded-xl p-3.5 mb-6 hover:border-purple-400 hover:bg-purple-50/50 transition-all flex items-center gap-3 justify-center shadow-sm"
         >
           <ChatBubbleLeftRightIcon className="w-5 h-5 text-purple-600" />
           <span className="font-semibold text-gray-700">แชร์ดีลดีๆ ที่เจอ...</span>

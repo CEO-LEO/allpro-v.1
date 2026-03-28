@@ -71,10 +71,10 @@ export default function NearbyGems({ promos, userLocation }: NearbyGemsProps) {
                   repeatDelay: 3
                 }}
               >
-                <MapPinIcon className="w-7 h-7 text-emerald-600" />
+                <MapPinIcon className="w-7 h-7 text-orange-600" />
               </motion.div>
-              <h2 className="text-h2 text-gray-900">
-                Nearby Gems
+              <h2 className="text-base font-bold text-gray-900">
+                ร้านเด็ดใกล้คุณ
               </h2>
             </div>
             <p className="text-body-sm text-gray-600">
@@ -84,7 +84,7 @@ export default function NearbyGems({ promos, userLocation }: NearbyGemsProps) {
           
           <Link 
             href="/map"
-            className="flex items-center gap-1 text-body-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+            className="flex items-center gap-1 text-body-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors"
           >
             ดูทั้งหมด
             <ArrowRightIcon className="w-4 h-4" />
@@ -118,7 +118,7 @@ export default function NearbyGems({ promos, userLocation }: NearbyGemsProps) {
             {Array.from({ length: Math.min(Math.ceil(nearbyPromos.length / 3), 5) }).map((_, i) => (
               <div 
                 key={i}
-                className="w-2 h-2 rounded-full bg-emerald-200"
+                className="w-2 h-2 rounded-full bg-orange-200"
               />
             ))}
           </div>
@@ -141,26 +141,23 @@ function NearbyGemCard({ promo, index }: { promo: NearbyPromo; index: number }) 
         delay: index * 0.1,
         duration: 0.3
       }}
-      whileHover={{ scale: 1.05, y: -5 }}
-      className="flex-shrink-0 w-72"
+      whileHover={{ scale: 1.02, y: -2 }}
+      className="flex-shrink-0 w-56 sm:w-64 lg:w-72"
     >
       <Link href={`/promo/${promo.id}`}>
         <div className={`
-          relative overflow-hidden rounded-2xl shadow-lg
-          border-2 transition-all duration-300
-          ${isBigBrand 
-            ? 'border-purple-200 bg-gradient-to-br from-purple-50 to-white hover:shadow-purple-200' 
-            : 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white hover:shadow-emerald-200'
-          }
+          relative overflow-hidden rounded-xl
+          bg-white border border-gray-100 transition-all duration-300
+          shadow-[0_1px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]
         `}>
           {/* Image */}
-          <div className="relative w-full h-40 bg-gray-100">
+          <div className="relative w-full aspect-square bg-gray-50">
             {!imageError && promo.image ? (
               <Image
                 src={promo.image}
                 alt={promo.title}
                 fill
-                sizes="288px"
+                sizes="(max-width: 640px) 224px, (max-width: 1024px) 256px, 288px"
                 className="object-cover"
                 onError={() => setImageError(true)}
                 loading="lazy"
@@ -168,12 +165,12 @@ function NearbyGemCard({ promo, index }: { promo: NearbyPromo; index: number }) 
             ) : (
               <div className={`
                 w-full h-full flex items-center justify-center
-                ${isBigBrand ? 'bg-purple-100' : 'bg-emerald-100'}
+                ${isBigBrand ? 'bg-purple-100' : 'bg-orange-100'}
               `}>
                 {isBigBrand ? (
                   <SparklesIcon className="w-12 h-12 text-purple-400" />
                 ) : (
-                  <BuildingStorefrontIcon className="w-12 h-12 text-emerald-400" />
+                  <BuildingStorefrontIcon className="w-12 h-12 text-orange-400" />
                 )}
               </div>
             )}
@@ -203,22 +200,22 @@ function NearbyGemCard({ promo, index }: { promo: NearbyPromo; index: number }) 
           </div>
 
           {/* Content */}
-          <div className="p-4 space-y-2">
+          <div className="p-3.5 space-y-1.5">
             {/* Shop Name */}
             <div className="flex items-center gap-2">
               <div className={`
                 p-1 rounded-lg
-                ${isBigBrand ? 'bg-purple-100' : 'bg-emerald-100'}
+                ${isBigBrand ? 'bg-purple-100' : 'bg-orange-100'}
               `}>
                 {isBigBrand ? (
                   <SparklesIcon className="w-3.5 h-3.5 text-purple-600" />
                 ) : (
-                  <BuildingStorefrontIcon className="w-3.5 h-3.5 text-emerald-600" />
+                  <BuildingStorefrontIcon className="w-3.5 h-3.5 text-orange-600" />
                 )}
               </div>
               <span className={`
                 text-caption
-                ${isBigBrand ? 'text-purple-600' : 'text-emerald-600'}
+                ${isBigBrand ? 'text-purple-600' : 'text-orange-600'}
               `}>
                 {promo.shop_name}
               </span>
@@ -241,11 +238,11 @@ function NearbyGemCard({ promo, index }: { promo: NearbyPromo; index: number }) 
             {promo.price && (
               <div className={`
                 inline-flex px-3 py-1.5 rounded-lg
-                ${isBigBrand ? 'bg-purple-100' : 'bg-emerald-100'}
+                ${isBigBrand ? 'bg-purple-100' : 'bg-orange-100'}
               `}>
                 <p className={`
                   text-h4
-                  ${isBigBrand ? 'text-purple-700' : 'text-emerald-700'}
+                  ${isBigBrand ? 'text-purple-700' : 'text-orange-700'}
                 `}>
                   ฿{promo.price}
                 </p>

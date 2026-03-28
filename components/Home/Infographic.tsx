@@ -31,7 +31,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 const MOCK_STATS: StatItem[] = [
   { id: 1, iconName: 'ShoppingBagIcon', value: '500+',   label: 'โปรโมชั่นทั้งหมด', color: 'from-orange-500 to-red-500',   bgColor: 'from-orange-50 to-red-50' },
   { id: 2, iconName: 'UserGroupIcon',   value: '10,000+', label: 'ผู้ใช้งาน',         color: 'from-blue-500 to-indigo-500', bgColor: 'from-blue-50 to-indigo-50' },
-  { id: 3, iconName: 'MapPinIcon',      value: '100+',   label: 'ร้านค้าพาร์ทเนอร์',  color: 'from-green-500 to-emerald-500', bgColor: 'from-green-50 to-emerald-50' },
+  { id: 3, iconName: 'MapPinIcon',      value: '100+',   label: 'ร้านค้าพาร์ทเนอร์',  color: 'from-orange-500 to-amber-500', bgColor: 'from-orange-50 to-amber-50' },
   { id: 4, iconName: 'SparklesIcon',    value: '70%',    label: 'ประหยัดสูงสุด',      color: 'from-purple-500 to-pink-500', bgColor: 'from-purple-50 to-pink-50' },
 ];
 
@@ -58,7 +58,7 @@ export default function Infographic() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
             🎯 All Pro ในตัวเลข
           </h2>
           <p className="text-sm text-gray-500">
@@ -97,7 +97,7 @@ export default function Infographic() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ delay: index * 0.1, type: 'spring', stiffness: 200 }}
-              className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${stat.bgColor} p-5 sm:p-6 border border-white/80 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-default`}
+              className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${stat.bgColor} p-4 sm:p-5 border border-white/80 shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 group cursor-default`}
             >
               {/* Background Pattern */}
               <div className="absolute -right-3 -top-3 opacity-[0.06]">

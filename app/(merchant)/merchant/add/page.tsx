@@ -1,17 +1,31 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore'; // Import Store
 import { toast } from 'sonner';
 import { FASTWORK_URLS } from '@/lib/config';
-import { PhotoIcon, XMarkIcon } from '@heroicons/react/24/solid'; // UI Icons
+import { PhotoIcon, XMarkIcon, ShieldExclamationIcon } from '@heroicons/react/24/solid'; // UI Icons
+import { Store, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+
+// Helper: check if merchant profile is complete
+function isMerchantProfileComplete(user: any): boolean {
+  if (!user) return false;
+  return !!(
+    user.shopName?.trim() &&
+    user.shopLogo &&
+    user.shopAddress?.trim() &&
+    user.phone?.trim() && user.phone.trim().length >= 9 &&
+    user.merchantProfileComplete
+  );
+}
 
 export default function AddProductPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const addProduct = useProductStore((state) => state.addProduct); // Use Store Action
   const [loading, setLoading] = useState(false);
+  const profileComplete = isMerchantProfileComplete(user);
   
   // Form State
   const [title, setTitle] = useState('');
@@ -43,6 +57,12 @@ export default function AddProductPage() {
     
     if (!user) {
       toast.error('⚠️ กรุณาล็อกอินก่อนลงขายสินค้า!');
+      return;
+    }
+
+    if (!profileComplete) {
+      toast.error('⚠️ กรุณาตั้งค่าโปรไฟล์ร้านค้าก่อน');
+      router.push('/merchant/shop?setup=true');
       return;
     }
 
@@ -108,8 +128,54 @@ export default function AddProductPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50 p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
+
+        {/* Profile Incomplete Lock Overlay */}
+        {!profileComplete && (
+          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border-2 border-orange-200">
+            <div className="flex flex-col items-center text-center py-4">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                <ShieldExclamationIcon className="w-8 h-8 text-orange-500" />
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">
+                กรุณาตั้งค่าโปรไฟล์ร้านค้าก่อน
+              </h2>
+              <p className="text-sm text-gray-500 mb-4 max-w-sm">
+                คุณต้องกรอกข้อมูลร้านค้าให้ครบถ้วนก่อนจึงจะโพสต์โปรโมชันได้
+              </p>
+
+              {/* Checklist preview */}
+              <div className="w-full max-w-xs space-y-2 mb-5">
+                {[
+                  { label: 'ชื่อร้านค้า', done: !!user?.shopName?.trim() },
+                  { label: 'โลโก้ร้านค้า', done: !!user?.shopLogo },
+                  { label: 'ที่ตั้งร้านค้า', done: !!user?.shopAddress?.trim() },
+                  { label: 'เบอร์โทรศัพท์', done: !!(user?.phone?.trim() && user.phone.trim().length >= 9) },
+                ].map((item) => (
+                  <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${item.done ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-500'}`}>
+                    {item.done ? (
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                    )}
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => router.push('/merchant/shop?setup=true')}
+                className="px-6 py-3 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/25"
+              >
+                <Store className="w-4 h-4" />
+                ตั้งค่าโปรไฟล์ร้านค้า
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 mb-6">
+        <div className={`bg-white rounded-3xl shadow-xl p-8 mb-6 ${!profileComplete ? 'opacity-40 pointer-events-none select-none' : ''}`}>
           <div className="flex items-center gap-4 mb-2">
             <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center">
               <span className="text-3xl">🏪</span>
@@ -122,7 +188,7 @@ export default function AddProductPage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-3xl shadow-xl p-8">
+        <div className={`bg-white rounded-3xl shadow-xl p-8 ${!profileComplete ? 'opacity-40 pointer-events-none select-none' : ''}`}>
           <form onSubmit={handleSubmit} className="space-y-6">
             
             {/* Image Upload Section */}

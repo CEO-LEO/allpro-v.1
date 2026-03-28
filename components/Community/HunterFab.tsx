@@ -24,12 +24,12 @@ export default function HunterFab({ onClick }: HunterFabProps) {
     <motion.button
       onClick={onClick}
       className={`
-        fixed z-[1000] bg-gradient-to-r from-red-600 to-red-700 
-        text-white shadow-2xl flex items-center justify-center gap-2
-        transition-all duration-300 hover:shadow-red-500/50
+        fixed z-[1000] bg-gradient-to-r from-orange-500 to-red-500 
+        text-white shadow-lg flex items-center justify-center gap-2
+        transition-all duration-300 hover:shadow-orange-300/40
         ${isScrolled 
-          ? 'bottom-6 right-6 w-14 h-14 rounded-full' 
-          : 'bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 px-6 py-4 rounded-full'
+          ? 'bottom-6 right-6 w-12 h-12 rounded-full' 
+          : 'bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 px-5 py-3 rounded-full'
         }
       `}
       whileHover={{ scale: 1.05 }}

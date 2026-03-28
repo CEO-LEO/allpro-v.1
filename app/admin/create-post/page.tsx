@@ -234,16 +234,12 @@ export default function AdminCreatePostPage() {
         description: formData.description || '',
         category: formData.category,
         price: formData.promoPrice ? parseFloat(formData.promoPrice) : 0,
-        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
-        promoPrice: formData.promoPrice ? parseFloat(formData.promoPrice) : null,
-        discount: formData.discount || null,
+        original_price: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+        discount: formData.discount ? parseInt(formData.discount) : null,
         image: imageUrls[0] || '/placeholder.jpg',
-        images: imageUrls,
-        shopName: 'Admin Upload',
-        validUntil: formData.endDate,
-        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
-        verified: true,
-        branches: formData.branches,
+        shop_name: 'Admin Upload',
+        shop_id: 'admin',
+        conditions: formData.endDate ? `หมดเขต ${formData.endDate}` : null,
       };
 
       const { data: insertedProduct, error: insertError } = await supabase

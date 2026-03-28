@@ -17,11 +17,26 @@ create table if not exists profiles (
 );
 
 -- 2. สร้างระบบอัตโนมัติ: สมัครปุ๊บ สร้าง Profile ให้ปั๊บ
+-- ดึง role จาก user_metadata ที่ส่งมาตอน signUp (ไม่ hardcode 'user' อีกต่อไป)
 create or replace function public.handle_new_user() 
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, username, coins, xp, level, role)
-  values (new.id, new.email, split_part(new.email, '@', 1), 50, 0, 1, 'user');
+  insert into public.profiles (id, email, username, avatar_url, coins, xp, level, role)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    coalesce(new.raw_user_meta_data->>'avatar_url', ''),
+    50,
+    0,
+    1,
+    coalesce(new.raw_user_meta_data->>'role', 'USER')
+  )
+  on conflict (id) do update set
+    email = excluded.email,
+    username = excluded.username,
+    avatar_url = excluded.avatar_url,
+    role = excluded.role;
   return new;
 end;
 $$ language plpgsql security definer;

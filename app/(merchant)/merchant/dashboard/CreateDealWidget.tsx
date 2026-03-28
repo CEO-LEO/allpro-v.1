@@ -15,6 +15,7 @@ export default function CreateDealWidget() {
   const [formData, setFormData] = useState({
     productName: '',
     price: '',
+    category: 'Food' as 'Food' | 'Fashion' | 'Travel' | 'Gadget' | 'Beauty' | 'Service' | 'Electronics' | 'Fitness' | 'Other',
     isFlashSale: false,
   });
 
@@ -38,8 +39,18 @@ export default function CreateDealWidget() {
     const discount = Math.round(((originalPrice - discountedPrice) / originalPrice) * 100);
 
     // Generate image based on category
-    const imageSeeds = ['food', 'fashion', 'service', 'electronics', 'beauty', 'fitness'];
-    const randomSeed = imageSeeds[Math.floor(Math.random() * imageSeeds.length)];
+    const categoryImages: Record<string, string> = {
+      Food: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop',
+      Fashion: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=300&fit=crop',
+      Travel: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+      Gadget: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop',
+      Beauty: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&fit=crop',
+      Service: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=300&fit=crop',
+      Electronics: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop',
+      Fitness: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop',
+      Other: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&h=300&fit=crop',
+    };
+    const selectedImage = categoryImages[formData.category] || categoryImages.Other;
 
     // Create new product
     const newProduct = {
@@ -48,18 +59,34 @@ export default function CreateDealWidget() {
       originalPrice: originalPrice,
       promoPrice: discountedPrice,
       discount: discount,
-      image: `https://picsum.photos/seed/${randomSeed}-${Date.now()}/400/300`,
+      image: selectedImage,
       shopName: user?.shopName || user?.name || 'Your Shop',
       shopLogo: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.shopName || user?.name || 'YS')}&background=4F46E5&color=fff`,
-      category: 'Other' as const,
+      category: formData.category,
       verified: true,
       distance: '0.5 km',
       validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      tags: formData.isFlashSale ? ['Flash Sale', 'Limited Time'] : ['New Deal', 'Special Offer'],
+      tags: [
+        formData.category,
+        ...(formData.isFlashSale ? ['Flash Sale', 'Limited Time'] : ['New Deal', 'Special Offer'])
+      ],
     };
 
     // Add to store (adds to BEGINNING of array)
     addProduct(newProduct);
+
+    // Dispatch event to trigger notifications for users with matching preferred_tags
+    if (typeof window !== 'undefined') {
+      const promoEvent = new CustomEvent('newPromoCreated', {
+        detail: {
+          title: formData.productName,
+          shopName: user?.shopName || user?.name || 'Our Shop',
+          tags: newProduct.tags,
+          category: newProduct.category,
+        }
+      });
+      window.dispatchEvent(promoEvent);
+    }
 
     // Success feedback
     confetti({
@@ -74,12 +101,14 @@ export default function CreateDealWidget() {
     setFormData({
       productName: '',
       price: '',
+      category: 'Food',
       isFlashSale: false,
     });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -142,6 +171,30 @@ export default function CreateDealWidget() {
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             💡 Original price will be calculated automatically
           </p>
+        </div>
+
+        {/* Category */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <Package className="w-4 h-4 inline mr-1" />
+            Category
+          </label>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          >
+            <option value="Food">🍔 Food</option>
+            <option value="Fashion">👗 Fashion</option>
+            <option value="Travel">✈️ Travel</option>
+            <option value="Gadget">📱 Gadget</option>
+            <option value="Beauty">💄 Beauty</option>
+            <option value="Service">🛎️ Service</option>
+            <option value="Electronics">💻 Electronics</option>
+            <option value="Fitness">💪 Fitness</option>
+            <option value="Other">📦 Other</option>
+          </select>
         </div>
 
         {/* Flash Sale Toggle */}

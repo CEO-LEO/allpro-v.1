@@ -8,9 +8,24 @@ import { ArrowLeftIcon, CameraIcon } from "@heroicons/react/24/outline";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
 
+const GENDER_OPTIONS = [
+  { id: 'male' as const, label: 'ชาย', icon: '👨' },
+  { id: 'female' as const, label: 'หญิง', icon: '👩' },
+  { id: 'other' as const, label: 'อื่นๆ', icon: '🧑' },
+  { id: 'prefer_not_to_say' as const, label: 'ไม่ระบุ', icon: '🤐' },
+];
+
+const AGE_OPTIONS = [
+  { id: '18-24' as const, label: '18-24 ปี' },
+  { id: '25-34' as const, label: '25-34 ปี' },
+  { id: '35-44' as const, label: '35-44 ปี' },
+  { id: '45-54' as const, label: '45-54 ปี' },
+  { id: '55+' as const, label: '55+ ปี' },
+];
+
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, updateProfile } = useAuthStore();
+  const { user, updateProfile, updateUser } = useAuthStore();
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -18,6 +33,8 @@ export default function EditProfilePage() {
     phone: user?.phone || ""
   });
 
+  const [gender, setGender] = useState(user?.gender);
+  const [ageRange, setAgeRange] = useState(user?.ageRange);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +48,13 @@ export default function EditProfilePage() {
     updateProfile({
       name: formData.name,
       phone: formData.phone
+    });
+
+    // Update demographics
+    updateUser({
+      gender: gender,
+      ageRange: ageRange,
+      profileCompleted: !!(gender && ageRange),
     });
 
     toast.success("✓ บันทึกข้อมูลสำเร็จ", {
@@ -156,6 +180,70 @@ export default function EditProfilePage() {
                 className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="0XX-XXX-XXXX"
               />
+            </div>
+          </motion.div>
+
+          {/* Demographics Section */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.15 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg space-y-5"
+          >
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">ข้อมูลส่วนตัว</h3>
+              <p className="text-xs text-gray-400">ข้อมูลนี้จะช่วยให้เราแนะนำโปรโมชันที่เหมาะกับคุณ</p>
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                เพศ
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {GENDER_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setGender(option.id)}
+                    className={`flex flex-col items-center gap-1 py-3 px-1 rounded-xl border-2 transition-all ${
+                      gender === option.id
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                        : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-xl">{option.icon}</span>
+                    <span className={`text-xs font-medium ${
+                      gender === option.id ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {option.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Age Range */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                ช่วงอายุ
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {AGE_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setAgeRange(option.id)}
+                    className={`py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                      ageRange === option.id
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+                        : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 hover:border-gray-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </motion.div>
 

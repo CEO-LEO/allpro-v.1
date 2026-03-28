@@ -108,8 +108,23 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-white pb-24">
       {/* Header Image */}
-      <div className="relative h-80 w-full">
-        <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+      <div className="relative h-80 w-full bg-gradient-to-br from-orange-100 to-orange-50">
+        {product.image ? (
+          <img 
+            src={product.image} 
+            alt={product.title} 
+            className="w-full h-full object-cover" 
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.style.display = 'none';
+              const fallback = target.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div className={`w-full h-full items-center justify-center text-gray-300 ${product.image ? 'hidden' : 'flex'}`}>
+          <span className="text-6xl">🛍️</span>
+        </div>
         
         {/* Discount Badge */}
         {discountPercent > 0 && (

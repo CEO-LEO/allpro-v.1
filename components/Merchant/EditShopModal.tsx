@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { X, Store, Upload, Camera, Loader2, CheckCircle } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, Store, Upload, Camera, Loader2, CheckCircle, MessageCircle, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { resolveImageUrl } from '@/lib/imageUrl';
+import { formatLineUrl, formatFacebookUrl, formatInstagramUrl, formatWebsiteUrl } from '@/lib/socialLinks';
 
 interface EditShopModalProps {
   isOpen: boolean;
@@ -13,6 +16,7 @@ interface EditShopModalProps {
 export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
   const { user, updateUser } = useAuthStore();
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoFileRef = useRef<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // ═══ Controlled Form State ═══
@@ -30,56 +34,144 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
     socialInstagram: user?.shopSocialInstagram || '',
     socialWebsite: user?.shopSocialWebsite || '',
   });
+
+  // Re-sync form when modal opens (so updated user data is reflected)
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        shopName: user?.shopName || '',
+        description: user?.shopDescription || '',
+        phone: user?.phone || '',
+        email: user?.email || '',
+        address: user?.shopAddress || '',
+        category: user?.shopCategory || '',
+        openingHours: user?.shopOpeningHours || '',
+        paymentMethods: user?.shopPaymentMethods || '',
+        socialLine: user?.shopSocialLine || '',
+        socialFacebook: user?.shopSocialFacebook || '',
+        socialInstagram: user?.shopSocialInstagram || '',
+        socialWebsite: user?.shopSocialWebsite || '',
+      });
+      setLogoPreview(null);
+    }
+  }, [isOpen, user]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
-    if (logoPreview) URL.revokeObjectURL(logoPreview);
-    const url = URL.createObjectURL(file);
-    setLogoPreview(url);
+    logoFileRef.current = file;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLogoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
+
+  // Helper: run promise with timeout (prevents hanging)
+  const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> =>
+    Promise.race([promise, new Promise<null>(resolve => setTimeout(() => resolve(null), ms))]);
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
 
-      // TODO: Replace with real API call
-      // const res = await fetch('/api/merchant/shop', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ ...formData, shopLogo: logoPreview }),
-      // });
-      // if (!res.ok) throw new Error('Failed to save');
+      const logoVal = logoPreview || user?.shopLogo || undefined;
 
-      await new Promise(r => setTimeout(r, 800));
+      const isComplete = !!(
+        formData.shopName?.trim() &&
+        logoVal &&
+        formData.address?.trim() &&
+        formData.phone?.trim() && formData.phone.trim().length >= 9
+      );
 
-      // Update local auth store
+      // ═══ 1) LOCAL SAVE FIRST (instant) ═══
       updateUser({
         shopName: formData.shopName || undefined,
         phone: formData.phone || undefined,
         email: formData.email || undefined,
-        shopLogo: logoPreview || user?.shopLogo || undefined,
+        shopLogo: logoVal,
         shopDescription: formData.description || undefined,
         shopAddress: formData.address || undefined,
         shopCategory: formData.category || undefined,
         shopOpeningHours: formData.openingHours || undefined,
         shopPaymentMethods: formData.paymentMethods || undefined,
-        shopSocialLine: formData.socialLine || undefined,
-        shopSocialFacebook: formData.socialFacebook || undefined,
-        shopSocialInstagram: formData.socialInstagram || undefined,
-        shopSocialWebsite: formData.socialWebsite || undefined,
+        shopSocialLine: formData.socialLine ? formatLineUrl(formData.socialLine) : undefined,
+        shopSocialFacebook: formData.socialFacebook ? formatFacebookUrl(formData.socialFacebook) : undefined,
+        shopSocialInstagram: formData.socialInstagram ? formatInstagramUrl(formData.socialInstagram) : undefined,
+        shopSocialWebsite: formData.socialWebsite ? formatWebsiteUrl(formData.socialWebsite) : undefined,
+        merchantProfileComplete: isComplete,
       });
 
+      // ═══ 2) SHOW SUCCESS IMMEDIATELY ═══
       setSaveSuccess(true);
+      setIsSaving(false);
+
       setTimeout(() => {
         setSaveSuccess(false);
+        logoFileRef.current = null;
         onClose();
       }, 1200);
-    } catch {
-      // Error handling for future API integration
-    } finally {
+
+      // ═══ 3) SUPABASE SAVE IN BACKGROUND (fire-and-forget, 8s timeout) ═══
+      if (isSupabaseConfigured) {
+        (async () => {
+          try {
+            const sessionRes = await withTimeout(Promise.resolve(supabase.auth.getSession()), 5000);
+            if (!sessionRes) { console.warn('[EditShop] getSession timed out'); return; }
+            const session = sessionRes.data?.session;
+            if (!session) { console.warn('[EditShop] No session'); return; }
+
+            console.log('[EditShop] Supabase session: ✅ uid=' + session.user.id);
+
+            // Upload logo if new file
+            let finalLogo = logoVal;
+            if (logoFileRef.current) {
+              const file = logoFileRef.current;
+              const fileExt = file.name.split('.').pop() || 'png';
+              const fileName = `${session.user.id}_${Date.now()}.${fileExt}`;
+              const filePath = `shop-logos/${fileName}`;
+              const uploadRes = await withTimeout(
+                Promise.resolve(supabase.storage.from('promotions').upload(filePath, file, { contentType: file.type, upsert: true })),
+                8000
+              );
+              if (uploadRes && !uploadRes.error) {
+                finalLogo = filePath;
+                updateUser({ shopLogo: filePath });
+              } else {
+                console.warn('[EditShop] Logo upload failed or timed out');
+              }
+            }
+
+            // Upsert merchant profile
+            const upsertRes = await withTimeout(
+              Promise.resolve(supabase.from('merchant_profiles').upsert({
+                user_id: session.user.id,
+                shop_name: formData.shopName || null,
+                phone: formData.phone || null,
+                shop_logo: finalLogo || null,
+                shop_address: formData.address || null,
+                line_id: formData.socialLine || null,
+                instagram: formData.socialInstagram || null,
+                facebook: formData.socialFacebook || null,
+                website: formData.socialWebsite || null,
+              }, { onConflict: 'user_id' }).select()),
+              8000
+            );
+
+            if (upsertRes && !upsertRes.error) {
+              console.log('[EditShop] ✅ Supabase upsert success:', upsertRes.data);
+            } else {
+              console.error('[EditShop] ❌ Supabase upsert error:', upsertRes?.error || 'timeout');
+            }
+          } catch (bgErr) {
+            console.warn('[EditShop] Background save error:', bgErr);
+          }
+        })();
+      }
+    } catch (err) {
+      console.error('EditShopModal save error:', err);
       setIsSaving(false);
     }
   };
@@ -135,7 +227,7 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
                     <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-gray-200 group-hover:ring-blue-400 transition-all bg-gray-50 flex items-center justify-center">
                       {logoPreview || user?.shopLogo ? (
                         <img
-                          src={logoPreview || user?.shopLogo || ''}
+                          src={logoPreview || resolveImageUrl(user?.shopLogo || '')}
                           alt="Shop logo"
                           className="w-full h-full object-cover"
                         />
@@ -273,34 +365,66 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">ช่องทางโซเชียล</label>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input
-                    type="text"
-                    value={formData.socialLine}
-                    onChange={(e) => setFormData(prev => ({ ...prev, socialLine: e.target.value }))}
-                    placeholder="LINE ID"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
-                  />
-                  <input
-                    type="text"
-                    value={formData.socialFacebook}
-                    onChange={(e) => setFormData(prev => ({ ...prev, socialFacebook: e.target.value }))}
-                    placeholder="Facebook"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
-                  />
-                  <input
-                    type="text"
-                    value={formData.socialInstagram}
-                    onChange={(e) => setFormData(prev => ({ ...prev, socialInstagram: e.target.value }))}
-                    placeholder="Instagram"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
-                  />
-                  <input
-                    type="text"
-                    value={formData.socialWebsite}
-                    onChange={(e) => setFormData(prev => ({ ...prev, socialWebsite: e.target.value }))}
-                    placeholder="เว็บไซต์"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
-                  />
+                  <div>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded bg-green-500 flex items-center justify-center">
+                        <MessageCircle className="w-3 h-3 text-white" />
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.socialLine}
+                        onChange={(e) => setFormData(prev => ({ ...prev, socialLine: e.target.value }))}
+                        placeholder="LINE ID เช่น @myshop หรือ myshop123"
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500/40 transition-all"
+                      />
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1 ml-1">กรอก LINE ID ระบบจะสร้างลิงก์ให้อัตโนมัติ</p>
+                  </div>
+                  <div>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded bg-blue-600 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">f</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.socialFacebook}
+                        onChange={(e) => setFormData(prev => ({ ...prev, socialFacebook: e.target.value }))}
+                        placeholder="ชื่อเพจ Facebook หรือวางลิงก์"
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                      />
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1 ml-1">เช่น myshop หรือ https://facebook.com/myshop</p>
+                  </div>
+                  <div>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded bg-gradient-to-tr from-yellow-500 via-pink-500 to-purple-600 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">ig</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.socialInstagram}
+                        onChange={(e) => setFormData(prev => ({ ...prev, socialInstagram: e.target.value }))}
+                        placeholder="@username หรือวางลิงก์ Instagram"
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500/40 focus:border-pink-500/40 transition-all"
+                      />
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1 ml-1">เช่น @myshop หรือ https://instagram.com/myshop</p>
+                  </div>
+                  <div>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded bg-orange-500 flex items-center justify-center">
+                        <Globe className="w-3 h-3 text-white" />
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.socialWebsite}
+                        onChange={(e) => setFormData(prev => ({ ...prev, socialWebsite: e.target.value }))}
+                        placeholder="เว็บไซต์ เช่น www.myshop.com"
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/40 transition-all"
+                      />
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1 ml-1">ระบบจะเติม https:// ให้อัตโนมัติ</p>
+                  </div>
                 </div>
               </div>
             </div>

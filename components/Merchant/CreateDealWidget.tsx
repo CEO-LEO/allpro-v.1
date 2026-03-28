@@ -1,20 +1,30 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useProductStore } from "@/store/useProductStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useStockStore } from "@/store/useStockStore";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Upload, X, Zap, Package, AlertTriangle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Upload, X, Zap, Package, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
+import EditShopModal from "@/components/Merchant/EditShopModal";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1505252585461-04db1267ae5b?w=500&q=80";
 
 const CATEGORIES = ['Food', 'Fashion', 'Travel', 'Gadget', 'Beauty'] as const;
 
+// Helper: check if merchant profile is complete (derived from fields only)
+function isMerchantProfileComplete(user: any): boolean {
+  if (!user) return false;
+  return !!(
+    user.shopName?.trim() &&
+    user.shopLogo &&
+    user.shopAddress?.trim() &&
+    user.phone?.trim() && user.phone.trim().length >= 9
+  );
+}
+
 export default function CreateDealWidget() {
-  const addProduct = useProductStore((s) => s.addProduct);
   const { user } = useAuthStore();
   const stockItems = useStockStore((s) => s.items);
   const deductStock = useStockStore((s) => s.deductStock);
@@ -23,6 +33,9 @@ export default function CreateDealWidget() {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [useImageUrl, setUseImageUrl] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+
+
 
   // Stock-linked fields
   const [selectedStockId, setSelectedStockId] = useState<string>("");
@@ -42,6 +55,7 @@ export default function CreateDealWidget() {
 
   const [formData, setFormData] = useState({
     productName: "",
+    description: "",
     originalPrice: "",
     discountedPrice: "",
     category: "Food" as string,
@@ -98,51 +112,53 @@ export default function CreateDealWidget() {
     setIsLoading(true);
 
     try {
-      // Determine which image to use
-      let finalImage = DEFAULT_IMAGE;
-      
+      // Build FormData and send to server API (bypasses client-side RLS issues)
+      toast.loading('กำลังลงประกาศโปรโมชั่น...', { id: 'create-deal' });
+
+      const apiFormData = new FormData();
+      apiFormData.append('title', formData.productName);
+      apiFormData.append('description', formData.description || `ลด ${calculateDiscount()}%`);
+      apiFormData.append('price', formData.discountedPrice);
+      apiFormData.append('original_price', formData.originalPrice);
+      apiFormData.append('category', formData.category);
+      apiFormData.append('shop_name', user?.shopName || user?.name || 'My Shop');
+      apiFormData.append('discount', String(calculateDiscount()));
+      apiFormData.append('location', 'กรุงเทพฯ');
+      apiFormData.append('conditions', formData.isFlashSale ? 'Flash Sale - เวลาจำกัด' : 'โปรโมชั่นพิเศษ');
+
+      // Attach image file if selected
       if (imageFile) {
-        finalImage = imagePreview;
+        apiFormData.append('image', imageFile);
       } else if (useImageUrl && imageUrl) {
-        finalImage = imageUrl;
+        apiFormData.append('image_url', imageUrl);
       }
 
-      // Add product to local store
-      addProduct({
-        title: formData.productName,
-        description: `ลดราคาถึง ${calculateDiscount()}% สำหรับคำสั่งซื้อทั้งหมด`,
-        originalPrice: original,
-        promoPrice: discounted,
-        discount: calculateDiscount(),
-        image: finalImage,
-        category: formData.category as 'Food' | 'Fashion' | 'Travel' | 'Gadget' | 'Beauty' | 'Service' | 'Electronics' | 'Fitness' | 'Other',
-        shopName: user?.shopName || user?.name || "My Shop",
-        shopLogo: "",
-        verified: true,
-        tags: formData.isFlashSale ? ["Flash Sale", "Limited Time"] : ["Special Offer"],
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      // Try to get user session for shop_id
+      try {
+        const sessionRes = await supabase.auth.getSession();
+        if (sessionRes?.data?.session?.user?.id) {
+          apiFormData.append('shop_id', sessionRes.data.session.user.id);
+        }
+      } catch {
+        // Session not available — still proceed without shop_id
+      }
+
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        body: apiFormData,
       });
 
-      // Also save to Supabase products table
-      if (isSupabaseConfigured) {
-        const shopName = user?.shopName || user?.name || 'My Shop';
-        const { error: dbError } = await supabase.from('products').insert({
-          title: formData.productName,
-          description: `ลดราคาถึง ${calculateDiscount()}%${formData.paymentInfo ? ' | ชำระเงิน: ' + formData.paymentInfo : ''}`,
-          "promoPrice": discounted,
-          "originalPrice": original,
-          image: finalImage,
-          category: formData.category,
-          "shopName": shopName,
-          "shopId": user?.id || 'unknown',
-          discount: calculateDiscount(),
-          location: 'กรุงเทพฯ',
-          conditions: formData.isFlashSale ? 'Flash Sale - เวลาจำกัด' : 'โปรโมชั่นพิเศษ',          ...(selectedStockId ? { product_id: selectedStockId, promo_quantity: quantityNum } : {}),        });
-        if (dbError) {
-          console.error('Supabase insert error:', dbError);
-          toast.error('บันทึกลง Supabase ไม่สำเร็จ: ' + dbError.message);
-        }
+      const result = await res.json();
+
+      if (!res.ok || result.error) {
+        console.error('[CreateDeal] API error:', result);
+        toast.error(result.error || 'บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
+        setIsLoading(false);
+        return;
       }
+
+      console.log('[CreateDeal] ✅ API success:', result.data);
+      toast.success('ลงประกาศโปรโมชั่นสำเร็จ! 🎉', { id: 'create-deal' });
 
       // Success feedback
       confetti({
@@ -159,11 +175,10 @@ export default function CreateDealWidget() {
         }
       }
 
-      toast.success(`${formData.productName} ลงประกาศแล้ว!`);
-
       // Reset form
       setFormData({
         productName: "",
+        description: "",
         originalPrice: "",
         discountedPrice: "",
         category: "Food",
@@ -183,6 +198,55 @@ export default function CreateDealWidget() {
   };
 
   const discountPercent = calculateDiscount();
+  const profileComplete = isMerchantProfileComplete(user);
+
+  // Profile incomplete state
+  if (!profileComplete) {
+    return (
+      <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-3xl border-2 border-orange-200 p-8 shadow-sm mb-8">
+        <div className="flex flex-col items-center text-center py-2">
+          <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mb-3">
+            <AlertTriangle className="w-7 h-7 text-orange-500" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">
+            ตั้งค่าโปรไฟล์ก่อนลงประกาศ
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            กรอกข้อมูลร้านค้าให้ครบถ้วนก่อนจึงจะโพสต์โปรโมชันได้
+          </p>
+
+          <div className="w-full max-w-xs space-y-1.5 mb-4">
+            {[
+              { label: 'ชื่อร้านค้า', done: !!user?.shopName?.trim() },
+              { label: 'โลโก้ร้านค้า', done: !!user?.shopLogo },
+              { label: 'ที่ตั้งร้านค้า', done: !!user?.shopAddress?.trim() },
+              { label: 'เบอร์โทรศัพท์', done: !!(user?.phone?.trim() && user.phone.trim().length >= 9) },
+            ].map((item) => (
+              <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${item.done ? 'bg-green-50 text-green-700' : 'bg-white text-gray-500'}`}>
+                {item.done ? (
+                  <CheckCircleIcon className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                )}
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-all flex items-center gap-2"
+          >
+            <Store className="w-4 h-4" />
+            ตั้งค่าโปรไฟล์
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <EditShopModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border-2 border-blue-100 p-8 shadow-sm mb-8">
@@ -354,6 +418,22 @@ export default function CreateDealWidget() {
                 setFormData({ ...formData, productName: e.target.value })
               }
               className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* รายละเอียดโปรโมชั่น */}
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              รายละเอียด
+            </label>
+            <textarea
+              placeholder="เช่น ซื้อ 1 แถม 1, จำกัด 50 ชิ้นแรก"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              rows={2}
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 

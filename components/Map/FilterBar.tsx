@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Store as StoreIcon, Coffee, ShoppingBag, Shirt, Sparkles } from 'lucide-react';
 import { ReactNode } from 'react';
 
-export type FilterCategory = 'all' | '7-Eleven' | 'Lotus' | 'coffee' | 'food' | 'fashion';
+export type FilterCategory = 'all' | '7-Eleven' | "Lotus's" | 'coffee' | 'food' | 'fashion';
 
 interface FilterBarProps {
   activeFilters: FilterCategory[];
@@ -12,12 +12,12 @@ interface FilterBarProps {
 }
 
 const filters: { id: FilterCategory; label: string; icon: ReactNode }[] = [
-  { id: 'all', label: 'All', icon: <Sparkles className="w-4 h-4" /> },
+  { id: 'all', label: 'ทั้งหมด', icon: <Sparkles className="w-4 h-4" /> },
   { id: '7-Eleven', label: '7-Eleven', icon: <StoreIcon className="w-4 h-4" /> },
-  { id: 'Lotus', label: "Lotus's", icon: <ShoppingBag className="w-4 h-4" /> },
-  { id: 'coffee', label: 'Coffee', icon: <Coffee className="w-4 h-4" /> },
-  { id: 'food', label: 'Food', icon: <ShoppingBag className="w-4 h-4" /> },
-  { id: 'fashion', label: 'Fashion', icon: <Shirt className="w-4 h-4" /> },
+  { id: "Lotus's", label: "Lotus's", icon: <ShoppingBag className="w-4 h-4" /> },
+  { id: 'coffee', label: 'กาแฟ', icon: <Coffee className="w-4 h-4" /> },
+  { id: 'food', label: 'อาหาร', icon: <ShoppingBag className="w-4 h-4" /> },
+  { id: 'fashion', label: 'แฟชั่น', icon: <Shirt className="w-4 h-4" /> },
 ];
 
 export default function FilterBar({ activeFilters, onFilterChange }: FilterBarProps) {
@@ -52,7 +52,7 @@ export default function FilterBar({ activeFilters, onFilterChange }: FilterBarPr
                   flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
                   transition-all duration-200 whitespace-nowrap
                   ${isActive 
-                    ? 'bg-red-600 text-white shadow-md' 
+                    ? 'bg-orange-500 text-white shadow-md' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }
                 `}

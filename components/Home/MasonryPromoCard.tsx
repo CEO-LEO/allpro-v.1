@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Share2, MapPin, Clock, Zap, Flame } from 'lucide-react';
 import { useState } from 'react';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 interface Promotion {
   id: string;
@@ -43,7 +44,7 @@ export default function MasonryPromoCard({ promo, index }: MasonryPromoCardProps
     if (discountPercent >= 70) return { text: `ลด ${discountPercent}%`, color: 'from-red-500 to-pink-600' };
     if (discountPercent >= 50) return { text: `ลด ${discountPercent}%`, color: 'from-orange-500 to-red-500' };
     if (discountPercent >= 30) return { text: `ลด ${discountPercent}%`, color: 'from-yellow-500 to-orange-500' };
-    return { text: 'โปรดี', color: 'from-green-500 to-emerald-600' };
+    return { text: 'โปรดี', color: 'from-orange-400 to-amber-500' };
   };
 
   const tag = getDiscountTag();
@@ -70,7 +71,7 @@ export default function MasonryPromoCard({ promo, index }: MasonryPromoCardProps
           {/* Image Container - รูปเด่น */}
           <div className="relative overflow-hidden bg-gray-100">
             <Image
-              src={promo.image || 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=600'}
+              src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))}
               alt={promo.title}
               width={400}
               height={500}
@@ -104,7 +105,7 @@ export default function MasonryPromoCard({ promo, index }: MasonryPromoCardProps
                   initial={{ x: -100, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.15, type: 'spring' }}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-full shadow-2xl"
+                  className="bg-gradient-to-r from-orange-500 to-amber-600 text-white px-3 py-1.5 rounded-full shadow-2xl"
                 >
                   <span className="text-xs font-black uppercase tracking-wide">1 แถม 1</span>
                 </motion.div>

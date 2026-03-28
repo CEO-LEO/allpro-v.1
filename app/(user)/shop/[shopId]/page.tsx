@@ -3,13 +3,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
   Store, Star, Package, MapPin, CheckCircle, ArrowLeft,
-  TrendingUp, Clock, Heart, Share2
+  TrendingUp, Clock, Heart, Share2, MessageCircle, Globe, ExternalLink
 } from 'lucide-react';
 import { useProductStore, type Product } from '@/store/useProductStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getSocialLinks } from '@/lib/socialLinks';
+import { getPromotions } from '@/lib/getPromotions';
 
 interface ShopInfo {
   id: string;
@@ -27,16 +29,22 @@ export default function PublicShopPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const { products } = useProductStore();
+  const { user: authUser, savedMerchantProfile } = useAuthStore();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
+  const [apiProducts, setApiProducts] = useState<Product[]>([]);
 
-  // Derive shop products from store
+  // Derive shop products from local store + API results
   const shopProducts = useMemo(() => {
     if (!shopInfo) return [];
-    return products.filter(p => p.shopName === shopInfo.name);
-  }, [products, shopInfo]);
+    const localMatches = products.filter(p => p.shopName === shopInfo.name);
+    // Merge with API products, deduplicate by id
+    const localIds = new Set(localMatches.map(p => p.id));
+    const apiMatches = apiProducts.filter(p => !localIds.has(p.id));
+    return [...localMatches, ...apiMatches];
+  }, [products, shopInfo, apiProducts]);
 
   useEffect(() => {
     const fetchShop = async () => {
@@ -52,28 +60,105 @@ export default function PublicShopPage() {
 
         await new Promise(r => setTimeout(r, 400));
 
-        // Demo Mode: derive shop info from products in store
         const decodedName = decodeURIComponent(shopId);
+
+        // ─── Source 1: Local product store ───
         const matching = products.filter(p => p.shopName === decodedName);
 
-        if (matching.length === 0) {
-          throw new Error('ไม่พบร้านค้านี้');
+        if (matching.length > 0) {
+          const firstProduct = matching[0];
+          const avgRating = matching.reduce((sum, p) => sum + (p.rating || 0), 0) / matching.length;
+
+          setShopInfo({
+            id: shopId,
+            name: firstProduct.shopName,
+            logo: firstProduct.shopLogo || '',
+            description: `ยินดีต้อนรับสู่ ${firstProduct.shopName} — ร้านค้าคุณภาพพร้อมโปรโมชั่นสุดพิเศษ`,
+            verified: firstProduct.verified,
+            rating: parseFloat(avgRating.toFixed(1)),
+            totalProducts: matching.length,
+            location: firstProduct.distance || 'กรุงเทพฯ',
+            memberSince: '2024',
+          });
+          return;
         }
 
-        const firstProduct = matching[0];
-        const avgRating = matching.reduce((sum, p) => sum + (p.rating || 0), 0) / matching.length;
+        // ─── Source 2: Static promotions data ───
+        const staticPromos = getPromotions();
+        const staticMatching = staticPromos.filter(p => p.shop_name === decodedName);
 
-        setShopInfo({
-          id: shopId,
-          name: firstProduct.shopName,
-          logo: firstProduct.shopLogo || '',
-          description: `ยินดีต้อนรับสู่ ${firstProduct.shopName} — ร้านค้าคุณภาพพร้อมโปรโมชั่นสุดพิเศษ`,
-          verified: firstProduct.verified,
-          rating: parseFloat(avgRating.toFixed(1)),
-          totalProducts: matching.length,
-          location: firstProduct.distance || 'กรุงเทพฯ',
-          memberSince: '2024',
-        });
+        if (staticMatching.length > 0) {
+          const first = staticMatching[0];
+          // Convert static promos to Product-like objects for shopProducts
+          const asProducts: Product[] = staticMatching.map(p => ({
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            originalPrice: p.price,
+            promoPrice: Math.round(p.price * (1 - p.discount_rate / 100)),
+            discount: p.discount_rate,
+            image: p.image || '',
+            shopName: p.shop_name,
+            category: (p.category || 'Other') as Product['category'],
+            verified: p.is_verified,
+            likes: p.views || 0,
+            isLiked: false,
+            reviews: 0,
+            rating: 0,
+            distance: p.location,
+            validUntil: p.valid_until || '',
+            createdAt: '',
+            tags: p.tags || [],
+          }));
+          setApiProducts(asProducts);
+
+          setShopInfo({
+            id: shopId,
+            name: first.shop_name,
+            logo: '',
+            description: `ยินดีต้อนรับสู่ ${first.shop_name} — ร้านค้าคุณภาพพร้อมโปรโมชั่นสุดพิเศษ`,
+            verified: first.is_verified,
+            rating: 0,
+            totalProducts: staticMatching.length,
+            location: first.location || 'กรุงเทพฯ',
+            memberSince: '2024',
+          });
+          return;
+        }
+
+        // ─── Source 3: Logged-in merchant auth data ───
+        if (authUser?.role === 'MERCHANT' && authUser.shopName === decodedName) {
+          setShopInfo({
+            id: authUser.id || shopId,
+            name: authUser.shopName,
+            logo: authUser.shopLogo || '',
+            description: authUser.shopDescription || `ยินดีต้อนรับสู่ ${authUser.shopName} — ร้านค้าคุณภาพพร้อมโปรโมชั่นสุดพิเศษ`,
+            verified: authUser.verified ?? false,
+            rating: 0,
+            totalProducts: 0,
+            location: authUser.shopAddress || 'กรุงเทพฯ',
+            memberSince: authUser.createdAt ? new Date(authUser.createdAt).getFullYear().toString() : '2024',
+          });
+          return;
+        }
+
+        // ─── Source 4: Saved merchant profile from account ───
+        if (savedMerchantProfile && savedMerchantProfile.shopName === decodedName) {
+          setShopInfo({
+            id: savedMerchantProfile.id || shopId,
+            name: savedMerchantProfile.shopName,
+            logo: savedMerchantProfile.shopLogo || '',
+            description: savedMerchantProfile.shopDescription || `ยินดีต้อนรับสู่ ${savedMerchantProfile.shopName} — ร้านค้าคุณภาพพร้อมโปรโมชั่นสุดพิเศษ`,
+            verified: savedMerchantProfile.verified ?? false,
+            rating: 0,
+            totalProducts: 0,
+            location: savedMerchantProfile.shopAddress || 'กรุงเทพฯ',
+            memberSince: '2024',
+          });
+          return;
+        }
+
+        throw new Error('ไม่พบร้านค้านี้');
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
         setError(message);
@@ -83,7 +168,7 @@ export default function PublicShopPage() {
     };
 
     if (shopId) fetchShop();
-  }, [shopId, products]);
+  }, [shopId, products, authUser, savedMerchantProfile]);
 
   if (isLoading) {
     return (
@@ -214,6 +299,41 @@ export default function PublicShopPage() {
               <p className="text-xs text-gray-500">ถูกใจ</p>
             </div>
           </div>
+
+          {/* Social Links */}
+          {(() => {
+            // ดึงข้อมูล social จาก auth store ถ้าเป็นร้านของตัวเอง
+            const isOwnShop = authUser?.shopName === shopInfo.name;
+            const socialLinks = isOwnShop ? getSocialLinks({
+              line: authUser?.shopSocialLine,
+              facebook: authUser?.shopSocialFacebook,
+              instagram: authUser?.shopSocialInstagram,
+              website: authUser?.shopSocialWebsite,
+            }) : [];
+            if (socialLinks.length === 0) return null;
+            return (
+              <div className="flex flex-wrap justify-center gap-2 mt-6">
+                {socialLinks.map((link) => (
+                  <a
+                    key={link.key}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white ${link.hoverColor} hover:shadow-md transition-all duration-200 group`}
+                  >
+                    <div className={`w-7 h-7 rounded-lg ${link.bgColor} flex items-center justify-center flex-shrink-0`}>
+                      {link.icon === 'line' && <MessageCircle className="w-3.5 h-3.5 text-white" />}
+                      {link.icon === 'facebook' && <span className="text-white text-xs font-bold">f</span>}
+                      {link.icon === 'instagram' && <span className="text-white text-xs font-bold">ig</span>}
+                      {link.icon === 'website' && <Globe className="w-3.5 h-3.5 text-white" />}
+                    </div>
+                    <span className={`text-sm font-medium ${link.color}`}>{link.label}</span>
+                    <ExternalLink className="w-3 h-3 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                  </a>
+                ))}
+              </div>
+            );
+          })()}
         </motion.div>
 
         {/* ═══ Shop Products ═══ */}
@@ -245,14 +365,21 @@ export default function PublicShopPage() {
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all group">
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-                        <Image
-                          src={product.image}
+                        <img
+                          src={product.image || ''}
                           alt={product.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
+                        {/* Fallback icon (visible when image fails) */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-orange-50">
+                          <Package className="w-12 h-12 text-orange-300" />
+                        </div>
                         {product.discount > 0 && (
-                          <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                          <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full z-10">
                             -{product.discount}%
                           </span>
                         )}
@@ -260,11 +387,11 @@ export default function PublicShopPage() {
 
                       {/* Info */}
                       <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
+                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-orange-600 transition-colors">
                           {product.title}
                         </h3>
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg font-bold text-blue-600">
+                          <span className="text-lg font-bold text-orange-600">
                             ฿{product.promoPrice.toLocaleString()}
                           </span>
                           {product.originalPrice > product.promoPrice && (

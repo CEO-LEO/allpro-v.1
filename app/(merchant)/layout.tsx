@@ -11,7 +11,8 @@ import {
   Settings,
   Zap,
   Menu,
-  LogOut
+  LogOut,
+  AlertCircle
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'react-hot-toast';
@@ -19,27 +20,47 @@ import CreateDealModal from './merchant/dashboard/CreateDealModal';
 import AuthGuard from '@/components/Common/AuthGuard';
 import { useRouter } from 'next/navigation';
 
+// Shared profile completeness check
+function isMerchantProfileComplete(user: { shopName?: string; shopLogo?: string; shopAddress?: string; phone?: string; merchantProfileComplete?: boolean } | null): boolean {
+  if (!user) return false;
+  const hasShopName = !!user.shopName?.trim() && user.shopName.trim() !== 'My Shop';
+  const hasLogo = !!user.shopLogo;
+  const hasAddress = !!user.shopAddress?.trim();
+  const hasPhone = !!user.phone?.trim() && user.phone.trim().length >= 9;
+  return hasShopName && hasLogo && hasAddress && hasPhone;
+}
+
 // Merchant Sidebar Component
 function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const profileComplete = isMerchantProfileComplete(user);
 
   const navItems = [
-    { href: '/merchant/dashboard', icon: LayoutDashboard, label: 'Dashboard', activePaths: ['/merchant/dashboard'] },
-    { href: '/merchant/shop', icon: Store, label: 'My Shop', activePaths: ['/merchant/shop'] },
-    { href: '/merchant/ads', icon: TrendingUp, label: 'Ads', activePaths: ['/merchant/ads'] },
-    { href: '/merchant/settings', icon: Settings, label: 'Settings', activePaths: ['/merchant/settings'] }
+    { href: '/merchant/dashboard', icon: LayoutDashboard, label: 'แดชบอร์ด', activePaths: ['/merchant/dashboard'] },
+    { href: '/merchant/shop', icon: Store, label: 'ร้านของฉัน', activePaths: ['/merchant/shop'] },
+    { href: '/merchant/ads', icon: TrendingUp, label: 'โฆษณา', activePaths: ['/merchant/ads'] },
+    { href: '/merchant/settings', icon: Settings, label: 'ตั้งค่า', activePaths: ['/merchant/settings'] }
   ];
 
   const isActive = (paths: string[]) => {
     return paths.some(path => pathname.startsWith(path));
   };
 
-  const handleLogout = () => {
-    logout();
-    toast.success('Logged out successfully');
+  const handleLogout = async () => {
+    await logout();
+    toast.success('ออกจากระบบสำเร็จ');
     router.push('/');
+  };
+
+  const handleCreateDeal = () => {
+    if (!profileComplete) {
+      toast.error('กรุณากรอกข้อมูลร้านค้าให้ครบก่อนสร้างดีล', { duration: 3000 });
+      router.push('/merchant/shop?setup=true');
+      return;
+    }
+    onCreateDeal();
   };
 
   return (
@@ -69,6 +90,7 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.activePaths);
+            const showBadge = item.href === '/merchant/shop' && !profileComplete;
             
             return (
               <Link
@@ -76,17 +98,21 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative ${
                   active
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${active ? 'scale-110' : ''} transition-transform`} />
-                <span className={`font-medium ${active ? 'font-bold' : ''}`}>{item.label}</span>
+                <Icon className="w-5 h-5 transition-transform" />
+                <span className={`font-medium ${active ? 'font-semibold' : ''}`}>{item.label}</span>
                 
+                {showBadge && (
+                  <span className="ml-auto w-2 h-2 bg-orange-500 rounded-full" title="กรอกข้อมูลร้านค้าไม่ครบ" />
+                )}
+
                 {active && (
                   <motion.div
                     layoutId="merchant-nav-indicator"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-400 rounded-full"
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -98,19 +124,32 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
         {/* FAB Button - Create Flash Sale */}
         <div className="mt-6 pt-6 border-t border-slate-700 space-y-3">
           <button
-            onClick={onCreateDeal}
-            className="w-full py-4 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+            onClick={handleCreateDeal}
+            className={`w-full py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${
+              profileComplete
+                ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/30 hover:scale-105 active:scale-95'
+                : 'bg-slate-700 text-slate-400 cursor-not-allowed shadow-none'
+            }`}
           >
-            <Zap className="w-5 h-5" />
-            <span>Create Flash Sale</span>
+            {profileComplete ? (
+              <Zap className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-orange-400" />
+            )}
+            <span>สร้างแฟลชเซล</span>
           </button>
+          {!profileComplete && (
+            <p className="text-xs text-orange-400 text-center px-2">
+              กรอกข้อมูลร้านค้าให้ครบที่ ร้านของฉัน ก่อน
+            </p>
+          )}
 
           <button
             onClick={handleLogout}
             className="w-full py-3 rounded-xl bg-slate-800 text-slate-400 font-medium hover:bg-red-900/30 hover:text-red-400 transition-all flex items-center justify-center gap-2 border border-slate-700"
           >
             <LogOut className="w-4 h-4" />
-            <span>Logout</span>
+            <span>ออกจากระบบ</span>
           </button>
         </div>
       </div>

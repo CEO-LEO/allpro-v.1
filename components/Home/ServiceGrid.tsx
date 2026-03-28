@@ -35,7 +35,7 @@ const SERVICES = [
     id: 'articles', 
     name: 'บทความ', 
     icon: NewspaperIcon, 
-    color: 'from-green-500 to-emerald-500',
+    color: 'from-orange-400 to-amber-500',
     href: '/community'
   },
 ];
@@ -44,8 +44,8 @@ export default function ServiceGrid() {
   return (
     <div className="mb-8">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-4 px-2">
-        <h2 className="text-h3 text-gray-800">บริการทั้งหมด</h2>
+      <div className="flex items-center justify-between mb-5 px-1">
+        <h2 className="text-base font-bold text-gray-900">บริการทั้งหมด</h2>
       </div>
 
       {/* Service Grid */}
@@ -62,7 +62,7 @@ export default function ServiceGrid() {
             >
               <Link
                 href={service.href}
-                className="group flex flex-col items-center gap-2 p-4 rounded-2xl bg-white hover:bg-gray-50 border-2 border-gray-100 hover:border-orange-200 hover:shadow-md transition-all"
+                className="group flex flex-col items-center gap-2 p-3.5 rounded-xl bg-white hover:bg-gray-50/80 border border-gray-100 hover:border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all"
               >
                 {/* Icon Container */}
                 <div

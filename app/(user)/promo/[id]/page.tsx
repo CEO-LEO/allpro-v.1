@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   CheckBadgeIcon,
@@ -17,6 +17,7 @@ import {
 import { getPromotionById, getPromotions } from '@/lib/getPromotions';
 import { useProductStore } from '@/store/useProductStore';
 import { Promotion } from '@/lib/types';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import BranchAvailability from '@/components/BranchAvailability';
 import PriceHistory from '@/components/Product/PriceHistory';
 import NotifyButton from '@/components/Product/NotifyButton';
@@ -29,6 +30,8 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
   const resolvedParams = use(params);
   const decodedId = decodeURIComponent(resolvedParams.id);
   const storeProducts = useProductStore((s) => s.products);
+  const [dbPromo, setDbPromo] = useState<Promotion | null>(null);
+  const [dbLoading, setDbLoading] = useState(false);
 
   // Try static data first, then fallback to product store
   let promo: Promotion | undefined = getPromotionById(decodedId);
@@ -48,7 +51,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
         is_sponsored: false,
         location: storeProduct.distance || 'ทุกสาขา',
         search_volume: 0,
-        image: storeProduct.image,
+        image: resolveImageUrl(storeProduct.image, getCategoryFallbackImage(storeProduct.category)),
         valid_until: storeProduct.validUntil,
         views: storeProduct.likes || 0,
         saves: 0,
@@ -57,7 +60,59 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
     }
   }
 
-  if (!promo) {
+  // Fallback: fetch from API if not found locally
+  useEffect(() => {
+    if (promo) return;
+    setDbLoading(true);
+    const fetchFromApi = async () => {
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(decodedId)}`);
+        const json = await res.json();
+        const data = json.data;
+        if (data) {
+          setDbPromo({
+            id: String(data.id),
+            shop_name: String(data.shop_name || data.shopName || 'ร้านค้า'),
+            title: String(data.title || ''),
+            description: String(data.description || ''),
+            price: Number(data.price || data.promoPrice || 0),
+            discount_rate: Number(data.discount || data.discount_rate || 0),
+            category: String(data.category || 'Other'),
+            is_verified: Boolean(data.is_verified || data.verified),
+            is_sponsored: false,
+            location: String(data.location || data.distance || 'ทุกสาขา'),
+            search_volume: 0,
+            image: String(data.image || ''),
+            valid_until: String(data.valid_until || data.validUntil || new Date(Date.now() + 7 * 86400000).toISOString()),
+            views: Number(data.views || data.likes || 0),
+            saves: 0,
+            tags: Array.isArray(data.tags) ? data.tags : [],
+          });
+        }
+      } catch (err) {
+        console.error('API fetch error:', err);
+      } finally {
+        setDbLoading(false);
+      }
+    };
+    fetchFromApi();
+  }, [decodedId]);
+
+  // Use DB promo as final fallback
+  const finalPromo = promo || dbPromo;
+
+  if (dbLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!finalPromo) {
     // Get popular promos as fallback
     const popularPromos = getPromotions().slice(0, 6);
     
@@ -71,7 +126,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">ไม่พบโปรโมชั่นที่คุณค้นหา</h1>
             <p className="text-gray-600 mb-6">
-              โปรโมชั่น ID: "{resolvedParams.id}" อาจหมดเวลาแล้วหรือถูกลบไป
+              โปรโมชั่น ID: &quot;{resolvedParams.id}&quot; อาจหมดเวลาแล้วหรือถูกลบไป
             </p>
             <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-full font-bold hover:bg-orange-600 transition-colors">
               กลับหน้าแรก
@@ -91,12 +146,17 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                           src={promo.image} 
                           alt={promo.title}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <span className="text-3xl">🛍️</span>
-                        </div>
-                      )}
+                      ) : null}
+                      <div className={`w-full h-full items-center justify-center text-gray-400 ${promo.image ? 'hidden' : 'flex'}`}>
+                        <span className="text-3xl">🛍️</span>
+                      </div>
                       {promo.discount_rate && (
                         <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-bold">
                           -{promo.discount_rate}%
@@ -123,8 +183,11 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
     );
   }
 
-  const verificationDate = new Date(promo.valid_until);
+  const verificationDate = new Date(finalPromo.valid_until);
   verificationDate.setDate(verificationDate.getDate() - 7);
+
+  // Resolve image URL for display
+  const displayImage = resolveImageUrl(finalPromo.image, getCategoryFallbackImage(finalPromo.category));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -149,18 +212,27 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
         {/* Main Image */}
         <div className="card overflow-hidden mb-4 sm:mb-6">
           <div className="relative h-56 sm:h-72 md:h-80 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center overflow-hidden">
-            {promo.image ? (
-              <img src={promo.image} alt={promo.title} className="w-full h-full object-cover" />
-            ) : (
-              <div className="flex flex-col items-center justify-center text-gray-300">
-                <ShoppingBagIcon className="w-20 h-20 sm:w-28 sm:h-28" />
-                <p className="text-sm mt-2">ไม่มีรูปภาพ</p>
-              </div>
-            )}
+            {displayImage ? (
+              <img 
+                src={displayImage} 
+                alt={finalPromo.title} 
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className={`flex-col items-center justify-center text-gray-300 w-full h-full ${displayImage ? 'hidden' : 'flex'}`}>
+              <ShoppingBagIcon className="w-20 h-20 sm:w-28 sm:h-28" />
+              <p className="text-sm mt-2">ไม่มีรูปภาพ</p>
+            </div>
             
             {/* Discount Badge */}
             <div className="absolute top-4 right-4 bg-red-500 text-white font-bold px-6 py-3 rounded-full text-2xl shadow-lg">
-              -{promo.discount_rate}%
+              -{finalPromo.discount_rate}%
             </div>
           </div>
         </div>
@@ -176,36 +248,36 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
               'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600',
               'https://images.unsplash.com/photo-1547592180-85f173990554?w=600',
             ]}
-            officialImage={`https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600`}
-            productName={promo.title}
+            officialImage={displayImage || `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600`}
+            productName={finalPromo.title}
           />
         </div>
 
         {/* Content */}
         <div className="card p-6 mb-6">
           {/* Shop Name */}
-          <Link href={`/shop/${encodeURIComponent(promo.shop_name)}`} className="text-sm text-blue-600 font-medium mb-2 hover:underline inline-flex items-center gap-1">
+          <Link href={`/shop/${encodeURIComponent(finalPromo.shop_name)}`} className="text-sm text-blue-600 font-medium mb-2 hover:underline inline-flex items-center gap-1">
             <MapPinIcon className="w-4 h-4" />
-            {promo.shop_name}
+            {finalPromo.shop_name}
           </Link>
           
           {/* Title */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{promo.title}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{finalPromo.title}</h1>
 
           {/* Price */}
           <div className="flex items-baseline gap-4 mb-6 pb-6 border-b">
             <div>
               <p className="text-sm text-gray-400 line-through">
-                ฿{Math.round(promo.price / (1 - promo.discount_rate / 100))}
+                ฿{Math.round(finalPromo.price / (1 - finalPromo.discount_rate / 100))}
               </p>
               <p className="text-4xl font-bold text-[#FF5722]">
-                ฿{promo.price}
+                ฿{finalPromo.price}
               </p>
             </div>
             <div className="flex-1">
               <p className="text-sm text-gray-600">ประหยัด</p>
               <p className="text-2xl font-bold text-green-600">
-                ฿{Math.round(promo.price / (1 - promo.discount_rate / 100)) - promo.price}
+                ฿{Math.round(finalPromo.price / (1 - finalPromo.discount_rate / 100)) - finalPromo.price}
               </p>
             </div>
           </div>
@@ -213,7 +285,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
           {/* Description */}
           <div className="mb-6">
             <h2 className="text-lg font-bold text-gray-900 mb-3">รายละเอียด</h2>
-            <p className="text-gray-700 leading-relaxed">{promo.description}</p>
+            <p className="text-gray-700 leading-relaxed">{finalPromo.description}</p>
           </div>
 
           {/* Details Grid */}
@@ -222,7 +294,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
               <MapPinIcon className="w-5 h-5 text-[#FF5722]" />
               <div>
                 <p className="text-xs text-gray-500">สถานที่</p>
-                <p className="font-semibold text-gray-900">{promo.location}</p>
+                <p className="font-semibold text-gray-900">{finalPromo.location}</p>
               </div>
             </div>
 
@@ -231,7 +303,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
               <div>
                 <p className="text-xs text-gray-500">ใช้ได้ถึง</p>
                 <p className="font-semibold text-gray-900">
-                  {new Date(promo.valid_until).toLocaleDateString('th-TH', {
+                  {new Date(finalPromo.valid_until).toLocaleDateString('th-TH', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric'
@@ -244,7 +316,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
               <ClockIcon className="w-5 h-5 text-[#FF5722]" />
               <div>
                 <p className="text-xs text-gray-500">หมวดหมู่</p>
-                <p className="font-semibold text-gray-900">{promo.category}</p>
+                <p className="font-semibold text-gray-900">{finalPromo.category}</p>
               </div>
             </div>
 
@@ -253,7 +325,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
               <div>
                 <p className="text-xs text-gray-500">ความนิยม</p>
                 <p className="font-semibold text-gray-900">
-                  {promo.search_volume.toLocaleString()} views
+                  {(finalPromo.search_volume || 0).toLocaleString()} views
                 </p>
               </div>
             </div>
@@ -301,7 +373,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                   </div>
 
                   <button className="w-full bg-white text-orange-600 font-bold py-3 px-6 rounded-xl hover:bg-orange-50 transition-all flex items-center justify-center gap-2 shadow-lg group-hover:scale-105">
-                    <span>จ้างเลย ฿{Math.round(promo.price * 1.15)}</span>
+                    <span>จ้างเลย ฿{Math.round(finalPromo.price * 1.15)}</span>
                     <span className="text-xl">→</span>
                   </button>
                   
@@ -314,21 +386,21 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
 
             {/* Branch Availability Component */}
             <BranchAvailability 
-              productId={promo.id}
-              productTitle={promo.title}
+              productId={finalPromo.id}
+              productTitle={finalPromo.title}
             />
 
             {/* Notify Button (shows when out of stock) */}
             <NotifyButton
-              productId={promo.id}
-              productName={promo.title}
+              productId={finalPromo.id}
+              productName={finalPromo.title}
               branchName="All Branches"
-              stockStatus={promo.stockStatus || 'in_stock'}
+              stockStatus={finalPromo.stockStatus || 'in_stock'}
             />
 
             <div className="flex gap-3">
               <Link 
-                href={`/shop/${encodeURIComponent(promo.shop_name)}`}
+                href={`/shop/${encodeURIComponent(finalPromo.shop_name)}`}
                 className="flex-1 btn-primary py-4 text-lg text-center flex items-center justify-center gap-2"
               >
                 ดูร้านค้า
@@ -337,7 +409,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                 className="btn-secondary px-6"
                 onClick={() => {
                   if (navigator.share) {
-                    navigator.share({ title: promo.title, text: promo.description, url: window.location.href }).catch(() => {});
+                    navigator.share({ title: finalPromo.title, text: finalPromo.description, url: window.location.href }).catch(() => {});
                   } else {
                     navigator.clipboard.writeText(window.location.href);
                     alert('คัดลอกลิงก์แล้ว!');
@@ -352,27 +424,28 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
 
         {/* Party Finder - Group Buying */}
         <PartyList
-          productId={promo.id}
-          productName={promo.title}
-          dealType={promo.description}
-          discount={promo.discount_rate}
+          productId={finalPromo.id}
+          productName={finalPromo.title}
+          dealType={finalPromo.description}
+          discount={finalPromo.discount_rate}
         />
 
         {/* Worth It Meter - Quick Voting */}
         <div className="mb-6">
-          <WorthItMeter productId={promo.id} />
+          <WorthItMeter productId={finalPromo.id} />
         </div>
 
         {/* Reviews Section */}
         <div className="mb-6">
-          <Reviews productId={promo.id} />
+          <Reviews productId={finalPromo.id} />
         </div>
 
         {/* Price History Graph */}
         <div className="mb-6">
           <PriceHistory 
-            productName={promo.title}
-            currentPrice={promo.price}
+            productId={finalPromo.id}
+            productName={finalPromo.title}
+            currentPrice={finalPromo.price}
           />
         </div>
 
@@ -408,15 +481,15 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
           <h3 className="font-bold text-purple-900 mb-4">📊 สถิติโปรโมชั่นนี้ (Demo)</h3>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-3xl font-bold text-purple-900">{promo.search_volume}</p>
+              <p className="text-3xl font-bold text-purple-900">{finalPromo.search_volume || 0}</p>
               <p className="text-sm text-purple-700">ผู้เข้าชม</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-purple-900">{Math.round(promo.search_volume * 0.23)}</p>
+              <p className="text-3xl font-bold text-purple-900">{Math.round((finalPromo.search_volume || 0) * 0.23)}</p>
               <p className="text-sm text-purple-700">บันทึก</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-purple-900">{Math.round(promo.search_volume * 0.45)}</p>
+              <p className="text-3xl font-bold text-purple-900">{Math.round((finalPromo.search_volume || 0) * 0.45)}</p>
               <p className="text-sm text-purple-700">คลิกดูร้าน</p>
             </div>
           </div>

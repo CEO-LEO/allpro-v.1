@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/solid';
 import BookmarkButton from '@/components/Home/BookmarkButton';
 import ShareButton from '@/components/Home/ShareButton';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 interface Promotion {
   id: string;
@@ -44,21 +45,19 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
   const isBigBrand = promo.isPro || promo.is_sponsored;
   
   const brandStyles = isBigBrand ? {
-    borderColor: 'border-purple-200',
-    bgGradient: 'from-purple-50 via-white to-purple-50',
-    badgeColor: 'bg-gradient-to-r from-purple-500 to-indigo-600',
+    borderColor: 'border-gray-100',
+    badgeColor: 'bg-purple-600',
     accentColor: 'text-purple-600',
-    iconBg: 'bg-purple-100',
+    iconBg: 'bg-purple-50',
     iconColor: 'text-purple-600',
-    hoverShadow: 'hover:shadow-purple-200',
+    hoverTitle: 'group-hover:text-purple-600',
   } : {
-    borderColor: 'border-emerald-200',
-    bgGradient: 'from-emerald-50 via-white to-emerald-50',
-    badgeColor: 'bg-gradient-to-r from-emerald-500 to-teal-600',
-    accentColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-100',
-    iconColor: 'text-emerald-600',
-    hoverShadow: 'hover:shadow-emerald-200',
+    borderColor: 'border-gray-100',
+    badgeColor: 'bg-orange-500',
+    accentColor: 'text-orange-600',
+    iconBg: 'bg-orange-50',
+    iconColor: 'text-orange-600',
+    hoverTitle: 'group-hover:text-orange-600',
   };
 
   return (
@@ -70,14 +69,14 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
         delay: index * 0.1,
         ease: [0.25, 0.1, 0.25, 1] 
       }}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -2 }}
       className="group"
     >
       <Link href={`/promo/${encodeURIComponent(promo.id)}`} className="block">
         <div className={`
-          relative overflow-hidden rounded-2xl border-2 ${brandStyles.borderColor}
-          bg-gradient-to-br ${brandStyles.bgGradient}
-          transition-all duration-300 ${brandStyles.hoverShadow} hover:shadow-xl
+          relative overflow-hidden rounded-xl border ${brandStyles.borderColor}
+          bg-white
+          shadow-[0_1px_4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]
         `}>
           {/* Badge ประเภทร้านค้า */}
           <div className="absolute top-3 left-3 z-10 flex gap-2">
@@ -87,8 +86,8 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
               transition={{ delay: 0.2 + index * 0.1, type: "spring" }}
               className={`
                 ${brandStyles.badgeColor} 
-                px-3 py-1.5 rounded-full 
-                shadow-lg backdrop-blur-sm
+                px-2.5 py-1 rounded-lg 
+                shadow-sm
               `}
             >
               <div className="flex items-center gap-1.5">
@@ -125,10 +124,10 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
           </div>
 
           {/* รูปภาพโปรโมชั่น */}
-          <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
+          <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
             {!imageError && promo.image ? (
               <Image
-                src={promo.image}
+                src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))}
                 alt={promo.title}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -181,24 +180,24 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
             </div>
 
             {/* หัวข้อโปรโมชั่น */}
-            <h3 className="text-h4 text-gray-900 leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
+            <h3 className={`text-h4 text-gray-900 leading-tight line-clamp-2 ${brandStyles.hoverTitle} transition-colors`}>
               {promo.title}
             </h3>
 
             {/* คำอธิบาย */}
-            <p className="text-body-sm text-gray-600 line-clamp-2">
+            <p className="text-sm text-slate-500 line-clamp-2">
               {promo.description}
             </p>
 
             {/* ราคาและข้อมูลเพิ่มเติม */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
               <div className="space-y-1">
                 {promo.price && (
                   <p className="text-h2 text-gray-900">
                     ฿{promo.price}
                   </p>
                 )}
-                <div className="flex items-center gap-1 text-caption text-gray-500">
+                <div className="flex items-center gap-1 text-xs text-slate-400">
                   <MapPinIcon className="w-3.5 h-3.5" />
                   <span className="line-clamp-1">{promo.location || 'ทุกสาขา'}</span>
                 </div>

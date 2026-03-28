@@ -194,18 +194,19 @@ export const useAppStore = create<AppState>()(
       },
 
       loginAsUser: () => {
+        const prev = get().user?.role === 'user' ? get().user : null;
         const newUser: User = {
-          id: `user-${Date.now()}`,
-          name: '',
-          username: '',
-          email: '',
+          id: prev?.id || `user-${Date.now()}`,
+          name: prev?.name || '',
+          username: prev?.username || '',
+          email: prev?.email || '',
           role: 'user',
-          avatar: '',
-          phone: '',
-          createdAt: new Date().toISOString(),
-          xp: 0,
-          level: 1,
-          coins: 0
+          avatar: prev?.avatar || '',
+          phone: prev?.phone || '',
+          createdAt: prev?.createdAt || new Date().toISOString(),
+          xp: prev?.xp ?? 0,
+          level: prev?.level ?? 1,
+          coins: prev?.coins ?? 0
         };
 
         set({ user: newUser, isAuthenticated: true });
@@ -213,18 +214,19 @@ export const useAppStore = create<AppState>()(
       },
 
       loginAsMerchant: () => {
+        const prev = get().user?.role === 'merchant' ? get().user : null;
         const newUser: User = {
-          id: `merchant-${Date.now()}`,
-          name: '',
-          username: '',
-          email: '',
+          id: prev?.id || `merchant-${Date.now()}`,
+          name: prev?.name || '',
+          username: prev?.username || '',
+          email: prev?.email || '',
           role: 'merchant',
-          avatar: '',
-          phone: '',
-          createdAt: new Date().toISOString(),
-          xp: 0,
-          level: 1,
-          coins: 0
+          avatar: prev?.avatar || '',
+          phone: prev?.phone || '',
+          createdAt: prev?.createdAt || new Date().toISOString(),
+          xp: prev?.xp ?? 0,
+          level: prev?.level ?? 1,
+          coins: prev?.coins ?? 0
         };
 
         set({ user: newUser, isAuthenticated: true });

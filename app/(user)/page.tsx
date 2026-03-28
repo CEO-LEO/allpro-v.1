@@ -7,14 +7,17 @@ import { ArrowRight, Store, Search, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { useProductStore, Product } from '@/store/useProductStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getPromotions } from '@/lib/getPromotions';
 import { Promotion } from '@/lib/types';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import TrendingTags from '@/components/TrendingTags';
-import HomeSearchInput from '@/components/Home/HomeSearchInput';
 import EnhancedPromoCard from '@/components/Home/EnhancedPromoCard';
 import CategoryGrid from '@/components/Home/CategoryGrid';
+import PromoBannerCarousel from '@/components/Home/PromoBannerCarousel';
 import ServiceGrid from '@/components/Home/ServiceGrid';
 import Infographic from '@/components/Home/Infographic';
+import TagSelectionModal from '@/components/Onboarding/TagSelectionModal';
 
 // Dynamic imports for performance
 const NearbyGems = dynamic(() => import('@/components/Home/NearbyGems'), {
@@ -72,7 +75,7 @@ function productToPromotion(p: Product): Promotion {
     boosted_at: p.boostedAt,
     location: p.distance || 'ทุกสาขา',
     search_volume: 0,
-    image: p.image,
+    image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
     valid_until: p.validUntil,
     views: 0,
     saves: 0,
@@ -82,12 +85,23 @@ function productToPromotion(p: Product): Promotion {
 
 export default function Home() {
   const { user, checkAuth, selectedCategory, setSelectedCategory } = useAppStore();
+  const { user: authUser } = useAuthStore();
   const storeProducts = useProductStore((s) => s.products);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [showTagModal, setShowTagModal] = useState(false);
+
+  // Show Tag Selection Modal for first-time users
+  useEffect(() => {
+    if (authUser && authUser.role === 'USER' && !authUser.onboardingCompleted) {
+      // Small delay so the page loads first
+      const timer = setTimeout(() => setShowTagModal(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [authUser]);
 
   // Fetch promotions on mount
   useEffect(() => {
@@ -97,6 +111,48 @@ export default function Home() {
       try {
         // Load static promotions
         const staticData = getPromotions();
+
+        // Fetch from server-side API (avoids client-side Supabase issues)
+        try {
+          const res = await fetch('/api/debug-products');
+          const json = await res.json();
+          const dbProducts = json.data;
+
+          console.log('[Home] API fetch result:', { count: dbProducts?.length, data: dbProducts });
+
+          if (dbProducts && dbProducts.length > 0) {
+            const dbPromos: Promotion[] = dbProducts.map((p: Record<string, unknown>) => ({
+              id: String(p.id || ''),
+              shop_name: String(p.shopName || p.shop_name || 'ร้านค้า'),
+              title: String(p.title || ''),
+              description: String(p.description || ''),
+              price: Number(p.promoPrice || p.price || 0),
+              discount_rate: Number(p.discount || p.discount_rate || 0),
+              category: String(p.category || 'Other'),
+              is_verified: Boolean(p.verified || p.is_verified),
+              is_sponsored: Boolean(p.is_sponsored),
+              location: String(p.location || p.distance || 'ทุกสาขา'),
+              search_volume: 0,
+              image: String(p.image || '') || getCategoryFallbackImage(p.category as string),
+              valid_until: String(p.validUntil || p.valid_until || new Date(Date.now() + 7 * 86400000).toISOString()),
+              views: Number(p.likes || p.views || 0),
+              saves: 0,
+              tags: Array.isArray(p.tags) ? p.tags as string[] : [],
+            }));
+            // Merge: DB products first, then static (deduped)
+            const dbIds = new Set(dbPromos.map(p => p.id));
+            const merged = [...dbPromos, ...staticData.filter(p => !dbIds.has(p.id))];
+            console.log('[Home] ✅ Setting promotions:', merged.length, 'items');
+            setPromotions(merged);
+            setIsLoading(false);
+            return;
+          } else {
+            console.warn('[Home] ⚠️ No DB products, falling back to static');
+          }
+        } catch (apiErr) {
+          console.error('[Home] API fetch failed:', apiErr);
+        }
+
         setPromotions(staticData);
       } catch (err) {
         console.error('Failed to fetch promotions:', err);
@@ -140,6 +196,22 @@ export default function Home() {
     });
   }, [allPromotions, searchQuery, selectedCategory]);
 
+  // Personalized: แนะนำโปรโมชั่นตาม preferred_tags ของผู้ใช้
+  const recommendedPromotions = useMemo(() => {
+    const tags = authUser?.preferred_tags;
+    if (!tags || tags.length === 0) return [];
+
+    const tagsLower = tags.map(t => t.toLowerCase());
+
+    return allPromotions.filter((promo) => {
+      // เช็ค category ตรงกับ preferred_tags
+      if (tagsLower.includes(promo.category.toLowerCase())) return true;
+      // เช็ค tags ของ promo ตรงกับ preferred_tags
+      if (promo.tags?.some(t => tagsLower.includes(t.toLowerCase()))) return true;
+      return false;
+    }).slice(0, 6); // แสดงสูงสุด 6 รายการ
+  }, [allPromotions, authUser?.preferred_tags]);
+
   // Products to display
   const displayedProducts = useMemo(() => {
     return filteredProducts.slice(0, visibleCount);
@@ -170,34 +242,19 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
-      {/* Debug Navigation */}
-      <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-h4 text-orange-600">Pro Hunter</Link>
-          <div className="flex gap-2">
-            <Link 
-              href="/debug-promo"
-              className="text-caption bg-yellow-200 text-yellow-800 px-3 py-1.5 rounded-full hover:bg-yellow-300 transition-colors font-medium"
-            >
-              Debug Promo
-            </Link>
-            <Link 
-              href="/rewards"
-              className="text-caption bg-purple-200 text-purple-800 px-3 py-1.5 rounded-full hover:bg-purple-300 transition-colors font-medium"
-            >
-              Rewards
-            </Link>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-white">
+      {/* Tag Selection Onboarding Modal */}
+      <TagSelectionModal 
+        isOpen={showTagModal} 
+        onClose={() => setShowTagModal(false)} 
+      />
       
       {/* Merchant CTA Banner */}
       {user?.role !== 'merchant' && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg"
+          className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
         >
           <div className="max-w-[1800px] mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-4">
@@ -220,42 +277,70 @@ export default function Home() {
         </motion.div>
       )}
 
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6">
+
+        {/* Promo Banner Carousel — แบนเนอร์โฆษณาแบบสไลด์ */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-8"
+        >
+          <PromoBannerCarousel />
+        </motion.div>
 
         {/* Trending Tags — แถบแท็กค้นหาแนะนำ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6"
+          transition={{ delay: 0.25 }}
+          className="mb-10"
         >
           <TrendingTags />
         </motion.div>
 
-        {/* Search Bar — กล่องค้นหา (กด Enter → ไปหน้า /search?q=...) */}
-        <div className="mb-8">
-          <HomeSearchInput />
-        </div>
-
-        {/* Category Grid — หมวดหมู่แถวเดียว (Single Row) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <CategoryGrid 
-            onSelectCategory={setSelectedCategory}
-            selectedCategory={selectedCategory}
-          />
-        </motion.div>
+        {/* 🌟 Recommended for You — โปรโมชั่นแนะนำตาม preferred_tags */}
+        {recommendedPromotions.length > 0 && selectedCategory === 'All' && !searchQuery && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-12"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  🌟 แนะนำสำหรับคุณ
+                </h2>
+                <p className="text-body-sm text-gray-500 mt-1">
+                  ดีลที่ตรงกับความสนใจของคุณ
+                </p>
+              </div>
+              <button
+                onClick={() => setShowTagModal(true)}
+                className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 transition-colors"
+              >
+                ✏️ แก้ไข
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+              {recommendedPromotions.map((promo, index) => (
+                <EnhancedPromoCard 
+                  key={`rec-${promo.id}`}
+                  promo={promo}
+                  index={index}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Service Grid — บริการทั้งหมด */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mb-8"
+          className="mb-12"
         >
           <ServiceGrid />
         </motion.div>
@@ -265,7 +350,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mb-8"
+          className="mb-12"
         >
           <Infographic />
         </motion.div>
@@ -276,7 +361,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.55 }}
-            className="mb-8"
+            className="mb-12"
           >
             <NearbyDeals products={allPromotions.map((p) => ({
               id: p.id,
@@ -316,19 +401,19 @@ export default function Home() {
           id="all-promotions"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mb-6 scroll-mt-24"
+          className="mb-8 scroll-mt-24"
         >
-          <h2 className="text-h2 text-gray-900">
-            {searchQuery ? 'ผลการค้นหา' : selectedCategory === 'All' ? 'โปรโมชั่นทั้งหมด' : selectedCategory}
+          <h2 className="text-base font-bold text-gray-900">
+            {searchQuery ? 'ผลการค้นหา' : selectedCategory === 'All' ? 'โปรโมชั่นทั้งหมด' : ({'Food':'อาหาร','Fashion':'แฟชั่น','Travel':'ท่องเที่ยว','Gadget':'อุปกรณ์','Beauty':'ความงาม'} as Record<string,string>)[selectedCategory] || selectedCategory}
           </h2>
-          <p className="text-body-sm text-gray-600 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             พบ {filteredProducts.length} โปรโมชั่น
           </p>
         </motion.div>
 
         {/* Loading Skeleton */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
                 <div className="h-48 bg-gray-200" />
@@ -367,7 +452,7 @@ export default function Home() {
         ) : displayedProducts.length > 0 ? (
           /* Promotion Grid */
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
               {displayedProducts.map((promo, index) => (
                 <EnhancedPromoCard 
                   key={promo.id}
@@ -387,7 +472,7 @@ export default function Home() {
                 <button
                   onClick={handleLoadMore}
                   disabled={isLoadingMore}
-                  className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full font-bold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoadingMore ? (
                     <span className="flex items-center gap-2">
@@ -412,8 +497,8 @@ export default function Home() {
                 animate={{ opacity: 1 }}
                 className="text-center py-12"
               >
-                <div className="inline-block bg-gradient-to-r from-green-100 to-emerald-100 px-6 py-3 rounded-full">
-                  <p className="text-green-800 font-bold">
+                <div className="inline-block bg-gradient-to-r from-orange-100 to-amber-100 px-6 py-3 rounded-full">
+                  <p className="text-orange-800 font-bold">
                     คุณดูครบทั้งหมดแล้ว!
                   </p>
                 </div>

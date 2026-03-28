@@ -27,31 +27,46 @@ export default function DynamicNavbar() {
 
   // Define navigation items based on role
   const userNavItems = [
-    { href: '/', icon: Home, label: 'Home', activePaths: ['/'] },
-    { href: '/map', icon: MapPin, label: 'Map', activePaths: ['/map'] },
-    { href: '/wallet', icon: Wallet, label: 'Wallet', activePaths: ['/wallet'] },
-    { href: '/profile', icon: User, label: 'Profile', activePaths: ['/profile'] }
+    { href: '/', icon: Home, label: 'หน้าแรก', activePaths: ['/'] },
+    { href: '/map', icon: MapPin, label: 'แผนที่', activePaths: ['/map'] },
+    { href: '/wallet', icon: Wallet, label: 'กระเป๋า', activePaths: ['/wallet'] },
+    { href: '/profile', icon: User, label: 'โปรไฟล์', activePaths: ['/profile'] }
   ];
 
   const merchantNavItems = [
-    { href: '/merchant/dashboard', icon: LayoutDashboard, label: 'Dashboard', activePaths: ['/merchant/dashboard'] },
-    { href: '/merchant/shop', icon: Store, label: 'My Shop', activePaths: ['/merchant/shop'] },
-    { href: '/merchant/ads', icon: TrendingUp, label: 'Ads', activePaths: ['/merchant/ads'] },
-    { href: '/merchant/settings', icon: Settings, label: 'Settings', activePaths: ['/merchant/settings'] }
+    { href: '/merchant/dashboard', icon: LayoutDashboard, label: 'แดชบอร์ด', activePaths: ['/merchant/dashboard'] },
+    { href: '/merchant/shop', icon: Store, label: 'ร้านของฉัน', activePaths: ['/merchant/shop'] },
+    { href: '/merchant/ads', icon: TrendingUp, label: 'โฆษณา', activePaths: ['/merchant/ads'] },
+    { href: '/merchant/settings', icon: Settings, label: 'ตั้งค่า', activePaths: ['/merchant/settings'] }
   ];
 
   const navItems = user?.role === 'MERCHANT' ? merchantNavItems : userNavItems;
   
+  // Profile completeness check for merchants
+  const isMerchantComplete = (() => {
+    if (user?.role !== 'MERCHANT') return true;
+    const hasShopName = !!user.shopName?.trim() && user.shopName.trim() !== 'My Shop';
+    const hasLogo = !!user.shopLogo;
+    const hasAddress = !!user.shopAddress?.trim();
+    const hasPhone = !!user.phone?.trim() && user.phone.trim().length >= 9;
+    return hasShopName && hasLogo && hasAddress && hasPhone;
+  })();
+
   // Floating Action Button config
   const fabConfig = user?.role === 'MERCHANT' 
     ? {
         icon: Zap,
         label: 'Create Flash Sale',
         onClick: () => {
+          if (!isMerchantComplete) {
+            toast.error('กรุณากรอกข้อมูลร้านค้าให้ครบก่อนสร้างดีล');
+            router.push('/merchant/shop?setup=true');
+            return;
+          }
           router.push('/merchant/dashboard');
           toast.info('💡 คลิกปุ่ม "Create Flash Sale" สีน้ำเงินด้านล่างเพื่อสร้างดีล');
         },
-        color: 'from-blue-500 to-indigo-600'
+        color: isMerchantComplete ? 'from-blue-500 to-indigo-600' : 'from-slate-500 to-slate-600'
       }
     : {
         icon: QrCode,

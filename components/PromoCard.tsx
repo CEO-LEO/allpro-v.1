@@ -25,7 +25,7 @@ interface PromoCardProps {
 // Helper function to get icon by category
 const getIconByCategory = (category: string) => {
   const iconMap: { [key: string]: any } = {
-    'ของแถม': { icon: ShoppingCartIcon, color: 'from-green-400 to-emerald-500' },
+    'ของแถม': { icon: ShoppingCartIcon, color: 'from-orange-400 to-amber-500' },
     'ส่วนลด': { icon: SparklesIcon, color: 'from-orange-400 to-red-500' },
     'สินค้า': { icon: CubeIcon, color: 'from-blue-400 to-indigo-500' },
     'อาหาร': { icon: CakeIcon, color: 'from-pink-400 to-rose-500' },
@@ -65,23 +65,28 @@ export default function PromoCard({ promo }: PromoCardProps) {
               src={promo.imageUrl} 
               alt={promo.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
             />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 via-orange-50 to-red-50">
-              <div className="text-center">
-                {(() => {
-                  const iconData = getIconByCategory(promo.category);
-                  const Icon = iconData.icon;
-                  return (
-                    <div className={`inline-flex w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br ${iconData.color} rounded-2xl items-center justify-center mb-4 shadow-xl`}>
-                      <Icon className="w-12 h-12 sm:w-14 sm:h-14 text-white" />
-                    </div>
-                  );
-                })()}
-                <p className="text-xs text-gray-400 px-4">รูปภาพสินค้าจะแสดงที่นี่</p>
-              </div>
+          ) : null}
+          <div className={`w-full h-full items-center justify-center bg-gradient-to-br from-orange-100 via-orange-50 to-red-50 ${promo.imageUrl ? 'hidden' : 'flex'}`}>
+            <div className="text-center">
+              {(() => {
+                const iconData = getIconByCategory(promo.category);
+                const Icon = iconData.icon;
+                return (
+                  <div className={`inline-flex w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br ${iconData.color} rounded-2xl items-center justify-center mb-4 shadow-xl`}>
+                    <Icon className="w-12 h-12 sm:w-14 sm:h-14 text-white" />
+                  </div>
+                );
+              })()}
+              <p className="text-xs text-gray-400 px-4">รูปภาพสินค้าจะแสดงที่นี่</p>
             </div>
-          )}
+          </div>
           
           {/* Badges */}
           <div className="absolute top-2 left-2 flex gap-2">

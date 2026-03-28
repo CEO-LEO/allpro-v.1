@@ -14,6 +14,7 @@ import {
   PresentationChartLineIcon,
   TrashIcon,
   RocketLaunchIcon,
+  PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import { getSearchInsights } from "@/lib/getPromotions";
 import { Package as PackageIcon } from "lucide-react";
@@ -25,12 +26,15 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
 import CreateDealWidget from "@/components/Merchant/CreateDealWidget";
 import BoostPromotionModal from "@/components/Merchant/BoostPromotionModal";
+import EditPromotionModal from "@/components/Merchant/EditPromotionModal";
+import { Product } from "@/store/useProductStore";
 
 // Dynamic Imports for Heavy Components (Charts/Analytics)
 const PredictiveInsights = dynamic(() => import("@/components/PredictiveInsights"), { ssr: false });
 const MarketInsights = dynamic(() => import("@/components/MarketInsights"), { ssr: false });
 const SEOBidManager = dynamic(() => import("@/components/SEOBidManager"), { ssr: false });
 const StockControl = dynamic(() => import("@/components/Merchant/StockControl"), { ssr: false });
+const CustomerInsights = dynamic(() => import("@/components/Merchant/Analytics/CustomerInsights"), { ssr: false });
 
 // Static SEO packages — extracted to module level to avoid re-creation each render
 const seoPackages = [
@@ -124,6 +128,8 @@ export default function MerchantDashboard() {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const { startFlashSale, endFlashSale, isFlashSale } = useFlashSale();
   const [showBoostModal, setShowBoostModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // ═══════════════════════════════════════════════════════
   // API-Ready State Management
@@ -299,11 +305,11 @@ export default function MerchantDashboard() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
               <div className="flex items-center justify-between">
                 <Link href="/" className="text-sm sm:text-base font-semibold text-blue-600 hover:text-blue-500 transition-colors flex items-center gap-1">
-                  ← <span className="hidden sm:inline">Pro Hunter</span>
+                  ← <span className="hidden sm:inline">หน้าแรก</span>
                 </Link>
                 <h1 className="text-sm sm:text-lg font-semibold text-gray-900">
-                  <span className="hidden sm:inline">Merchant Dashboard</span>
-                  <span className="sm:hidden">Dashboard</span>
+                  <span className="hidden sm:inline">แดชบอร์ดร้านค้า</span>
+                  <span className="sm:hidden">แดชบอร์ด</span>
                 </h1>
                 <div className="w-8 sm:w-20"></div>
               </div>
@@ -312,6 +318,25 @@ export default function MerchantDashboard() {
 
           {/* Upgrade Banner for Free Merchants */}
           <UpgradeBanner />
+
+          {/* Profile Incomplete Alert */}
+          {user && !(user.shopName?.trim() && user.shopLogo && user.shopAddress?.trim() && user.phone?.trim() && user.phone.trim().length >= 9) && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
+              <Link
+                href="/merchant/shop?setup=true"
+                className="flex items-center gap-3 bg-orange-50 border-2 border-orange-200 rounded-xl p-4 hover:bg-orange-100 transition-colors group"
+              >
+                <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <PackageIcon className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-orange-800">ตั้งค่าโปรไฟล์ร้านค้าให้ครบ</p>
+                  <p className="text-xs text-orange-600">กรอกข้อมูลร้านค้าเพื่อเริ่มโพสต์โปรโมชัน →</p>
+                </div>
+                <ArrowTrendingUpIcon className="w-5 h-5 text-orange-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+              </Link>
+            </div>
+          )}
 
           <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24">
           {/* Main Content Card Container */}
@@ -363,6 +388,13 @@ export default function MerchantDashboard() {
 
         {/* Boost Modal */}
         <BoostPromotionModal isOpen={showBoostModal} onClose={() => setShowBoostModal(false)} />
+
+        {/* Edit Modal */}
+        <EditPromotionModal
+          isOpen={showEditModal}
+          onClose={() => { setShowEditModal(false); setEditingProduct(null); }}
+          product={editingProduct}
+        />
 
         {/* My Active Deals Section */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
@@ -467,6 +499,7 @@ export default function MerchantDashboard() {
                         src={product.image}
                         alt={product.title}
                         className="w-12 h-12 rounded-lg object-cover"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                       <div className="min-w-0">
                         <p className="font-medium text-gray-800 truncate">
@@ -508,6 +541,13 @@ export default function MerchantDashboard() {
 
                     {/* Actions */}
                     <div className="md:col-span-2 flex md:justify-end gap-2">
+                      <button
+                        onClick={() => { setEditingProduct(product); setShowEditModal(true); }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors font-medium text-sm flex-1 md:flex-none justify-center"
+                      >
+                        <PencilSquareIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">แก้ไข</span>
+                      </button>
                       <button
                         onClick={() => handleDelete(product.id, product.title)}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-medium text-sm flex-1 md:flex-none justify-center"
@@ -555,6 +595,11 @@ export default function MerchantDashboard() {
         {/* Market Insights Section (Big Data) */}
         <div className="mb-8">
           <MarketInsights />
+        </div>
+
+        {/* Customer Insights — Demographics Analytics */}
+        <div className="mb-8">
+          <CustomerInsights />
         </div>
 
         {/* Data Insights Section */}

@@ -29,6 +29,15 @@ import RegisterModal from "@/components/Auth/RegisterModal";
 
 const CATEGORIES = ['All', 'Food', 'Fashion', 'Travel', 'Gadget', 'Beauty'];
 
+const CATEGORY_LABEL: Record<string, string> = {
+  All: 'ทั้งหมด',
+  Food: 'อาหาร',
+  Fashion: 'แฟชั่น',
+  Travel: 'ท่องเที่ยว',
+  Gadget: 'อุปกรณ์',
+  Beauty: 'ความงาม',
+};
+
 const CATEGORY_ROUTE_MAP: Record<string, string> = {
   All: 'all',
   Food: 'Food',
@@ -68,7 +77,7 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/?search=${encodeURIComponent(searchQuery)}`);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -88,16 +97,16 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-[70] bg-white border-b border-gray-200 shadow-sm">
+      <nav className="sticky top-0 z-[70] bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
           {/* Top Bar */}
           <div className="flex items-center justify-between h-12">
             {/* Logo */}
             <Link href="/" onClick={() => setSelectedCategory('All')} className="flex items-center gap-1.5 flex-shrink-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
                 <Package className="w-4 h-4 text-white" />
               </div>
-              <span className="text-base font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent hidden sm:inline">
+              <span className="text-base font-bold text-gray-900 hidden sm:inline">
                 All Pro
               </span>
             </Link>
@@ -110,7 +119,7 @@ export default function Navbar() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ค้นหาโปรโมชั่น, ร้านค้า, หมวดหมู่..."
-                  className="w-full px-3 py-1.5 pl-9 pr-3 border border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none text-sm"
+                  className="w-full px-3 py-1.5 pl-9 pr-3 border border-gray-200 rounded-lg bg-gray-50/80 focus:bg-white focus:border-orange-400 focus:outline-none text-sm transition-colors placeholder:text-gray-400"
                 />
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
@@ -146,7 +155,7 @@ export default function Navbar() {
                 }`}
               >
                 <Zap size={15} />
-                <span>Flash Sale</span>
+                <span>แฟลชเซล</span>
               </Link>
 
               <Link 
@@ -156,7 +165,7 @@ export default function Navbar() {
                 }`}
               >
                 <Users size={15} />
-                <span>Community</span>
+                <span>ชุมชน</span>
               </Link>
 
               <Link 
@@ -193,13 +202,13 @@ export default function Navbar() {
                     className="flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     {/* Coins */}
-                    <div className="hidden sm:flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
+                    <div className="hidden sm:flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
                       <Coins className="w-3 h-3" />
                       <span>{user.coins ?? 0}</span>
                     </div>
 
                     {/* Avatar */}
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">
+                    <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
                       {user.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
 
@@ -224,7 +233,7 @@ export default function Navbar() {
                           className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50"
                         >
                           {/* User Info */}
-                          <div className="px-3 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 text-white">
+                          <div className="px-3 py-2.5 bg-orange-500 text-white">
                             <p className="font-bold text-sm">{user.name || 'ผู้ใช้งาน'}</p>
                             <p className="text-xs text-orange-100">{user.email || 'กำลังโหลดข้อมูล...'}</p>
                             <div className="flex items-center gap-3 mt-1 text-xs">
@@ -281,7 +290,7 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={() => setShowLoginModal(true)}
-                  className="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-red-600 text-white text-sm font-semibold rounded-lg hover:shadow-lg transition-all"
+                  className="px-4 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-all"
                 >
                   เข้าสู่ระบบ
                 </button>
@@ -303,13 +312,13 @@ export default function Navbar() {
               <button
                 key={category}
                 onClick={() => handleCategoryClick(category)}
-                className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                   selectedCategory === category
-                    ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                 }`}
               >
-                {category}
+                {CATEGORY_LABEL[category] || category}
               </button>
             ))}
           </div>
@@ -329,8 +338,8 @@ export default function Navbar() {
                 {[
                   { href: '/', label: 'หน้าแรก', icon: Home, color: 'orange' },
                   { href: '/map', label: 'แผนที่', icon: Map, color: 'blue' },
-                  { href: '/flash-sale', label: 'Flash Sale', icon: Zap, color: 'orange' },
-                  { href: '/community', label: 'Community', icon: Users, color: 'purple' },
+                  { href: '/flash-sale', label: 'แฟลชเซล', icon: Zap, color: 'orange' },
+                  { href: '/community', label: 'ชุมชน', icon: Users, color: 'purple' },
                   { href: '/rewards', label: 'รางวัล', icon: Gift, color: 'green' },
                 ].map(({ href, label, icon: Icon }) => (
                   <Link
@@ -361,7 +370,7 @@ export default function Navbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ค้นหาโปรโมชั่น..."
-              className="w-full px-3 py-1.5 pl-8 pr-3 border border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none text-sm"
+              className="w-full px-3 py-1.5 pl-8 pr-3 border border-gray-200 rounded-lg bg-gray-50/80 focus:bg-white focus:border-orange-400 focus:outline-none text-sm transition-colors placeholder:text-gray-400"
             />
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
@@ -375,11 +384,11 @@ export default function Navbar() {
               onClick={() => handleCategoryClick(category)}
               className={`px-3 py-1 rounded-full whitespace-nowrap transition-all text-xs font-medium ${
                 selectedCategory === category
-                  ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-600'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-50 text-gray-500'
               }`}
             >
-              {category}
+              {CATEGORY_LABEL[category] || category}
             </button>
           ))}
         </div>

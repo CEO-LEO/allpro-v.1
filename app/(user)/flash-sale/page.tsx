@@ -111,7 +111,16 @@ function DealDetailModal({
 
         {/* Image */}
         <div className="relative aspect-[4/3] flex-shrink-0">
-          <img src={deal.image} alt={deal.title} className="w-full h-full object-cover" />
+          <img 
+            src={deal.image} 
+            alt={deal.title} 
+            className="w-full h-full object-cover" 
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.style.display = 'none';
+              target.parentElement!.classList.add('bg-gradient-to-br', 'from-orange-100', 'to-orange-50');
+            }}
+          />
           {/* Discount badge */}
           <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-lg">
             -{deal.discount}%

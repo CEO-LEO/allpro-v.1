@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Image as ImageIcon, DollarSign, Tag, Calendar, Sparkles } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, Image as ImageIcon, DollarSign, Tag, Calendar, Sparkles, Upload, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useProductStore } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 
@@ -17,7 +17,11 @@ const categories = ['Food', 'Fashion', 'Service', 'Electronics', 'Beauty', 'Fitn
 
 export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProps) {
   const { user } = useAuthStore();
-  const addProduct = useProductStore((state) => state.addProduct);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const imageFileRef = useRef<File | null>(null);
+
+
   
   const [formData, setFormData] = useState({
     title: '',
@@ -29,7 +33,18 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
     tags: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    imageFileRef.current = file;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const originalPrice = parseFloat(formData.originalPrice);
@@ -47,45 +62,63 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
     
     const discount = Math.round(((originalPrice - promoPrice) / originalPrice) * 100);
     
-    // Generate placeholder image based on category
-    const imageSeeds: Record<string, string> = {
-      Food: 'food',
-      Fashion: 'fashion',
-      Service: 'service',
-      Electronics: 'tech',
-      Beauty: 'beauty',
-      Fitness: 'fitness',
-      Other: 'product'
-    };
-    
-    const newProduct = {
-      title: formData.title,
-      description: formData.description || 'Amazing deal! Limited time only.',
-      originalPrice,
-      promoPrice,
-      discount,
-      image: `https://picsum.photos/seed/${imageSeeds[formData.category]}-${Date.now()}/400/300`,
-      shopName: user?.shopName || user?.name || 'Your Shop',
-      shopLogo: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.shopName || user?.name || 'Shop')}&background=3B82F6&color=fff`,
-      category: formData.category,
-      verified: true,
-      distance: '0.0 km',
-      validUntil: formData.validUntil || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
-    };
-    
-    addProduct(newProduct);
-    
-    // Success feedback
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-    
-    toast.success('🎉 Deal posted successfully!', {
-      description: 'Your promotion is now live and visible to all users!'
-    });
+    // Send everything to server API (bypasses client-side RLS issues)
+    toast.loading('กำลังลงประกาศโปรโมชั่น...', { id: 'create-deal' });
+
+    const apiFormData = new FormData();
+    apiFormData.append('title', formData.title);
+    apiFormData.append('description', formData.description || 'โปรโมชั่นพิเศษ!');
+    apiFormData.append('price', String(promoPrice));
+    apiFormData.append('original_price', String(originalPrice));
+    apiFormData.append('category', formData.category);
+    apiFormData.append('shop_name', user?.shopName || user?.name || 'Your Shop');
+    apiFormData.append('discount', String(discount));
+    apiFormData.append('location', 'กรุงเทพฯ');
+    apiFormData.append('conditions', 'โปรโมชั่นพิเศษ');
+
+    // Attach image file if selected
+    if (imageFileRef.current) {
+      apiFormData.append('image', imageFileRef.current);
+    }
+
+    // Try to get user session for shop_id
+    try {
+      const sessionRes = await supabase.auth.getSession();
+      if (sessionRes?.data?.session?.user?.id) {
+        apiFormData.append('shop_id', sessionRes.data.session.user.id);
+      }
+    } catch {
+      // Continue without shop_id
+    }
+
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        body: apiFormData,
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || result.error) {
+        console.error('[CreateDealModal] API error:', result);
+        toast.error(result.error || 'บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
+        return;
+      }
+
+      console.log('[CreateDealModal] ✅ API success:', result.data);
+      toast.success('ลงประกาศโปรโมชั่นสำเร็จ! 🎉', { id: 'create-deal' });
+      
+      // Success animation
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    } catch (err) {
+      console.error('[CreateDealModal] Fetch error:', err);
+      toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่', { id: 'create-deal' });
+      return;
+    }
     
     // Reset form
     setFormData({
@@ -97,6 +130,8 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
       validUntil: '',
       tags: ''
     });
+    setImagePreview('');
+    imageFileRef.current = null;
     
     onClose();
   };
@@ -286,15 +321,52 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
                   />
                 </div>
                 
-                {/* Image Info */}
-                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <ImageIcon className="w-5 h-5 text-blue-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-blue-300 mb-1">Product Image</p>
-                      <p className="text-xs text-gray-400">A placeholder image will be generated automatically. Image upload coming soon!</p>
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Product Image
+                  </label>
+                  {imagePreview ? (
+                    <div className="relative rounded-xl overflow-hidden">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-48 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview('');
+                          if (imageInputRef.current) imageInputRef.current.value = '';
+                        }}
+                        className="absolute top-3 right-3 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition shadow-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      className="w-full h-48 border-2 border-dashed border-slate-600 rounded-xl hover:border-blue-500 hover:bg-blue-500/5 transition-all flex flex-col items-center justify-center gap-2 group"
+                    >
+                      <div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                        <Camera className="w-6 h-6 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-400 group-hover:text-blue-400 transition-colors">คลิกเพื่อเลือกรูปสินค้า</p>
+                      <p className="text-xs text-gray-500">PNG, JPG (แนะนำ 1:1)</p>
+                    </button>
+                  )}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+                  {!imagePreview && (
+                    <p className="text-xs text-gray-500 mt-2">ถ้าไม่อัปโหลด จะใช้รูปอัตโนมัติตามหมวดหมู่</p>
+                  )}
                 </div>
                 
                 {/* Submit Buttons */}
