@@ -5,6 +5,23 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { fetchProfile, fetchMerchantProfile, getCurrentSession } from '@/lib/supabase/auth';
 import { useAuthStore, UserRole } from '@/store/useAuthStore';
 
+// ★ Global flag — LoginModal sets this BEFORE calling signIn()
+// so the SIGNED_IN event handler knows to skip
+// This is safer than time-based debounce
+let loginInProgress = false;
+let loginInProgressTimeout: ReturnType<typeof setTimeout> | null = null;
+
+export function setLoginInProgress(value: boolean) {
+  loginInProgress = value;
+  // Auto-reset after 15 seconds in case something goes wrong
+  if (loginInProgressTimeout) clearTimeout(loginInProgressTimeout);
+  if (value) {
+    loginInProgressTimeout = setTimeout(() => {
+      loginInProgress = false;
+    }, 15000);
+  }
+}
+
 /**
  * AuthListener — ตรวจจับสถานะ Auth จาก Supabase
  * วางไว้ใน root layout เพื่อ auto-restore session เมื่อ refresh หน้า
@@ -19,7 +36,7 @@ import { useAuthStore, UserRole } from '@/store/useAuthStore';
  *     - ถ้า store ยัง authenticated → เรียก logout()
  */
 export default function AuthListener() {
-  const { login, logout } = useAuthStore();
+  const { login } = useAuthStore();
   const initialCheckDone = useRef(false);
   // Track เวลาที่ login ล่าสุดถูกเรียกจาก LoginModal
   // ใช้ป้องกัน onAuthStateChange ไม่ให้ทับข้อมูลที่เพิ่ง set ไป
@@ -78,11 +95,23 @@ export default function AuthListener() {
         try {
           // ── SIGNED_IN ──
           if (event === 'SIGNED_IN' && session?.user) {
-            // ถ้า login ถูกเรียกไปไม่เกิน 3 วินาทีที่แล้ว (จาก LoginModal หรือ restoreSession)
-            // → ข้ามเพื่อไม่ให้ข้อมูล merchant ถูกทับด้วยข้อมูลที่ไม่ครบ
+            // ถ้า LoginModal กำลังทำงานอยู่ → ข้ามเลย (LoginModal จะ call login() เอง)
+            if (loginInProgress) {
+              console.log('[AuthListener] SIGNED_IN — skipped (loginInProgress flag is set)');
+              return;
+            }
+
+            // ถ้า login ถูกเรียกไปไม่เกิน 5 วินาทีที่แล้ว (จาก restoreSession)
             const timeSinceLastLogin = Date.now() - lastLoginTime.current;
-            if (timeSinceLastLogin < 3000) {
+            if (timeSinceLastLogin < 5000) {
               console.log('[AuthListener] SIGNED_IN — skipped (login was called', timeSinceLastLogin, 'ms ago)');
+              return;
+            }
+
+            // ถ้า store มี user แล้วและ id ตรงกัน → ข้าม (ไม่ต้องทำซ้ำ)
+            const currentState = useAuthStore.getState();
+            if (currentState.isAuthenticated && currentState.user?.id === session.user.id) {
+              console.log('[AuthListener] SIGNED_IN — skipped (same user already in store)');
               return;
             }
 
@@ -137,9 +166,11 @@ export default function AuthListener() {
           // ── SIGNED_OUT ──
           if (event === 'SIGNED_OUT') {
             const currentState = useAuthStore.getState();
-            if (currentState.isAuthenticated) {
-              console.log('[AuthListener] SIGNED_OUT — clearing store');
-              logout();
+            if (currentState.isAuthenticated || currentState.user) {
+              console.log('[AuthListener] SIGNED_OUT — clearing store (without calling signOut again)');
+              // ★ Direct state clear — do NOT call logout() which would call signOut()
+              //    and trigger SIGNED_OUT again → infinite loop
+              useAuthStore.setState({ user: null, isAuthenticated: false });
             }
           }
         } catch (err) {
@@ -151,7 +182,7 @@ export default function AuthListener() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [login, logout]);
+  }, [login]);
 
   return null;
 }

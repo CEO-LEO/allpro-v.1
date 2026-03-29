@@ -253,9 +253,21 @@ export const useAuthStore = create<AuthState>()(
       }),
       
       logout: async () => {
+        // Prevent re-entrant logout (AuthListener SIGNED_OUT → logout() → signOut → SIGNED_OUT → ...)
+        const currentState = useAuthStore.getState();
+        if (!currentState.isAuthenticated && !currentState.user) {
+          console.log('[AuthStore] logout — already logged out, skipping');
+          return;
+        }
+
         // Keep savedMerchantProfile — it's part of the account, not the session
         console.log('[AuthStore] logout — clearing user, keeping savedMerchantProfile');
+        
+        // 1) Clear local state FIRST so re-entrant calls are blocked
         set({ user: null, isAuthenticated: false });
+        
+        // 2) Then sign out from Supabase (this fires SIGNED_OUT event,
+        //    but the guard above will prevent recursion)
         try {
           await signOut();
           console.log('[AuthStore] Supabase signOut completed');

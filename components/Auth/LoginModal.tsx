@@ -7,6 +7,7 @@ import { X, UserCircle, Store, Sparkles, Lock, Mail, Eye, EyeOff, Loader2, Finge
 import { useAuthStore } from '@/store/useAuthStore';
 import { signIn, signOut as supabaseSignOut } from '@/lib/supabase/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { setLoginInProgress } from '@/components/Auth/AuthListener';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
@@ -213,6 +214,9 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         setTimeout(() => reject(new Error('TIMEOUT')), 10000)
       );
 
+      // ★ Tell AuthListener to NOT handle the SIGNED_IN event — we'll do it ourselves
+      setLoginInProgress(true);
+
       console.log('[Login] Calling signIn...');
       const result = await Promise.race([
         signIn(email.trim(), password),
@@ -243,6 +247,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       const dbRole = result.user.role;
 
       if (selectedRole === 'MERCHANT' && dbRole !== 'MERCHANT') {
+        setLoginInProgress(false);
         await supabaseSignOut();
         setError('บัญชีนี้ไม่ใช่บัญชีร้านค้า กรุณาสมัครสมาชิกเป็นร้านค้าก่อน');
         setShowAccountNotFound(true);
@@ -250,6 +255,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       }
 
       if (selectedRole === 'USER' && dbRole === 'MERCHANT') {
+        setLoginInProgress(false);
         await supabaseSignOut();
         setError('บัญชีนี้เป็นบัญชีร้านค้า กรุณาเลือกแท็บ "ร้านค้า" เพื่อเข้าสู่ระบบ');
         return;
@@ -298,6 +304,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     } finally {
       console.log('[Login] Finally — setIsLoading(false)');
       setIsLoading(false);
+      setLoginInProgress(false);
     }
   };
 
