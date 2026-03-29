@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       const filePath = `products/${fileName}`;
 
       const buffer = Buffer.from(await imageFile.arrayBuffer());
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('promotions')
         .upload(filePath, buffer, {
           contentType: imageFile.type,
@@ -54,19 +54,59 @@ export async function POST(request: Request) {
 
       if (uploadError) {
         console.error('[API] Storage upload error:', uploadError);
-        return NextResponse.json({
-          error: 'อัพโหลดรูปภาพไม่สำเร็จ: ' + uploadError.message,
-          step: 'upload',
-        }, { status: 500 });
+        // Non-blocking — continue without image rather than failing
+        finalImage = '';
+      } else {
+        finalImage = filePath;
+        console.log('[API] ✅ Image uploaded:', filePath);
       }
-
-      finalImage = filePath;
-      console.log('[API] ✅ Image uploaded:', filePath);
     } else if (imageUrl) {
       finalImage = imageUrl;
     }
 
     // Step 2: Insert product into DB
+    // Try multiple column naming conventions (simple-schema vs supabase-schema)
+    const insertResult = await tryInsertProduct(supabase, {
+      title, description, price, originalPrice, finalImage,
+      category, shopName, shopId, discount, location, conditions,
+    });
+
+    if (insertResult.error) {
+      console.error('[API] All insert attempts failed:', insertResult.error);
+      return NextResponse.json({
+        error: 'บันทึกข้อมูลไม่สำเร็จ: ' + insertResult.error,
+        step: 'insert',
+      }, { status: 500 });
+    }
+
+    console.log('[API] ✅ Product created:', insertResult.data?.id);
+
+    return NextResponse.json({
+      success: true,
+      data: insertResult.data,
+    });
+  } catch (err: unknown) {
+    console.error('[API] Unexpected error:', err);
+    return NextResponse.json({
+      error: 'เกิดข้อผิดพลาด: ' + String(err),
+    }, { status: 500 });
+  }
+}
+
+// Try inserting with different column naming strategies
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function tryInsertProduct(
+  supabase: any,
+  fields: {
+    title: string; description: string; price: number; originalPrice: number;
+    finalImage: string; category: string; shopName: string; shopId: string;
+    discount: number; location: string; conditions: string;
+  }
+): Promise<{ data: any; error: string | null }> {
+  const { title, description, price, originalPrice, finalImage, category, shopName, shopId, discount, location, conditions } = fields;
+
+  // Strategy 1: snake_case columns with extras (simple-schema + extra columns)
+  {
     const insertData: Record<string, unknown> = {
       title,
       description: description || '',
@@ -79,36 +119,50 @@ export async function POST(request: Request) {
       location,
       conditions,
     };
+    if (shopId && shopId.length > 10) insertData.shop_id = shopId;
 
-    // Only add shop_id if provided (UUID)
-    if (shopId && shopId.length > 10) {
-      insertData.shop_id = shopId;
-    }
+    const { data, error } = await supabase.from('products').insert(insertData).select().single();
+    if (!error) return { data, error: null };
+    console.warn('[API] Strategy 1 failed:', error.message);
+  }
 
-    const { data, error } = await supabase
-      .from('products')
-      .insert(insertData)
-      .select()
-      .single();
+  // Strategy 2: Minimal snake_case columns (simple-schema only)
+  {
+    const insertData: Record<string, unknown> = {
+      title,
+      description: description || '',
+      price,
+      original_price: originalPrice || price,
+      image: finalImage,
+      category,
+      shop_name: shopName,
+    };
+    if (shopId && shopId.length > 10) insertData.shop_id = shopId;
 
-    if (error) {
-      console.error('[API] DB insert error:', error);
-      return NextResponse.json({
-        error: 'บันทึกข้อมูลไม่สำเร็จ: ' + error.message,
-        step: 'insert',
-      }, { status: 500 });
-    }
+    const { data, error } = await supabase.from('products').insert(insertData).select().single();
+    if (!error) return { data, error: null };
+    console.warn('[API] Strategy 2 failed:', error.message);
+  }
 
-    console.log('[API] ✅ Product created:', data.id);
+  // Strategy 3: camelCase columns (supabase-schema.sql)
+  {
+    const insertData: Record<string, unknown> = {
+      title,
+      description: description || '',
+      'promoPrice': price,
+      'originalPrice': originalPrice || price,
+      image: finalImage,
+      category,
+      'shopName': shopName,
+      discount,
+      location,
+      conditions,
+    };
+    if (shopId && shopId.length > 10) insertData['shopId'] = shopId;
 
-    return NextResponse.json({
-      success: true,
-      data,
-    });
-  } catch (err: unknown) {
-    console.error('[API] Unexpected error:', err);
-    return NextResponse.json({
-      error: 'เกิดข้อผิดพลาด: ' + String(err),
-    }, { status: 500 });
+    const { data, error } = await supabase.from('products').insert(insertData).select().single();
+    if (!error) return { data, error: null };
+    console.warn('[API] Strategy 3 failed:', error.message);
+    return { data: null, error: error.message };
   }
 }

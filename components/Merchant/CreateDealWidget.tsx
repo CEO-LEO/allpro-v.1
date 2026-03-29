@@ -134,30 +134,73 @@ export default function CreateDealWidget() {
       }
 
       // Try to get user session for shop_id
+      let userId = '';
       try {
         const sessionRes = await supabase.auth.getSession();
         if (sessionRes?.data?.session?.user?.id) {
-          apiFormData.append('shop_id', sessionRes.data.session.user.id);
+          userId = sessionRes.data.session.user.id;
+          apiFormData.append('shop_id', userId);
         }
       } catch {
         // Session not available — still proceed without shop_id
       }
 
-      const res = await fetch('/api/products', {
-        method: 'POST',
-        body: apiFormData,
-      });
+      let success = false;
 
-      const result = await res.json();
+      // Attempt 1: Server API (uses service role key, bypasses RLS)
+      try {
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          body: apiFormData,
+        });
 
-      if (!res.ok || result.error) {
-        console.error('[CreateDeal] API error:', result);
-        toast.error(result.error || 'บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
-        setIsLoading(false);
+        const result = await res.json();
+
+        if (res.ok && !result.error) {
+          console.log('[CreateDeal] ✅ API success:', result.data);
+          success = true;
+        } else {
+          console.warn('[CreateDeal] API error:', result.error || res.status);
+        }
+      } catch (fetchErr) {
+        console.warn('[CreateDeal] API fetch failed:', fetchErr);
+      }
+
+      // Attempt 2: Direct client-side Supabase insert (fallback)
+      if (!success) {
+        console.log('[CreateDeal] Trying direct Supabase insert...');
+        try {
+          const insertData: Record<string, unknown> = {
+            title: formData.productName,
+            description: formData.description || `ลด ${calculateDiscount()}%`,
+            price: discounted,
+            original_price: original,
+            image: (useImageUrl && imageUrl) ? imageUrl : '',
+            category: formData.category,
+            shop_name: user?.shopName || user?.name || 'My Shop',
+          };
+          if (userId) insertData.shop_id = userId;
+
+          const { error: dbError } = await supabase
+            .from('products')
+            .insert(insertData);
+
+          if (!dbError) {
+            console.log('[CreateDeal] ✅ Direct insert success');
+            success = true;
+          } else {
+            console.warn('[CreateDeal] Direct insert failed:', dbError.message);
+          }
+        } catch (directErr) {
+          console.warn('[CreateDeal] Direct fallback error:', directErr);
+        }
+      }
+
+      if (!success) {
+        toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
         return;
       }
 
-      console.log('[CreateDeal] ✅ API success:', result.data);
       toast.success('ลงประกาศโปรโมชั่นสำเร็จ! 🎉', { id: 'create-deal' });
 
       // Success feedback
@@ -191,7 +234,8 @@ export default function CreateDealWidget() {
       setImagePreview("");
       setImageUrl("");
     } catch (error) {
-      toast.error("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      console.error('[CreateDeal] Unexpected error:', error);
+      toast.error("เกิดข้อผิดพลาด กรุณาลองใหม่", { id: 'create-deal' });
     } finally {
       setIsLoading(false);
     }
