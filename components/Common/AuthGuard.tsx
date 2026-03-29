@@ -18,9 +18,12 @@ export default function AuthGuard({
 }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isHydrating } = useAuthStore();
 
   useEffect(() => {
+    // ★ Wait for hydration to finish before making any redirect decisions
+    if (isHydrating) return;
+
     // Check if user is authenticated
     if (!isAuthenticated) {
       if (pathname.startsWith('/merchant')) {
@@ -36,7 +39,7 @@ export default function AuthGuard({
 
     // Check if user is trying to access merchant routes but isn't a merchant
     if (pathname.startsWith('/merchant') && userRole !== 'merchant') {
-      toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้'); // "You don't have permission"
+      toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
       router.push('/');
       return;
     }
@@ -46,11 +49,11 @@ export default function AuthGuard({
       toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
       router.push(redirectTo);
     }
-  }, [pathname, user, isAuthenticated, requiredRole, redirectTo, router]);
+  }, [pathname, user, isAuthenticated, isHydrating, requiredRole, redirectTo, router]);
 
-  // If not authenticated or role mismatch, we might render nothing or a loader, 
-  // but since it's client-side redirect, children might render briefly.
-  // We can return null if checking strictly, but let's keep it simple as before.
+  // ★ While hydrating, show nothing (layout will show its own loading)
+  if (isHydrating) return null;
+
   if (!isAuthenticated && pathname.startsWith('/merchant')) return null;
 
   return <>{children}</>;

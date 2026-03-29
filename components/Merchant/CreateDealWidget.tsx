@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useStockStore } from "@/store/useStockStore";
 import { supabase } from "@/lib/supabase";
-import { Upload, X, Zap, Package, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle } from "lucide-react";
+import { Upload, X, Zap, Package, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import EditShopModal from "@/components/Merchant/EditShopModal";
@@ -25,7 +25,7 @@ function isMerchantProfileComplete(user: any): boolean {
 }
 
 export default function CreateDealWidget() {
-  const { user } = useAuthStore();
+  const { user, isHydrating } = useAuthStore();
   const stockItems = useStockStore((s) => s.items);
   const deductStock = useStockStore((s) => s.deductStock);
   const [isLoading, setIsLoading] = useState(false);
@@ -243,6 +243,18 @@ export default function CreateDealWidget() {
 
   const discountPercent = calculateDiscount();
   const profileComplete = isMerchantProfileComplete(user);
+
+  // ★ รอให้ hydration เสร็จก่อนตัดสินใจว่า profile ครบหรือไม่
+  if (isHydrating) {
+    return (
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border-2 border-blue-100 p-8 shadow-sm mb-8">
+        <div className="flex flex-col items-center justify-center py-12 gap-4">
+          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+          <p className="text-sm text-slate-500">กำลังโหลดข้อมูลร้านค้า...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Profile incomplete state
   if (!profileComplete) {

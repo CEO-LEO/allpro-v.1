@@ -12,7 +12,8 @@ import {
   Zap,
   Menu,
   LogOut,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'react-hot-toast';
@@ -164,13 +165,14 @@ export default function MerchantLayout({
   children: React.ReactNode;
 }) {
   const [showCreateDeal, setShowCreateDeal] = useState(false);
-  const { user, updateUser } = useAuthStore();
+  const { user, updateUser, isHydrating } = useAuthStore();
   const syncDone = useRef(false);
 
   // ═══ Safety Net: ถ้า profile ว่างแต่ DB มีข้อมูล → ดึงมาเติม ═══
   // แก้ปัญหา: หลังล็อคอิน/รีเฟรช ข้อมูลจาก DB ยังไม่โหลดทัน
   useEffect(() => {
     if (syncDone.current) return;
+    if (isHydrating) return; // ★ รอให้ hydration เสร็จก่อน
     if (!user || user.role !== 'MERCHANT') return;
     if (!isSupabaseConfigured) return;
 
@@ -231,7 +233,19 @@ export default function MerchantLayout({
         console.warn('[MerchantLayout] DB sync error:', err);
       }
     })();
-  }, [user, updateUser]);
+  }, [user, updateUser, isHydrating]);
+
+  // ★ แสดง Loading ขณะกำลังดึงข้อมูลจาก DB (ป้องกัน "ตั้งค่าโปรไฟล์" เด้งมาก่อน)
+  if (isHydrating) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+          <p className="text-sm text-slate-500">กำลังโหลดข้อมูลร้านค้า...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthGuard requiredRole="merchant">

@@ -68,6 +68,9 @@ interface AuthState {
   isAuthenticated: boolean;
   // Persisted merchant profile — survives logout
   savedMerchantProfile: MerchantProfile | null;
+  // ★ Hydration flag — true until restoreSession finishes
+  // NOT persisted — always starts true on page load
+  isHydrating: boolean;
   
   // Actions
   login: (user: User) => void;
@@ -77,6 +80,7 @@ interface AuthState {
   updateUser: (updates: Partial<User>) => void;
   updateProfile: (updates: { name?: string; phone?: string }) => void;
   switchRole: (role: UserRole) => void;
+  setHydrated: () => void;
   
   // Gamification Actions
   addXp: (amount: number) => void;
@@ -139,6 +143,9 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       savedMerchantProfile: null,
+      isHydrating: true,
+
+      setHydrated: () => set({ isHydrating: false }),
 
       login: (user) => set((state) => {
         try {

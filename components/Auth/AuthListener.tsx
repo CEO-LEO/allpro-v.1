@@ -36,7 +36,7 @@ export function setLoginInProgress(value: boolean) {
  *     - ถ้า store ยัง authenticated → เรียก logout()
  */
 export default function AuthListener() {
-  const { login } = useAuthStore();
+  const { login, setHydrated } = useAuthStore();
   const initialCheckDone = useRef(false);
   // Track เวลาที่ login ล่าสุดถูกเรียกจาก LoginModal
   // ใช้ป้องกัน onAuthStateChange ไม่ให้ทับข้อมูลที่เพิ่ง set ไป
@@ -44,14 +44,24 @@ export default function AuthListener() {
 
   // ═══ 1) Restore session on mount — รีเฟรชหน้าแล้วได้ข้อมูลกลับ ═══
   useEffect(() => {
-    if (!isSupabaseConfigured || initialCheckDone.current) return;
+    if (initialCheckDone.current) return;
     initialCheckDone.current = true;
+
+    if (!isSupabaseConfigured) {
+      // No Supabase → nothing to restore, mark hydration done immediately
+      setHydrated();
+      return;
+    }
 
     const restoreSession = async () => {
       try {
         // getCurrentSession() ดึง profiles + merchant_profiles จาก DB ให้เรียบร้อย
         const sessionUser = await getCurrentSession();
-        if (!sessionUser) return;
+        if (!sessionUser) {
+          console.log('[AuthListener] restoreSession — no session found');
+          setHydrated();
+          return;
+        }
 
         console.log('[AuthListener] restoreSession — role:', sessionUser.role, 'shopName:', sessionUser.shopName);
 
@@ -80,11 +90,14 @@ export default function AuthListener() {
         });
       } catch (err) {
         console.error('[AuthListener] restoreSession failed:', err);
+      } finally {
+        // ★ Always mark hydration done — even if session fetch failed
+        setHydrated();
       }
     };
 
     restoreSession();
-  }, [login]);
+  }, [login, setHydrated]);
 
   // ═══ 2) Listen for auth state changes (login / logout / token refresh) ═══
   useEffect(() => {
