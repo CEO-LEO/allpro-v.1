@@ -209,9 +209,9 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         return;
       }
 
-      // ── Supabase Auth — timeout protection (10s) ──
+      // ── Supabase Auth — timeout protection (15s) ──
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+        setTimeout(() => reject(new Error('TIMEOUT')), 15000)
       );
 
       // ★ Tell AuthListener to NOT handle the SIGNED_IN event — we'll do it ourselves

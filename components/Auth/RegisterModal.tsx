@@ -111,7 +111,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
   const validate = (): string | null => {
     if (!name.trim()) return 'กรุณากรอกชื่อ-นามสกุล';
     if (!email.trim()) return 'กรุณากรอกอีเมล';
-    if (!EMAIL_REGEX.test(email)) return 'รูปแบบอีเมลไม่ถูกต้อง';
+    if (!EMAIL_REGEX.test(email.trim())) return 'รูปแบบอีเมลไม่ถูกต้อง';
     if (!password) return 'กรุณากรอกรหัสผ่าน';
     if (password.length < 6) return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
     if (password !== confirmPassword) return 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน';
@@ -142,7 +142,8 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       }
 
       // ── Supabase Auth — Register จริง (with 12s timeout) ──
-      console.log('📝 Calling signUp with:', { email, name, selectedRole });
+      const trimmedEmail = email.trim();
+      console.log('📝 Calling signUp with:', { email: trimmedEmail, name, selectedRole });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('TIMEOUT')), 12000)
@@ -151,7 +152,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       let result;
       try {
         result = await Promise.race([
-          signUp(email, password, name, selectedRole),
+          signUp(trimmedEmail, password, name, selectedRole),
           timeoutPromise,
         ]);
       } catch (raceErr: unknown) {

@@ -45,8 +45,11 @@ export async function signUp(
     return { success: false, error: 'Supabase ยังไม่ได้ตั้งค่า กรุณาเพิ่ม .env.local' };
   }
 
+  // ★ Trim email เสมอ เพื่อป้องกัน space หน้า/หลัง
+  const trimmedEmail = email.trim();
+
   const { data, error } = await supabase.auth.signUp({
-    email,
+    email: trimmedEmail,
     password,
     options: {
       data: {
@@ -79,7 +82,7 @@ export async function signUp(
       console.warn('[signUp] DB trigger error — user may have been created, attempting login...');
       // ลอง signIn เพราะ user อาจถูกสร้างแล้วแม้ trigger จะ fail
       try {
-        const loginResult = await signIn(email, password);
+        const loginResult = await signIn(trimmedEmail, password);
         if (loginResult.success) {
           return loginResult;
         }
@@ -100,7 +103,7 @@ export async function signUp(
     await supabase.from('profiles').upsert(
       {
         id: data.user.id,
-        email: email,
+        email: trimmedEmail,
         username: name,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=EF4444&color=fff&size=128`,
         role: role === 'MERCHANT' ? 'MERCHANT' : 'USER',
@@ -123,7 +126,7 @@ export async function signUp(
     needsEmailConfirmation: needsConfirmation,
     user: {
       id: data.user.id,
-      email: data.user.email || email,
+      email: data.user.email || trimmedEmail,
       name,
       role,
     },
@@ -142,8 +145,11 @@ export async function signIn(
     return { success: false, error: 'Supabase ยังไม่ได้ตั้งค่า กรุณาเพิ่ม .env.local' };
   }
 
+  // ★ Trim email เสมอ
+  const trimmedEmail = email.trim();
+
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
+    email: trimmedEmail,
     password,
   });
 
@@ -183,23 +189,23 @@ export async function signIn(
 
   const metadata = data.user.user_metadata || {};
 
-  // ── ถ้าไม่มี profile row (เช่น หลัง schema reset) → สร้างให้ ──
+  // ── ถ้าไม่มี profile row (เช่น หลัง schema reset) → สร้างให้ (non-blocking) ──
   if (!profile) {
-    try {
-      await supabase.from('profiles').upsert({
+    // Fire-and-forget: ไม่ block login flow
+    Promise.resolve(
+      supabase.from('profiles').upsert({
         id: data.user.id,
-        email: data.user.email || email,
-        username: metadata.name || email.split('@')[0],
+        email: data.user.email || trimmedEmail,
+        username: metadata.name || trimmedEmail.split('@')[0],
         avatar_url: metadata.avatar_url || '',
         role: metadata.role || 'user',
         coins: 50,
         xp: 0,
         level: 1,
-      }, { onConflict: 'id' });
-      console.log('[signIn] Created missing profile for', data.user.id);
-    } catch (profileErr) {
-      console.warn('[signIn] Could not create profile:', profileErr);
-    }
+      }, { onConflict: 'id' })
+    )
+      .then(() => console.log('[signIn] Created missing profile for', data.user.id))
+      .catch(() => console.warn('[signIn] Could not create profile'));
   }
 
   // Role priority: profiles table > user_metadata > default
@@ -226,7 +232,7 @@ export async function signIn(
     success: true,
     user: {
       id: data.user.id,
-      email: data.user.email || email,
+      email: data.user.email || trimmedEmail,
       name: metadata.name || profile?.username || 'ผู้ใช้',
       role: resolvedRole,
       avatar: metadata.avatar_url || profile?.avatar_url || undefined,
@@ -260,17 +266,19 @@ export async function signOut(): Promise<void> {
 
 /**
  * Fetch user profile from profiles table
+ * มี timeout 5 วินาที เพื่อไม่ให้ค้างถ้า DB ช้า
  */
 export async function fetchProfile(userId: string) {
   try {
-    const { data, error } = await supabase
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+    const query = supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .single()
+      .then(({ data, error }) => (error ? null : data));
 
-    if (error) return null;
-    return data;
+    return await Promise.race([query, timeout]);
   } catch (err) {
     console.warn('fetchProfile exception:', err);
     return null;
@@ -280,17 +288,19 @@ export async function fetchProfile(userId: string) {
 /**
  * Fetch merchant profile from merchant_profiles table
  * Returns shop-specific fields (shopName, shopLogo, etc.)
+ * มี timeout 5 วินาที เพื่อไม่ให้ค้างถ้า DB ช้า
  */
 export async function fetchMerchantProfile(userId: string) {
   try {
-    const { data, error } = await supabase
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+    const query = supabase
       .from('merchant_profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .single()
+      .then(({ data, error }) => (error ? null : data));
 
-    if (error) return null;
-    return data;
+    return await Promise.race([query, timeout]);
   } catch (err) {
     console.warn('fetchMerchantProfile exception:', err);
     return null;
@@ -299,13 +309,20 @@ export async function fetchMerchantProfile(userId: string) {
 
 /**
  * Get current session (for AuthListener)
+ * มี timeout รวม 8 วินาที เพื่อไม่ให้ hydration ค้าง
  */
 export async function getCurrentSession() {
   if (!isSupabaseConfigured) return null;
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return null;
+    // Timeout สำหรับ getSession เอง (อาจค้างถ้า network มีปัญหา)
+    const sessionTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000));
+    const sessionResult = await Promise.race([
+      supabase.auth.getSession().then(({ data }) => data.session),
+      sessionTimeout,
+    ]);
+    if (!sessionResult?.user) return null;
+    const session = sessionResult;
 
     let profile: Record<string, any> | null = null;
     try {
@@ -324,6 +341,7 @@ export async function getCurrentSession() {
     }
 
     // Fetch merchant profile if role is MERCHANT
+    // OR always try if we have savedMerchantProfile in localStorage (role might be wrong in DB)
     let merchantData: Record<string, any> | null = null;
     if (resolvedRole === 'MERCHANT') {
       try {
@@ -331,7 +349,22 @@ export async function getCurrentSession() {
       } catch (err) {
         console.warn('getCurrentSession: fetchMerchantProfile failed:', err);
       }
+    } else {
+      // Fallback: ถ้า profiles.role ไม่ใช่ MERCHANT แต่อาจมี merchant_profiles อยู่จริง
+      // (เกิดจาก profiles.role ถูกเขียนผิด หรือ metadata ไม่ตรง)
+      try {
+        const maybeMP = await fetchMerchantProfile(session.user.id);
+        if (maybeMP && maybeMP.shop_name) {
+          console.log('[getCurrentSession] Found merchant_profiles for user marked as USER — upgrading role');
+          resolvedRole = 'MERCHANT';
+          merchantData = maybeMP;
+        }
+      } catch {
+        // ignore — user is genuinely a USER
+      }
     }
+
+    console.log('[getCurrentSession] resolved:', { role: resolvedRole, shopName: merchantData?.shop_name, profileExists: !!profile });
 
     return {
       id: session.user.id,
