@@ -42,6 +42,17 @@ export default function AuthListener() {
   // ใช้ป้องกัน onAuthStateChange ไม่ให้ทับข้อมูลที่เพิ่ง set ไป
   const lastLoginTime = useRef(0);
 
+  // ═══ Suppress Uncaught AbortError from Supabase internal fetch ═══
+  useEffect(() => {
+    const handler = (event: PromiseRejectionEvent) => {
+      if (event.reason?.name === 'AbortError') {
+        event.preventDefault(); // Suppress "Uncaught (in promise) AbortError"
+      }
+    };
+    window.addEventListener('unhandledrejection', handler);
+    return () => window.removeEventListener('unhandledrejection', handler);
+  }, []);
+
   // ═══ 1) Restore session on mount — รีเฟรชหน้าแล้วได้ข้อมูลกลับ ═══
   useEffect(() => {
     if (initialCheckDone.current) return;
@@ -88,8 +99,13 @@ export default function AuthListener() {
           shopSocialInstagram: sessionUser.shopSocialInstagram,
           shopSocialWebsite: sessionUser.shopSocialWebsite,
         });
-      } catch (err) {
-        console.error('[AuthListener] restoreSession failed:', err);
+      } catch (err: unknown) {
+        // AbortError is normal during React strict mode / fast navigation
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.log('[AuthListener] restoreSession aborted (normal during strict mode)');
+        } else {
+          console.error('[AuthListener] restoreSession failed:', err);
+        }
       } finally {
         // ★ Always mark hydration done — even if session fetch failed
         setHydrated();

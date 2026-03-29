@@ -247,12 +247,18 @@ export default function MerchantShopPage() {
                   >
                     <Edit3 className="w-4 h-4" /> แก้ไขข้อมูลร้าน
                   </button>
-                  <Link
-                    href={`/shop/${encodeURIComponent(user?.shopName || '')}`}
-                    className="px-5 py-2.5 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium border border-gray-200 inline-flex items-center text-sm"
-                  >
-                    ดูหน้าร้านค้า
-                  </Link>
+                  {user?.shopName?.trim() ? (
+                    <Link
+                      href={`/shop/${encodeURIComponent(user.shopName)}`}
+                      className="px-5 py-2.5 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium border border-gray-200 inline-flex items-center text-sm"
+                    >
+                      ดูหน้าร้านค้า
+                    </Link>
+                  ) : (
+                    <span className="px-5 py-2.5 bg-gray-100 text-gray-400 rounded-xl font-medium border border-gray-200 inline-flex items-center text-sm cursor-not-allowed">
+                      ดูหน้าร้านค้า
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

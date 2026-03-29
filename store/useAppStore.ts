@@ -188,7 +188,9 @@ export const useAppStore = create<AppState>()(
               await get().fetchSavedDeals();
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
+          // AbortError is normal during component unmount / React strict mode
+          if (error instanceof Error && error.name === 'AbortError') return;
           console.error('Auth check error:', error);
         }
       },

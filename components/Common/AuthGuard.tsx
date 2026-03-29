@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
@@ -19,14 +19,24 @@ export default function AuthGuard({
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isHydrating } = useAuthStore();
+  const hasRedirected = useRef(false);
+
+  // Reset redirect flag when pathname changes (user navigated back)
+  useEffect(() => {
+    hasRedirected.current = false;
+  }, [pathname]);
 
   useEffect(() => {
     // ★ Wait for hydration to finish before making any redirect decisions
     if (isHydrating) return;
 
+    // ★ Prevent duplicate redirects (avoids Maximum update depth exceeded)
+    if (hasRedirected.current) return;
+
     // Check if user is authenticated
     if (!isAuthenticated) {
       if (pathname.startsWith('/merchant')) {
+        hasRedirected.current = true;
         toast.error('กรุณาเข้าสู่ระบบก่อน');
         router.push('/');
       }
@@ -39,6 +49,7 @@ export default function AuthGuard({
 
     // Check if user is trying to access merchant routes but isn't a merchant
     if (pathname.startsWith('/merchant') && userRole !== 'merchant') {
+      hasRedirected.current = true;
       toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
       router.push('/');
       return;
@@ -46,6 +57,7 @@ export default function AuthGuard({
 
     // Check specific required role
     if (neededRole && userRole !== neededRole) {
+      hasRedirected.current = true;
       toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
       router.push(redirectTo);
     }

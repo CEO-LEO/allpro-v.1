@@ -385,7 +385,12 @@ export async function getCurrentSession() {
       shopSocialInstagram: merchantData?.instagram || undefined,
       shopSocialWebsite: merchantData?.website || undefined,
     };
-  } catch (err) {
+  } catch (err: unknown) {
+    // AbortError is normal during React strict mode / component unmount — suppress it
+    if (err instanceof Error && err.name === 'AbortError') {
+      console.log('[getCurrentSession] aborted (component unmounted or strict mode)');
+      return null;
+    }
     console.error('getCurrentSession error:', err);
     return null;
   }

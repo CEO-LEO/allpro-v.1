@@ -73,6 +73,26 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
   const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> =>
     Promise.race([promise, new Promise<null>(resolve => setTimeout(() => resolve(null), ms))]);
 
+  // Helper: getSession with retry (handles hydration delay / slow restore)
+  const getSessionWithRetry = async (retries = 3, delayMs = 500): Promise<{ user: { id: string } } | null> => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await withTimeout(Promise.resolve(supabase.auth.getSession()), 5000);
+        const session = res?.data?.session;
+        if (session?.user?.id) {
+          return session;
+        }
+        console.warn(`[EditShop] getSession attempt ${i + 1}/${retries}: no valid session, retrying...`);
+      } catch (err) {
+        console.warn(`[EditShop] getSession attempt ${i + 1}/${retries} error:`, err);
+      }
+      if (i < retries - 1) {
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+    return null;
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -114,14 +134,16 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
         onClose();
       }, 1200);
 
-      // ═══ 3) SUPABASE SAVE IN BACKGROUND (fire-and-forget, 8s timeout) ═══
+      // ═══ 3) SUPABASE SAVE IN BACKGROUND (fire-and-forget, with retry) ═══
       if (isSupabaseConfigured) {
         (async () => {
           try {
-            const sessionRes = await withTimeout(Promise.resolve(supabase.auth.getSession()), 5000);
-            if (!sessionRes) { console.warn('[EditShop] getSession timed out'); return; }
-            const session = sessionRes.data?.session;
-            if (!session) { console.warn('[EditShop] No session'); return; }
+            const session = await getSessionWithRetry(3, 500);
+            if (!session) {
+              console.warn('[EditShop] ❌ getSession failed after 3 retries — no valid session');
+              alert('ไม่สามารถซิงค์ข้อมูลกับเซิร์ฟเวอร์ได้ (session หมดอายุ)\nกรุณารีเฟรชหน้าใหม่ หรือ login ใหม่อีกครั้ง');
+              return;
+            }
 
             console.log('[EditShop] Supabase session: ✅ uid=' + session.user.id);
 

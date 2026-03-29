@@ -84,7 +84,7 @@ function productToPromotion(p: Product): Promotion {
 }
 
 export default function Home() {
-  const { user, checkAuth, selectedCategory, setSelectedCategory } = useAppStore();
+  const { user, selectedCategory, setSelectedCategory } = useAppStore();
   const { user: authUser } = useAuthStore();
   const storeProducts = useProductStore((s) => s.products);
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,8 +104,9 @@ export default function Home() {
   }, [authUser]);
 
   // Fetch promotions on mount
+  // Note: checkAuth() ไม่ต้อง call ที่นี่ เพราะ AuthListener (root layout) จัดการ session restore แล้ว
+  // การ call ซ้ำทำให้ Supabase abort request ก่อนหน้า → AbortError
   useEffect(() => {
-    checkAuth();
     async function fetchPromotions() {
       setIsLoading(true);
       try {
@@ -161,7 +162,7 @@ export default function Home() {
       }
     }
     fetchPromotions();
-  }, [checkAuth]);
+  }, []);
 
   // Merge static promotions + store products (merchant-created)
   // Sort boosted promotions to the top, then by creation date

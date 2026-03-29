@@ -12,6 +12,8 @@ import { useProductStore, type Product } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getSocialLinks } from '@/lib/socialLinks';
 import { getPromotions } from '@/lib/getPromotions';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { resolveImageUrl } from '@/lib/imageUrl';
 
 interface ShopInfo {
   id: string;
@@ -23,6 +25,10 @@ interface ShopInfo {
   totalProducts: number;
   location: string;
   memberSince: string;
+  socialLine?: string;
+  socialFacebook?: string;
+  socialInstagram?: string;
+  socialWebsite?: string;
 }
 
 export default function PublicShopPage() {
@@ -52,17 +58,89 @@ export default function PublicShopPage() {
         setIsLoading(true);
         setError(null);
 
-        // TODO: Replace with real API call
-        // const res = await fetch(`/api/shops/${shopId}`);
-        // if (!res.ok) throw new Error('Shop not found');
-        // const data = await res.json();
-        // setShopInfo(data);
-
-        await new Promise(r => setTimeout(r, 400));
-
         const decodedName = decodeURIComponent(shopId);
+        console.log('[ShopPage] Looking for shop:', decodedName);
 
-        // ─── Source 1: Local product store ───
+        // ─── Source 1: Supabase merchant_profiles + products ───
+        if (isSupabaseConfigured) {
+          try {
+            // Try exact match first, then case-insensitive
+            let { data: merchant, error: merchantErr } = await supabase
+              .from('merchant_profiles')
+              .select('*')
+              .eq('shop_name', decodedName)
+              .maybeSingle();
+
+            if (merchantErr) {
+              console.warn('[ShopPage] merchant_profiles query error:', merchantErr.message);
+            }
+
+            // Fallback: case-insensitive search
+            if (!merchant && !merchantErr) {
+              const { data: merchantIlike } = await supabase
+                .from('merchant_profiles')
+                .select('*')
+                .ilike('shop_name', decodedName)
+                .maybeSingle();
+              if (merchantIlike) merchant = merchantIlike;
+            }
+
+            console.log('[ShopPage] DB result:', merchant ? `Found: ${merchant.shop_name}` : 'Not found in DB');
+
+            if (merchant) {
+              // Also fetch products for this shop from DB
+              const { data: dbProducts } = await supabase
+                .from('products')
+                .select('*')
+                .eq('shop_name', decodedName);
+
+              if (dbProducts && dbProducts.length > 0) {
+                const asProducts: Product[] = dbProducts.map((p: Record<string, unknown>) => ({
+                  id: p.id as string,
+                  title: p.title as string,
+                  description: (p.description as string) || '',
+                  originalPrice: Number(p.original_price) || Number(p.price) || 0,
+                  promoPrice: Number(p.price) || 0,
+                  discount: Number(p.discount) || 0,
+                  image: (p.image as string) || '',
+                  shopName: (p.shop_name as string) || decodedName,
+                  category: ((p.category as string) || 'Other') as Product['category'],
+                  verified: true,
+                  likes: Number(p.likes) || 0,
+                  isLiked: false,
+                  reviews: Number(p.reviews) || 0,
+                  rating: Number(p.rating) || 0,
+                  distance: (p.distance as string) || '',
+                  validUntil: '',
+                  createdAt: (p.created_at as string) || '',
+                  tags: [],
+                }));
+                setApiProducts(asProducts);
+              }
+
+              setShopInfo({
+                id: merchant.id,
+                name: merchant.shop_name || decodedName,
+                logo: merchant.shop_logo ? resolveImageUrl(merchant.shop_logo) : '',
+                description: `ยินดีต้อนรับสู่ ${merchant.shop_name || decodedName} — ร้านค้าคุณภาพพร้อมโปรโมชั่นสุดพิเศษ`,
+                verified: true,
+                rating: 0,
+                totalProducts: (dbProducts?.length || 0),
+                location: merchant.shop_address || 'กรุงเทพฯ',
+                memberSince: merchant.created_at ? new Date(merchant.created_at).getFullYear().toString() : '2024',
+                socialLine: merchant.line_id || undefined,
+                socialFacebook: merchant.facebook || undefined,
+                socialInstagram: merchant.instagram || undefined,
+                socialWebsite: merchant.website || undefined,
+              });
+              return;
+            }
+          } catch (dbErr) {
+            console.warn('[ShopPage] Supabase query failed, falling back to local:', dbErr);
+          }
+        }
+
+        // ─── Source 2: Local product store ───
         const matching = products.filter(p => p.shopName === decodedName);
 
         if (matching.length > 0) {
@@ -160,6 +238,8 @@ export default function PublicShopPage() {
 
         throw new Error('ไม่พบร้านค้านี้');
       } catch (err: unknown) {
+        // AbortError during navigation/strict mode — ignore silently
+        if (err instanceof Error && err.name === 'AbortError') return;
         const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
         setError(message);
       } finally {
@@ -302,14 +382,14 @@ export default function PublicShopPage() {
 
           {/* Social Links */}
           {(() => {
-            // ดึงข้อมูล social จาก auth store ถ้าเป็นร้านของตัวเอง
+            // ดึงข้อมูล social จาก shopInfo (DB) หรือจาก auth store ถ้าเป็นร้านของตัวเอง
             const isOwnShop = authUser?.shopName === shopInfo.name;
-            const socialLinks = isOwnShop ? getSocialLinks({
-              line: authUser?.shopSocialLine,
-              facebook: authUser?.shopSocialFacebook,
-              instagram: authUser?.shopSocialInstagram,
-              website: authUser?.shopSocialWebsite,
-            }) : [];
+            const socialLinks = getSocialLinks({
+              line: shopInfo.socialLine || (isOwnShop ? authUser?.shopSocialLine : undefined),
+              facebook: shopInfo.socialFacebook || (isOwnShop ? authUser?.shopSocialFacebook : undefined),
+              instagram: shopInfo.socialInstagram || (isOwnShop ? authUser?.shopSocialInstagram : undefined),
+              website: shopInfo.socialWebsite || (isOwnShop ? authUser?.shopSocialWebsite : undefined),
+            });
             if (socialLinks.length === 0) return null;
             return (
               <div className="flex flex-wrap justify-center gap-2 mt-6">
