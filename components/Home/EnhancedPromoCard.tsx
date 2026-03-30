@@ -118,7 +118,7 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
           </div>
 
           {/* Bookmark & Share Buttons */}
-          <div className="absolute top-3 right-3 z-10 flex gap-2">
+          <div className="absolute top-3 right-3 z-20 flex gap-2" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
             <BookmarkButton promoId={promo.id} />
             <ShareButton promo={promo} />
           </div>

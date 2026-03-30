@@ -1,19 +1,108 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProductStore } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Bookmark, ArrowRight, Trash2, Clock, Store, LayoutGrid, List } from 'lucide-react';
+import { Bookmark, ArrowRight, Trash2, Clock, Store, LayoutGrid, List, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import LoginModal from '@/components/Auth/LoginModal';
+import { getPromotions } from '@/lib/getPromotions';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
+
+interface SavedPromo {
+  id: string;
+  title: string;
+  shopName: string;
+  image: string;
+  promoPrice: number;
+  originalPrice: number;
+  validUntil: string;
+  category: string;
+}
 
 type ViewMode = 'grid' | 'list';
 
 export default function SavedPage() {
   const { isAuthenticated } = useAuthStore();
-  const { products, savedProductIds, toggleSave } = useProductStore();
+  const { savedProductIds, toggleSave } = useProductStore();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [allPromos, setAllPromos] = useState<SavedPromo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch all available promotions (same sources as home page)
+  useEffect(() => {
+    async function loadPromotions() {
+      setIsLoading(true);
+      const results: SavedPromo[] = [];
+
+      try {
+        // Source 1: API / Supabase products
+        try {
+          const res = await fetch('/api/debug-products');
+          const json = await res.json();
+          if (json.data && json.data.length > 0) {
+            for (const p of json.data) {
+              results.push({
+                id: String(p.id || ''),
+                title: String(p.title || ''),
+                shopName: String(p.shopName || p.shop_name || 'ร้านค้า'),
+                image: String(p.image || '') || getCategoryFallbackImage(p.category as string),
+                promoPrice: Number(p.promoPrice || p.price || 0),
+                originalPrice: Number(p.originalPrice || p.original_price || 0),
+                validUntil: String(p.validUntil || p.valid_until || new Date(Date.now() + 7 * 86400000).toISOString()),
+                category: String(p.category || 'Other'),
+              });
+            }
+          }
+        } catch {
+          // API not available, continue with static data
+        }
+
+        // Source 2: Static promotions
+        const staticPromos = getPromotions();
+        const existingIds = new Set(results.map(r => r.id));
+        for (const p of staticPromos) {
+          if (!existingIds.has(p.id)) {
+            results.push({
+              id: p.id,
+              title: p.title,
+              shopName: p.shop_name,
+              image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
+              promoPrice: p.price,
+              originalPrice: Math.round(p.price / (1 - p.discount_rate / 100)),
+              validUntil: p.valid_until,
+              category: p.category,
+            });
+          }
+        }
+
+        // Source 3: Zustand store products (merchant-created)
+        const storeProducts = useProductStore.getState().products;
+        for (const p of storeProducts) {
+          if (!existingIds.has(p.id) && !results.find(r => r.id === p.id)) {
+            results.push({
+              id: p.id,
+              title: p.title,
+              shopName: p.shopName,
+              image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
+              promoPrice: p.promoPrice,
+              originalPrice: p.originalPrice,
+              validUntil: p.validUntil,
+              category: p.category,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[Saved] Failed to load promotions:', err);
+      }
+
+      setAllPromos(results);
+      setIsLoading(false);
+    }
+
+    loadPromotions();
+  }, []);
 
   if (!isAuthenticated) {
     return (
@@ -39,7 +128,7 @@ export default function SavedPage() {
     );
   }
 
-  const savedProducts = products.filter(p => savedProductIds.includes(p.id));
+  const savedProducts = allPromos.filter(p => savedProductIds.includes(p.id));
 
   const isExpired = (validUntil: string) => new Date(validUntil) < new Date();
   const activeProducts = savedProducts.filter(p => !isExpired(p.validUntil));
@@ -78,7 +167,12 @@ export default function SavedPage() {
           )}
         </div>
 
-        {savedProducts.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 text-orange-400 animate-spin mb-3" />
+            <p className="text-sm text-gray-400">กำลังโหลด...</p>
+          </div>
+        ) : savedProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
               <Bookmark className="w-7 h-7 text-gray-300" />

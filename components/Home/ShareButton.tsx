@@ -195,9 +195,9 @@ export default function ShareButton({ promo }: ShareButtonProps) {
         onClick={handleShare}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="p-2 rounded-full bg-white/90 hover:bg-gray-50 border border-gray-100 shadow-sm backdrop-blur-sm transition-all"
+        className="p-3 rounded-full bg-white/90 hover:bg-gray-50 border border-gray-100 shadow-sm backdrop-blur-sm transition-all touch-manipulation"
       >
-        <ShareIcon className="w-4 h-4 text-gray-500" />
+        <ShareIcon className="w-5 h-5 text-gray-500" />
       </motion.button>
 
       {/* Portal: render modal at document.body to escape all stacking contexts */}

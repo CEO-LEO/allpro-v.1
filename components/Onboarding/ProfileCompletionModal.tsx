@@ -34,7 +34,7 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -90,16 +90,16 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
             className={`fixed z-[9999] ${isMobile ? 'inset-x-0 bottom-0' : 'inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`bg-white shadow-2xl overflow-hidden ${isMobile ? 'rounded-t-2xl max-h-[90vh] overflow-y-auto' : 'rounded-2xl'}`}>
+            <div className={`bg-white shadow-2xl overflow-hidden ${isMobile ? 'rounded-t-2xl max-h-[85vh] overflow-y-auto' : 'rounded-2xl'}`}>
               {/* Header */}
               <div className="bg-orange-500 px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-white" />
-                  <h2 className="text-base font-bold text-white">ข้อมูลเพิ่มเติม</h2>
+                  <h2 className="text-lg font-bold text-white">ข้อมูลเพิ่มเติม</h2>
                 </div>
                 <button
                   onClick={handleSkip}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-white/80" />
                 </button>
@@ -107,7 +107,7 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
 
               <div className="p-5 space-y-5">
                 {/* Privacy notice */}
-                <p className="text-xs text-gray-400 leading-relaxed">
+                <p className="text-sm text-gray-400 leading-relaxed">
                   ข้อมูลนี้จะช่วยให้เราแนะนำโปรโมชันที่เหมาะกับคุณ
                 </p>
 
@@ -119,14 +119,14 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
                       <button
                         key={option.id}
                         onClick={() => setGender(option.id)}
-                        className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 transition-all text-center ${
+                        className={`flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl border-2 transition-all text-center touch-manipulation ${
                           gender === option.id
                             ? 'border-orange-500 bg-orange-50'
                             : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'
                         }`}
                       >
-                        <span className="text-lg">{option.icon}</span>
-                        <span className={`text-[11px] font-medium ${
+                        <span className="text-2xl">{option.icon}</span>
+                        <span className={`text-xs font-medium ${
                           gender === option.id ? 'text-orange-600' : 'text-gray-500'
                         }`}>
                           {option.label}
@@ -144,7 +144,7 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
                       <button
                         key={option.id}
                         onClick={() => setAgeRange(option.id)}
-                        className={`py-2.5 px-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                        className={`py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all touch-manipulation ${
                           ageRange === option.id
                             ? 'border-orange-500 bg-orange-50 text-orange-600'
                             : 'border-gray-100 bg-gray-50/50 text-gray-500 hover:border-gray-200'
@@ -166,14 +166,14 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={handleSkip}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors touch-manipulation"
                   >
                     ข้ามไปก่อน
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={!canSave}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all touch-manipulation ${
                       canSave
                         ? 'bg-orange-500 text-white hover:bg-orange-600 active:scale-95'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
