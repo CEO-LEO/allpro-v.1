@@ -344,151 +344,136 @@ export default function Reviews({ productId }: ReviewsProps) {
       )}
 
       {/* Write Review Modal */}
-      <AnimatePresence>
-        {showWriteReview && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowWriteReview(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+      {showWriteReview && (
+        <div
+          onClick={() => setShowWriteReview(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden"
-            >
-              {/* Header */}
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white relative">
-                <button
-                  onClick={() => setShowWriteReview(false)}
-                  className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-                <h2 className="text-2xl font-bold mb-2">✍️ เขียนรีวิว</h2>
-                <p className="text-purple-100 text-sm">แชร์ประสบการณ์ของคุณ และรับ +10 Points!</p>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white relative">
+              <button
+                onClick={() => setShowWriteReview(false)}
+                className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold mb-2">✍️ เขียนรีวิว</h2>
+              <p className="text-purple-100 text-sm">แชร์ประสบการณ์ของคุณ และรับ +10 Points!</p>
+            </div>
+
+            <div className="p-6">
+              {/* Rating */}
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  ให้คะแนน *
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewRating(star)}
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className={`w-10 h-10 ${
+                          star <= newRating
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="p-6">
-                {/* Rating */}
-                <div className="mb-6">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    ให้คะแนน *
-                  </label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() => setNewRating(star)}
-                        className="transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`w-10 h-10 ${
-                            star <= newRating
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Comment */}
-                <div className="mb-6">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    เขียนรีวิว * (อย่างน้อย 10 ตัวอักษร)
-                  </label>
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="บอกเล่าประสบการณ์ของคุณ... คุ้มไหม อร่อยไหม เหมือนรูปไหม"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none resize-none"
-                    rows={5}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {newComment.length} ตัวอักษร
-                  </p>
-                </div>
-
-                {/* Upload Photo (Mock) */}
-                <div className="mb-6">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    แนบรูปภาพ (ไม่บังคับ)
-                  </label>
-                  <button className="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-purple-400 hover:bg-purple-50 transition-all flex flex-col items-center gap-2">
-                    <Camera className="w-8 h-8 text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-600">
-                      คลิกเพื่ออัพโหลดรูป
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      (จะเพิ่มฟีเจอร์เร็วๆ นี้)
-                    </span>
-                  </button>
-                </div>
-
-                {/* Submit */}
-                <button
-                  onClick={handleSubmitReview}
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      กำลังส่ง...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" />
-                      ส่งรีวิวและรับ +10 Points
-                    </>
-                  )}
-                </button>
-
-                <p className="text-xs text-gray-500 text-center mt-3">
-                  รีวิวของคุณจะช่วยให้ Hunter คนอื่นตัดสินใจได้ดีขึ้น
+              {/* Comment */}
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  เขียนรีวิว * (อย่างน้อย 10 ตัวอักษร)
+                </label>
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="บอกเล่าประสบการณ์ของคุณ... คุ้มไหม อร่อยไหม เหมือนรูปไหม"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none resize-none"
+                  rows={5}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {newComment.length} ตัวอักษร
                 </p>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              {/* Upload Photo */}
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  แนบรูปภาพ (ไม่บังคับ)
+                </label>
+                <button type="button" className="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-purple-400 hover:bg-purple-50 transition-all flex flex-col items-center gap-2">
+                  <Camera className="w-8 h-8 text-gray-400" />
+                  <span className="text-sm font-semibold text-gray-600">
+                    คลิกเพื่ออัพโหลดรูป
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    (จะเพิ่มฟีเจอร์เร็วๆ นี้)
+                  </span>
+                </button>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="button"
+                onClick={handleSubmitReview}
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    กำลังส่ง...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" />
+                    ส่งรีวิวและรับ +10 Points
+                  </>
+                )}
+              </button>
+
+              <p className="text-xs text-gray-500 text-center mt-3">
+                รีวิวของคุณจะช่วยให้ Hunter คนอื่นตัดสินใจได้ดีขึ้น
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Lightbox */}
-      <AnimatePresence>
-        {selectedImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      {selectedImage && (
+        <div
+          onClick={() => setSelectedImage(null)}
+          className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4"
+        >
+          <button
             onClick={() => setSelectedImage(null)}
-            className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4"
+            className="absolute top-4 right-4 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm transition-all"
           >
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm transition-all"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              className="relative max-w-3xl w-full aspect-square"
-            >
-              <Image
-                src={selectedImage}
-                alt="Review photo"
-                fill
-                className="object-contain"
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div className="relative max-w-3xl w-full aspect-square">
+            <Image
+              src={selectedImage}
+              alt="Review photo"
+              fill
+              className="object-contain"
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }
