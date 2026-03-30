@@ -11,7 +11,8 @@ import {
   CheckCircle,
   Award,
   X,
-  Send
+  Send,
+  Loader2
 } from 'lucide-react';
 import { 
   type Review, 
@@ -22,9 +23,21 @@ import {
 } from '@/lib/reviewData';
 import toast from 'react-hot-toast';
 import { addPoints } from '@/lib/pointsUtils';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface ReviewsProps {
   productId: string;
+}
+
+interface SupabaseReview {
+  id: string;
+  user_id: string;
+  rating: number;
+  comment: string;
+  images: string[];
+  helpful_count: number;
+  created_at: string;
 }
 
 export default function Reviews({ productId }: ReviewsProps) {
@@ -35,12 +48,15 @@ export default function Reviews({ productId }: ReviewsProps) {
   const [newRating, setNewRating] = useState(0);
   const [newComment, setNewComment] = useState('');
   const [helpfulReviews, setHelpfulReviews] = useState<Set<string>>(new Set());
+  const [dbReviews, setDbReviews] = useState<Review[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuthStore();
 
+  // Load reviews from mock data
   useEffect(() => {
     const data = getProductReviews(productId);
     setReviewData(data);
 
-    // Load helpful reviews from localStorage
     const marked = new Set<string>();
     data?.reviews.forEach(review => {
       if (localStorage.getItem(`helpful_${review.id}`)) {
@@ -49,6 +65,40 @@ export default function Reviews({ productId }: ReviewsProps) {
     });
     setHelpfulReviews(marked);
   }, [productId]);
+
+  // Load reviews from Supabase
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('promotion_id', productId)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          const mapped: Review[] = (data as SupabaseReview[]).map(r => ({
+            id: r.id,
+            userId: r.user_id,
+            userName: user?.name || 'ผู้ใช้งาน',
+            userAvatar: user?.avatar || 'https://i.pravatar.cc/150?img=68',
+            rating: r.rating,
+            isVerifiedBuyer: true,
+            comment: r.comment || '',
+            photos: r.images || [],
+            helpful: r.helpful_count || 0,
+            timestamp: new Date(r.created_at),
+          }));
+          setDbReviews(mapped);
+        }
+      } catch (e) {
+        console.error('Failed to load reviews:', e);
+      }
+    })();
+  }, [productId, user]);
+
+  const allReviews = [...dbReviews, ...(reviewData?.reviews || [])];
 
   const handleMarkHelpful = (reviewId: string) => {
     const success = markReviewHelpful(reviewId, productId);
@@ -61,7 +111,7 @@ export default function Reviews({ productId }: ReviewsProps) {
     }
   };
 
-  const handleSubmitReview = () => {
+  const handleSubmitReview = async () => {
     if (newRating === 0) {
       toast.error('กรุณาให้คะแนน');
       return;
@@ -71,38 +121,84 @@ export default function Reviews({ productId }: ReviewsProps) {
       return;
     }
 
-    // Award points for first review
-    addPoints(10, 'เขียนรีวิวครั้งแรก', '✍️');
-    
-    toast.success('ส่งรีวิวสำเร็จ! +10 Points', {
-      icon: '✍️',
-      duration: 4000
-    });
+    setIsSubmitting(true);
 
-    setShowWriteReview(false);
-    setNewRating(0);
-    setNewComment('');
+    try {
+      if (isSupabaseConfigured && user) {
+        const { data: inserted, error } = await supabase
+          .from('reviews')
+          .insert({
+            user_id: user.id,
+            promotion_id: productId,
+            rating: newRating,
+            comment: newComment.trim(),
+            images: [],
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Failed to save review:', error);
+          toast.error('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Add to local state immediately
+        if (inserted) {
+          const newReview: Review = {
+            id: inserted.id,
+            userId: user.id,
+            userName: user.name || 'ผู้ใช้งาน',
+            userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=68',
+            rating: newRating,
+            isVerifiedBuyer: true,
+            comment: newComment.trim(),
+            photos: [],
+            helpful: 0,
+            timestamp: new Date(),
+          };
+          setDbReviews(prev => [newReview, ...prev]);
+        }
+      }
+
+      addPoints(10, 'เขียนรีวิวครั้งแรก', '✍️');
+
+      toast.success('ส่งรีวิวสำเร็จ! +10 Points', {
+        icon: '✍️',
+        duration: 4000
+      });
+
+      setShowWriteReview(false);
+      setNewRating(0);
+      setNewComment('');
+    } catch (e) {
+      console.error('Review submit error:', e);
+      toast.error('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (!reviewData) {
-    return (
-      <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200 text-center">
-        <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 mb-4">ยังไม่มีรีวิว</p>
-        <button
-          onClick={() => setShowWriteReview(true)}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all"
-        >
-          ✍️ เขียนรีวิวแรกและรับ +10 Points!
-        </button>
-      </div>
-    );
-  }
-
-  const displayedReviews = showAllReviews ? reviewData.reviews : reviewData.reviews.slice(0, 3);
+  const displayedReviews = showAllReviews ? allReviews : allReviews.slice(0, 3);
+  const avgRating = allReviews.length > 0
+    ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
+    : 0;
 
   return (
     <>
+      {allReviews.length === 0 ? (
+        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200 text-center">
+          <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 mb-4">ยังไม่มีรีวิว</p>
+          <button
+            onClick={() => setShowWriteReview(true)}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all"
+          >
+            ✍️ เขียนรีวิวแรกและรับ +10 Points!
+          </button>
+        </div>
+      ) : (
       <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
         {/* Header with Stats */}
         <div className="flex items-start justify-between mb-6">
@@ -114,10 +210,10 @@ export default function Reviews({ productId }: ReviewsProps) {
               <div className="flex items-center gap-1">
                 <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                 <span className="text-2xl font-black text-gray-900">
-                  {reviewData.averageRating.toFixed(1)}
+                  {avgRating.toFixed(1)}
                 </span>
                 <span className="text-gray-500 text-sm">
-                  ({reviewData.totalReviews} รีวิว)
+                  ({allReviews.length} รีวิว)
                 </span>
               </div>
             </div>
@@ -236,15 +332,16 @@ export default function Reviews({ productId }: ReviewsProps) {
         </div>
 
         {/* Show More Button */}
-        {reviewData.reviews.length > 3 && (
+        {allReviews.length > 3 && (
           <button
             onClick={() => setShowAllReviews(!showAllReviews)}
             className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold transition-all"
           >
-            {showAllReviews ? 'แสดงน้อยลง' : `ดูรีวิวทั้งหมด (${reviewData.reviews.length})`}
+            {showAllReviews ? 'แสดงน้อยลง' : `ดูรีวิวทั้งหมด (${allReviews.length})`}
           </button>
         )}
       </div>
+      )}
 
       {/* Write Review Modal */}
       <AnimatePresence>
@@ -328,7 +425,7 @@ export default function Reviews({ productId }: ReviewsProps) {
                       คลิกเพื่ออัพโหลดรูป
                     </span>
                     <span className="text-xs text-gray-500">
-                      (Demo: ไม่ได้เชื่อมต่อ API)
+                      (จะเพิ่มฟีเจอร์เร็วๆ นี้)
                     </span>
                   </button>
                 </div>
@@ -336,10 +433,20 @@ export default function Reviews({ productId }: ReviewsProps) {
                 {/* Submit */}
                 <button
                   onClick={handleSubmitReview}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                 >
-                  <Send className="w-5 h-5" />
-                  ส่งรีวิวและรับ +10 Points
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      กำลังส่ง...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      ส่งรีวิวและรับ +10 Points
+                    </>
+                  )}
                 </button>
 
                 <p className="text-xs text-gray-500 text-center mt-3">
