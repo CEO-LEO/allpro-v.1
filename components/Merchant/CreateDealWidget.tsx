@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useStockStore } from "@/store/useStockStore";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Upload, X, Zap, Package, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
@@ -167,7 +167,7 @@ export default function CreateDealWidget() {
       }
 
       // Attempt 2: Direct client-side Supabase insert (fallback)
-      if (!success) {
+      if (!success && isSupabaseConfigured) {
         console.log('[CreateDeal] Trying direct Supabase insert...');
         try {
           const insertData: Record<string, unknown> = {
@@ -197,7 +197,12 @@ export default function CreateDealWidget() {
       }
 
       if (!success) {
-        toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
+        if (!isSupabaseConfigured) {
+          console.error('[CreateDeal] Supabase not configured — env vars missing on this deployment');
+          toast.error('ระบบยังไม่พร้อม กรุณาตั้งค่า Supabase environment variables', { id: 'create-deal' });
+        } else {
+          toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
+        }
         return;
       }
 
