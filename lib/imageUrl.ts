@@ -22,6 +22,11 @@ export function resolveImageUrl(image: string | null | undefined, fallback?: str
     return fallback || CATEGORY_IMAGES.Other;
   }
 
+  // Localhost URLs leaked from development — use fallback
+  if (image.startsWith('http://localhost') || image.startsWith('https://localhost')) {
+    return fallback || CATEGORY_IMAGES.Other;
+  }
+
   // Already a full URL or data URI — use as-is
   if (
     image.startsWith('http://') ||
