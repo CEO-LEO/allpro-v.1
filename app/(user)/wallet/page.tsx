@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useProductStore } from '@/store/useProductStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
 import { QrCode, Trash2, ArrowRight, Bookmark, Ticket, Clock, Store, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,9 +23,17 @@ type Tab = 'coupons' | 'saved';
 
 export default function WalletPage() {
   const [activeTab, setActiveTab] = useState<Tab>('saved');
-  const { savedProductIds, toggleSave } = useProductStore();
+  const { savedProductIds, toggleSave, loadSavedFromSupabase } = useProductStore();
+  const { user } = useAuthStore();
   const [allPromos, setAllPromos] = useState<SavedPromo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Load saved IDs from Supabase on mount
+  useEffect(() => {
+    if (user?.id) {
+      loadSavedFromSupabase(user.id);
+    }
+  }, [user?.id, loadSavedFromSupabase]);
 
   // Fetch all available promotions (same sources as home page)
   useEffect(() => {
@@ -110,7 +119,7 @@ export default function WalletPage() {
   };
 
   const handleRemove = (id: string, title: string) => {
-    toggleSave(id);
+    toggleSave(id, user?.id);
     toast('ลบ "' + title + '" ออกแล้ว');
   };
 

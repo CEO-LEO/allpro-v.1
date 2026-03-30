@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { fetchProfile, fetchMerchantProfile, getCurrentSession } from '@/lib/supabase/auth';
 import { useAuthStore, UserRole } from '@/store/useAuthStore';
+import { useProductStore } from '@/store/useProductStore';
 
 // ★ Global flag — LoginModal sets this BEFORE calling signIn()
 // so the SIGNED_IN event handler knows to skip
@@ -99,6 +100,9 @@ export default function AuthListener() {
           shopSocialInstagram: sessionUser.shopSocialInstagram,
           shopSocialWebsite: sessionUser.shopSocialWebsite,
         });
+
+        // Load saved promotions from Supabase into store
+        useProductStore.getState().loadSavedFromSupabase(sessionUser.id);
       } catch (err: unknown) {
         // AbortError is normal during React strict mode / fast navigation
         if (err instanceof Error && err.name === 'AbortError') {

@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabase';
 import { FASTWORK_URLS } from '@/lib/config';
@@ -317,15 +317,15 @@ export const useAppStore = create<AppState>()(
         
         try {
           const { data, error } = await supabase
-            .from('saved_deals')
-            .select('product_id')
+            .from('saved_promotions')
+            .select('promo_id')
             .eq('user_id', state.user.id);
           
           if (error) throw error;
           
           if (data) {
             set({
-              savedProductIds: data.map((d: any) => d.product_id)
+              savedProductIds: data.map((d: any) => d.promo_id)
             });
           }
         } catch (error: any) {
@@ -357,9 +357,9 @@ export const useAppStore = create<AppState>()(
         try {
           if (isSaved) {
             const { error } = await supabase
-              .from('saved_deals')
+              .from('saved_promotions')
               .delete()
-              .match({ user_id: state.user.id, product_id: id });
+              .match({ user_id: state.user.id, promo_id: id });
             
             if (error) throw error;
             
@@ -369,8 +369,11 @@ export const useAppStore = create<AppState>()(
             toast.success('เธเธณเธญเธญเธเธเธฒเธเธเธฃเธฐเน€เธเนเธฒเนเธฅเนเธง');
           } else {
             const { error } = await supabase
-              .from('saved_deals')
-              .insert({ user_id: state.user.id, product_id: id });
+              .from('saved_promotions')
+              .upsert(
+                { user_id: state.user.id, promo_id: id },
+                { onConflict: 'user_id,promo_id' }
+              );
             
             if (error) throw error;
             

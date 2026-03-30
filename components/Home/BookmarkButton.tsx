@@ -12,7 +12,7 @@ interface BookmarkButtonProps {
 }
 
 export default function BookmarkButton({ promoId }: BookmarkButtonProps) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { savedProductIds, toggleSave } = useProductStore();
   const isBookmarked = savedProductIds.includes(promoId);
 
@@ -25,7 +25,7 @@ export default function BookmarkButton({ promoId }: BookmarkButtonProps) {
       return;
     }
 
-    toggleSave(promoId);
+    toggleSave(promoId, user?.id);
     
     if (!isBookmarked) {
       toast.success('บันทึกโปรโมชั่นแล้ว!');

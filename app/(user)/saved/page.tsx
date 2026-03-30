@@ -23,12 +23,19 @@ interface SavedPromo {
 type ViewMode = 'grid' | 'list';
 
 export default function SavedPage() {
-  const { isAuthenticated } = useAuthStore();
-  const { savedProductIds, toggleSave } = useProductStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const { savedProductIds, toggleSave, loadSavedFromSupabase } = useProductStore();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [allPromos, setAllPromos] = useState<SavedPromo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Load saved IDs from Supabase on mount
+  useEffect(() => {
+    if (user?.id) {
+      loadSavedFromSupabase(user.id);
+    }
+  }, [user?.id, loadSavedFromSupabase]);
 
   // Fetch all available promotions (same sources as home page)
   useEffect(() => {
@@ -135,7 +142,7 @@ export default function SavedPage() {
   const expiredProducts = savedProducts.filter(p => isExpired(p.validUntil));
 
   const handleRemove = (id: string, title: string) => {
-    toggleSave(id);
+    toggleSave(id, user?.id);
     toast('ลบ "' + title + '" ออกแล้ว');
   };
 

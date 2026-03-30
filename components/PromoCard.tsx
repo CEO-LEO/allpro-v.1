@@ -35,7 +35,7 @@ const getIconByCategory = (category: string) => {
 };
 
 export default function PromoCard({ promo }: PromoCardProps) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { savedProductIds, toggleSave } = useProductStore();
   const isFav = savedProductIds.includes(promo.id);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -49,7 +49,7 @@ export default function PromoCard({ promo }: PromoCardProps) {
       return;
     }
 
-    toggleSave(promo.id);
+    toggleSave(promo.id, user?.id);
   };
   return (
     <Link href={`/promo/${promo.id}`}>

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { fetchSavedPromoIds, savePromotion, unsavePromotion } from '@/lib/supabase/savedPromotions';
 
 export interface Product {
   id: string;
@@ -31,13 +32,16 @@ interface ProductStore {
   selectedCategory: string;
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'likes' | 'isLiked' | 'reviews' | 'rating'>) => void;
   toggleLike: (id: string) => void;
-  toggleSave: (id: string) => void;
+  toggleSave: (id: string, userId?: string) => void;
   deleteProduct: (id: string) => void;
   resetProducts: () => void;
   setSelectedCategory: (category: string) => void;
   boostProduct: (id: string) => void;
   unboostProduct: (id: string) => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
+  // Supabase sync
+  loadSavedFromSupabase: (userId: string) => Promise<void>;
+  setSavedProductIds: (ids: string[]) => void;
 }
 
 // Mock initial data
@@ -82,11 +86,23 @@ export const useProductStore = create<ProductStore>()(
         )
       })),
       
-      toggleSave: (id) => set((state) => ({
-        savedProductIds: state.savedProductIds.includes(id)
+      toggleSave: (id, userId) => set((state) => {
+        const isSaved = state.savedProductIds.includes(id);
+        const newIds = isSaved
           ? state.savedProductIds.filter((productId) => productId !== id)
-          : [...state.savedProductIds, id]
-      })),
+          : [...state.savedProductIds, id];
+
+        // Sync with Supabase in background (fire-and-forget)
+        if (userId) {
+          if (isSaved) {
+            unsavePromotion(userId, id);
+          } else {
+            savePromotion(userId, id);
+          }
+        }
+
+        return { savedProductIds: newIds };
+      }),
       
       deleteProduct: (id) => set((state) => ({
         products: state.products.filter((product) => product.id !== id)
@@ -120,7 +136,20 @@ export const useProductStore = create<ProductStore>()(
       
       setSelectedCategory: (category) => set({
         selectedCategory: category
-      })
+      }),
+
+      loadSavedFromSupabase: async (userId: string) => {
+        const dbIds = await fetchSavedPromoIds(userId);
+        if (dbIds.length > 0) {
+          // Merge: DB IDs + local IDs (deduped)
+          set((state) => {
+            const merged = Array.from(new Set([...dbIds, ...state.savedProductIds]));
+            return { savedProductIds: merged };
+          });
+        }
+      },
+
+      setSavedProductIds: (ids: string[]) => set({ savedProductIds: ids }),
     }),
     {
       name: 'product-storage',

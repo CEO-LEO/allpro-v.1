@@ -39,7 +39,7 @@ export default function ProductDisplayCard({ product, showSaveButton = true }: P
     setIsSaving(true);
     setTimeout(() => {
       const wasNotSaved = !isSaved;
-      toggleSave(product.id);
+      toggleSave(product.id, user?.id);
       
       // Award coins on first save
       if (wasNotSaved) {
