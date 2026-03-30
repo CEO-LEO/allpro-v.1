@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       const fileName = `${user.id}/${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('community-images')
+        .from('communinty-images')
         .upload(fileName, imageFile, {
           cacheControl: '3600',
           upsert: false,
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
         // Continue without image rather than failing
       } else {
         const { data: urlData } = supabase.storage
-          .from('community-images')
+          .from('communinty-images')
           .getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;
       }
