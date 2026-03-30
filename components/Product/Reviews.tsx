@@ -258,50 +258,94 @@ export default function Reviews({ productId }: ReviewsProps) {
   };
 
   const handleSubmitReview = async (rating: number, comment: string) => {
-    setIsSubmitting(true);
-    try {
-      if (isSupabaseConfigured && user) {
-        const { data: inserted, error } = await supabase
-          .from('reviews')
-          .insert({
-            user_id: user.id,
-            promotion_id: productId,
-            rating,
-            comment: comment.trim(),
-            images: [],
-          })
-          .select()
-          .single();
+    // ── 1. ตรวจสอบว่ามี user จาก Zustand store หรือไม่ ──
+    if (!user) {
+      console.warn('[Reviews] handleSubmitReview — user is null in useAuthStore');
+      toast.error('กรุณาเข้าสู่ระบบก่อนเขียนรีวิว');
+      return;
+    }
 
-        if (error) {
-          console.error('Failed to save review:', error);
-          toast.error('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
-          setIsSubmitting(false);
-          return;
+    console.log('[Reviews] Submitting review — user:', user.id, 'product:', productId, 'rating:', rating);
+    setIsSubmitting(true);
+
+    try {
+      let savedToDb = false;
+
+      // ── 2. ลอง save ลง Supabase (ถ้ามี session จริง) ──
+      if (isSupabaseConfigured) {
+        // เช็ก Supabase session จริงก่อน (ไม่ใช่แค่ Zustand)
+        let sessionUserId: string | null = null;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          sessionUserId = session?.user?.id || null;
+          console.log('[Reviews] Supabase session userId:', sessionUserId);
+        } catch (sessionErr) {
+          console.warn('[Reviews] getSession failed (AbortError?):', sessionErr);
         }
 
-        if (inserted) {
-          const newReview: Review = {
-            id: inserted.id,
-            userId: user.id,
-            userName: user.name || 'ผู้ใช้งาน',
-            userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=68',
-            rating,
-            isVerifiedBuyer: true,
-            comment: comment.trim(),
-            photos: [],
-            helpful: 0,
-            timestamp: new Date(),
-          };
-          setDbReviews(prev => [newReview, ...prev]);
+        if (sessionUserId) {
+          // มี Supabase session จริง → insert ด้วย session user id
+          const { data: inserted, error } = await supabase
+            .from('reviews')
+            .insert({
+              user_id: sessionUserId,
+              promotion_id: productId,
+              rating,
+              comment: comment.trim(),
+              images: [],
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error('[Reviews] Supabase insert error:', error.message, error.details, error.hint);
+            // ไม่ return — จะ fallback เป็น local save
+          } else if (inserted) {
+            console.log('[Reviews] Saved to Supabase:', inserted.id);
+            savedToDb = true;
+            const newReview: Review = {
+              id: inserted.id,
+              userId: sessionUserId,
+              userName: user.name || 'ผู้ใช้งาน',
+              userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=68',
+              rating,
+              isVerifiedBuyer: true,
+              comment: comment.trim(),
+              photos: [],
+              helpful: 0,
+              timestamp: new Date(),
+            };
+            setDbReviews(prev => [newReview, ...prev]);
+          }
+        } else {
+          console.log('[Reviews] No active Supabase session — saving locally only');
         }
       }
 
+      // ── 3. ถ้ายังไม่ได้ save ลง DB → เพิ่มใน local state เลย ──
+      if (!savedToDb) {
+        const localReview: Review = {
+          id: `local-${Date.now()}`,
+          userId: user.id,
+          userName: user.name || 'ผู้ใช้งาน',
+          userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=68',
+          rating,
+          isVerifiedBuyer: false,
+          comment: comment.trim(),
+          photos: [],
+          helpful: 0,
+          timestamp: new Date(),
+        };
+        setDbReviews(prev => [localReview, ...prev]);
+        console.log('[Reviews] Saved locally:', localReview.id);
+      }
+
+      // ── 4. สำเร็จ → ให้ points + ปิด modal ──
       addPoints(10, 'เขียนรีวิวครั้งแรก', '✍️');
       toast.success('ส่งรีวิวสำเร็จ! +10 Points', { icon: '✍️', duration: 4000 });
       setShowWriteReview(false);
     } catch (e) {
-      console.error('Review submit error:', e);
+      console.error('[Reviews] handleSubmitReview error:', e);
       toast.error('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
     } finally {
       setIsSubmitting(false);
