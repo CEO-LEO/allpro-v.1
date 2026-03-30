@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { X, Image as ImageIcon, DollarSign, Tag, Calendar, Sparkles, Upload, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useProductStore } from '@/store/useProductStore';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -17,6 +18,7 @@ const categories = ['Food', 'Fashion', 'Service', 'Electronics', 'Beauty', 'Fitn
 
 export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProps) {
   const { user } = useAuthStore();
+  const addProduct = useProductStore((s) => s.addProduct);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const imageFileRef = useRef<File | null>(null);
@@ -146,7 +148,25 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
     }
 
     toast.success('ลงประกาศโปรโมชั่นสำเร็จ! 🎉', { id: 'create-deal' });
-      
+
+    // Add to local Zustand store so dashboard shows it immediately
+    const origP = parseFloat(formData.originalPrice);
+    const promoP = parseFloat(formData.promoPrice);
+    addProduct({
+      title: formData.title,
+      description: formData.description || 'โปรโมชั่นพิเศษ!',
+      originalPrice: origP,
+      promoPrice: promoP,
+      discount,
+      image: imagePreview || '',
+      shopName: user?.shopName || user?.name || 'Your Shop',
+      category: formData.category as any,
+      verified: true,
+      validUntil: formData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [formData.category],
+      isBoosted: false,
+    });
+
     // Success animation
     confetti({
       particleCount: 100,

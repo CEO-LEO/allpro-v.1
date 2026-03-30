@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useStockStore } from "@/store/useStockStore";
+import { useProductStore } from "@/store/useProductStore";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Upload, X, Zap, Package, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -28,6 +29,7 @@ export default function CreateDealWidget() {
   const { user, isHydrating } = useAuthStore();
   const stockItems = useStockStore((s) => s.items);
   const deductStock = useStockStore((s) => s.deductStock);
+  const addProduct = useProductStore((s) => s.addProduct);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -207,6 +209,22 @@ export default function CreateDealWidget() {
       }
 
       toast.success('ลงประกาศโปรโมชั่นสำเร็จ! 🎉', { id: 'create-deal' });
+
+      // Add to local Zustand store so dashboard shows it immediately
+      addProduct({
+        title: formData.productName,
+        description: formData.description || `ลด ${calculateDiscount()}%`,
+        originalPrice: original,
+        promoPrice: discounted,
+        discount: calculateDiscount(),
+        image: (useImageUrl && imageUrl) ? imageUrl : imagePreview || '',
+        shopName: user?.shopName || user?.name || 'My Shop',
+        category: formData.category as any,
+        verified: true,
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        tags: [formData.category],
+        isBoosted: false,
+      });
 
       // Success feedback
       confetti({

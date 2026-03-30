@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { fetchSavedPromoIds, savePromotion, unsavePromotion } from '@/lib/supabase/savedPromotions';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export interface Product {
   id: string;
@@ -42,6 +43,8 @@ interface ProductStore {
   // Supabase sync
   loadSavedFromSupabase: (userId: string) => Promise<void>;
   setSavedProductIds: (ids: string[]) => void;
+  // Fetch merchant's own products from Supabase
+  fetchMerchantProducts: (shopId: string, shopName?: string) => Promise<void>;
 }
 
 // Mock initial data
@@ -150,6 +153,69 @@ export const useProductStore = create<ProductStore>()(
       },
 
       setSavedProductIds: (ids: string[]) => set({ savedProductIds: ids }),
+
+      fetchMerchantProducts: async (shopId: string, shopName?: string) => {
+        if (!isSupabaseConfigured) return;
+        try {
+          // Query by shop_id first, then also by shop_name for broader matching
+          let query = supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          // Build OR filter: shop_id = X or shop_name = Y
+          const filters: string[] = [];
+          if (shopId) filters.push(`shop_id.eq.${shopId}`);
+          if (shopName) filters.push(`shop_name.eq.${shopName}`);
+
+          if (filters.length > 0) {
+            query = query.or(filters.join(','));
+          } else {
+            return; // No identifier to query with
+          }
+
+          const { data, error } = await query;
+
+          if (error) {
+            console.error('[ProductStore] fetchMerchantProducts error:', error.message);
+            return;
+          }
+
+          if (data && data.length > 0) {
+            const mapped: Product[] = data.map((row: any) => ({
+              id: row.id,
+              title: row.title || '',
+              description: row.description || '',
+              originalPrice: row.original_price || row.price || 0,
+              promoPrice: row.price || 0,
+              discount: row.discount || 0,
+              image: row.image || '',
+              shopName: row.shop_name || shopName || '',
+              category: row.category || 'Other',
+              verified: true,
+              likes: row.likes || 0,
+              isLiked: false,
+              reviews: row.reviews || 0,
+              rating: row.rating || 0,
+              validUntil: row.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              createdAt: row.created_at || new Date().toISOString(),
+              tags: row.tags || [],
+              isBoosted: row.is_boosted || false,
+            }));
+
+            console.log('[ProductStore] Loaded', mapped.length, 'products from Supabase');
+
+            set((state) => {
+              // Merge: keep local products that aren't in DB, add all DB products
+              const dbIds = new Set(mapped.map(p => p.id));
+              const localOnly = state.products.filter(p => !dbIds.has(p.id));
+              return { products: [...mapped, ...localOnly] };
+            });
+          }
+        } catch (e) {
+          console.error('[ProductStore] fetchMerchantProducts unexpected error:', e);
+        }
+      },
     }),
     {
       name: 'product-storage',

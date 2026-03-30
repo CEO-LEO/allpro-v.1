@@ -122,6 +122,7 @@ export default function MerchantDashboard() {
   // Product Store
   const products = useProductStore((s) => s.products);
   const deleteProduct = useProductStore((s) => s.deleteProduct);
+  const fetchMerchantProducts = useProductStore((s) => s.fetchMerchantProducts);
   
   const [sortBy, setSortBy] = useState<"newest" | "popular" | "discount">("newest");
   const [selectedLocation, setSelectedLocation] = useState("อารีย์");
@@ -163,19 +164,13 @@ export default function MerchantDashboard() {
         setIsLoading(true);
         setError(null);
 
-        // TODO: Replace with real API calls
-        // const [activityRes, statsRes] = await Promise.all([
-        //   fetch('/api/merchant/activity'),
-        //   fetch('/api/merchant/dashboard/stats'),
-        // ]);
-        // if (!activityRes.ok || !statsRes.ok) throw new Error('Failed to fetch dashboard data');
-        // const activityJson = await activityRes.json();
-        // const statsJson = await statsRes.json();
-        // setActivityData(activityJson);
-        // setDashboardStats(statsJson);
+        // Fetch merchant's products from Supabase
+        await fetchMerchantProducts(
+          user?.id || '',
+          user?.shopName || user?.name || ''
+        );
 
-        // Simulate network delay (remove when connecting to real API)
-        await new Promise(r => setTimeout(r, 600));
+        // TODO: Replace with real API calls for activity/stats
         setActivityData([]);
         setDashboardStats(null);
       } catch (err: any) {
@@ -186,15 +181,16 @@ export default function MerchantDashboard() {
     };
 
     if (user) fetchDashboardData();
-  }, [user]);
+  }, [user, fetchMerchantProducts]);
 
   // Filter products for this merchant
-  // Match by shopName first, fallback to user name or "My Shop" (same logic as CreateDealWidget)
-  // Also include all merchant-created products (product- prefix) in case shopName changed
+  // Match by shopName, user name, or user id (for Supabase UUID-based products)
   const shopName = user?.shopName || '';
   const possibleNames = [shopName, user?.name, 'My Shop'].filter(Boolean);
   const myProducts = products.filter(
-    (p) => possibleNames.includes(p.shopName) || p.id.startsWith('product-')
+    (p) =>
+      possibleNames.includes(p.shopName) ||
+      p.id.startsWith('product-') // locally created
   );
 
   // Sort products
