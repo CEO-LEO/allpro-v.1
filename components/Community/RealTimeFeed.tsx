@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   MessageCircle,
   Repeat2,
@@ -24,6 +24,8 @@ import { useLoadScript } from '@react-google-maps/api';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { mockBrandPosts, mockUserPosts } from '@/data/communityPosts';
 import type { BrandPost, UserPost } from '@/data/communityPosts';
+import { useAuthStore } from '@/store/useAuthStore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // ─── Google Maps libraries ──────────────────────────────────────────────────
 const GOOGLE_MAPS_LIBS: ('places')[] = ['places'];
@@ -131,6 +133,21 @@ function shortTime(t: string) {
   if (t.includes('day')) return t.replace(/\s*days?\s*ago/, 'd');
   if (t.includes('week')) return t.replace(/\s*weeks?\s*ago/, 'w');
   return t;
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'เมื่อกี้';
+  if (mins < 60) return `${mins} mins ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hours ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} days ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks} weeks ago`;
 }
 
 // ─── Share helper ────────────────────────────────────────────────────────────
@@ -536,17 +553,20 @@ interface RealTimeFeedProps {
 export default function RealTimeFeed({ showCreateModal = false, setShowCreateModal }: RealTimeFeedProps) {
   const [activeTab, setActiveTab] = useState<FeedTab>('brands');
   const [selectedTag, setSelectedTag] = useState<CategoryTag | 'ทั้งหมด'>('ทั้งหมด');
+  const { user } = useAuthStore();
 
   // — Create-post modal state —
   const [modalText, setModalText] = useState('');
   const [modalTag, setModalTag] = useState<CategoryTag | null>(null);
   const [modalImagePreview, setModalImagePreview] = useState<string | null>(null);
+  const [modalImageFile, setModalImageFile] = useState<File | null>(null);
   const [modalLocation, setModalLocation] = useState('');
   // ── Google Places Autocomplete state ──
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
 
   // ── Google Maps loader ──
   const { isLoaded: isMapsLoaded } = useLoadScript({
@@ -557,13 +577,58 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
   // — Mutable feed arrays —
   const [extraBrandItems, setExtraBrandItems] = useState<FeedItem[]>([]);
   const [extraUserItems, setExtraUserItems] = useState<FeedItem[]>([]);
+  // — DB-loaded posts —
+  const [dbPosts, setDbPosts] = useState<FeedItem[]>([]);
+
+  // ── Load posts from Supabase on mount ──
+  const loadPosts = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+    setIsLoadingPosts(true);
+    try {
+      const res = await fetch('/api/community-posts');
+      const json = await res.json();
+      if (json.posts && Array.isArray(json.posts)) {
+        const items: FeedItem[] = json.posts.map((p: Record<string, unknown>) => ({
+          id: p.id as string,
+          displayName: p.display_name as string || 'Anonymous',
+          username: p.username as string || 'user',
+          avatar: p.avatar_url as string || 'https://i.pravatar.cc/150?img=68',
+          verified: false,
+          timeAgo: formatTimeAgo(p.created_at as string),
+          content: p.content as string,
+          imageUrl: p.image_url as string | undefined,
+          location: p.location as string | undefined,
+          placeId: p.place_id as string | undefined,
+          lat: p.lat as number | undefined,
+          lng: p.lng as number | undefined,
+          tag: (p.tag as CategoryTag) || 'โปรพิเศษ',
+          likes: (p.likes as number) || 0,
+          comments: (p.comments as number) || 0,
+          reposts: (p.reposts as number) || 0,
+          shares: (p.shares as number) || 0,
+          isBrand: (p.is_brand as boolean) || false,
+        }));
+        setDbPosts(items);
+      }
+    } catch (e) {
+      console.error('Failed to load community posts:', e);
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPosts();
+  }, [loadPosts]);
 
   const brandFeed: FeedItem[] = [
     ...extraBrandItems,
+    ...dbPosts.filter(p => p.isBrand),
     ...mockBrandPosts.map(brandToFeed),
   ];
   const userFeed: FeedItem[] = [
     ...extraUserItems,
+    ...dbPosts.filter(p => !p.isBrand),
     ...mockUserPosts.map(userToFeed),
   ];
   const rawFeed = activeTab === 'brands' ? brandFeed : userFeed;
@@ -575,12 +640,14 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
     if (file) {
       if (modalImagePreview) URL.revokeObjectURL(modalImagePreview);
       setModalImagePreview(URL.createObjectURL(file));
+      setModalImageFile(file);
     }
   };
 
   const removeImage = () => {
     if (modalImagePreview) URL.revokeObjectURL(modalImagePreview);
     setModalImagePreview(null);
+    setModalImageFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -597,35 +664,77 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
   };
 
   const handleModalSubmit = async () => {
-    if (!modalText.trim() || !modalImagePreview || !modalTag || isSubmitting) return;
+    if (!modalText.trim() || !modalTag || isSubmitting) return;
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
 
-    const newItem: FeedItem = {
-      id: `new-${Date.now()}`,
-      displayName: 'You',
-      username: 'hunter_you',
-      avatar: 'https://i.pravatar.cc/150?img=68',
-      verified: false,
-      timeAgo: 'เมื่อกี้',
-      content: modalText.trim(),
-      imageUrl: modalImagePreview,
-      location: modalLocation.trim() || undefined,
-      placeId: selectedPlaceId ?? undefined,
-      lat: selectedCoords?.lat,
-      lng: selectedCoords?.lng,
-      tag: modalTag,
-      likes: 0,
-      comments: 0,
-      reposts: 0,
-      shares: 0,
-      isBrand: false,
-    };
+    try {
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-    setExtraUserItems((prev) => [newItem, ...prev]);
-    setActiveTab('users');
-    setIsSubmitting(false);
-    closeModal();
+      if (token && isSupabaseConfigured) {
+        // Save to Supabase via API
+        const formData = new FormData();
+        formData.append('content', modalText.trim());
+        formData.append('tag', modalTag);
+        if (modalLocation.trim()) formData.append('location', modalLocation.trim());
+        if (selectedPlaceId) formData.append('place_id', selectedPlaceId);
+        if (selectedCoords) {
+          formData.append('lat', String(selectedCoords.lat));
+          formData.append('lng', String(selectedCoords.lng));
+        }
+        formData.append('display_name', user?.name || 'Anonymous');
+        formData.append('username', user?.email?.split('@')[0] || 'user');
+        if (user?.avatar) formData.append('avatar_url', user.avatar);
+        if (modalImageFile) formData.append('image', modalImageFile);
+
+        const res = await fetch('/api/community-posts', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (json.post) {
+          // Reload feed from DB
+          await loadPosts();
+          setActiveTab('users');
+          setIsSubmitting(false);
+          closeModal();
+          return;
+        }
+      }
+
+      // Fallback: add to local state only (no auth or Supabase not configured)
+      const newItem: FeedItem = {
+        id: `new-${Date.now()}`,
+        displayName: user?.name || 'You',
+        username: user?.email?.split('@')[0] || 'hunter_you',
+        avatar: user?.avatar || 'https://i.pravatar.cc/150?img=68',
+        verified: false,
+        timeAgo: 'เมื่อกี้',
+        content: modalText.trim(),
+        imageUrl: modalImagePreview || undefined,
+        location: modalLocation.trim() || undefined,
+        placeId: selectedPlaceId ?? undefined,
+        lat: selectedCoords?.lat,
+        lng: selectedCoords?.lng,
+        tag: modalTag,
+        likes: 0,
+        comments: 0,
+        reposts: 0,
+        shares: 0,
+        isBrand: false,
+      };
+
+      setExtraUserItems((prev) => [newItem, ...prev]);
+      setActiveTab('users');
+    } catch (e) {
+      console.error('Failed to submit post:', e);
+    } finally {
+      setIsSubmitting(false);
+      closeModal();
+    }
   };
 
   return (
@@ -717,7 +826,12 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
 
         {/* ─── Feed ─────────────────────────────────────────────────── */}
         <div className="mx-4 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden divide-y divide-gray-200">
-          {feed.length === 0 ? (
+          {isLoadingPosts ? (
+            <div className="py-16 text-center text-gray-400">
+              <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin opacity-40" />
+              <p className="text-sm">กำลังโหลดโพสต์...</p>
+            </div>
+          ) : feed.length === 0 ? (
             <div className="py-16 text-center text-gray-400">
               <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-40" />
               <p className="text-sm">ยังไม่มีโพสต์ เริ่มแชร์เลย!</p>
@@ -882,9 +996,9 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
               <button
                 type="button"
                 onClick={handleModalSubmit}
-                disabled={!modalText.trim() || !modalImagePreview || !modalTag || isSubmitting}
+                disabled={!modalText.trim() || !modalTag || isSubmitting}
                 className={`px-7 py-2.5 rounded-full text-sm font-bold transition-all ${
-                  modalText.trim() && modalImagePreview && modalTag && !isSubmitting
+                  modalText.trim() && modalTag && !isSubmitting
                     ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:shadow-lg hover:shadow-orange-500/25 hover:scale-105'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
