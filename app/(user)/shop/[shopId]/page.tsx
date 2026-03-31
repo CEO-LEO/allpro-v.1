@@ -13,7 +13,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { getSocialLinks } from '@/lib/socialLinks';
 import { getPromotions } from '@/lib/getPromotions';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { resolveImageUrl } from '@/lib/imageUrl';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 interface ShopInfo {
   id: string;
@@ -446,18 +446,17 @@ export default function PublicShopPage() {
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                         <img
-                          src={product.image || ''}
+                          src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                           alt={product.title}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none';
+                            const fallback = getCategoryFallbackImage(product.category);
+                            if (e.currentTarget.src !== fallback) {
+                              e.currentTarget.src = fallback;
+                            }
                           }}
                         />
-                        {/* Fallback icon (visible when image fails) */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-orange-50">
-                          <Package className="w-12 h-12 text-orange-300" />
-                        </div>
                         {product.discount > 0 && (
                           <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full z-10">
                             -{product.discount}%
