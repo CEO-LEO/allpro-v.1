@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { X, Gift, User, Users } from 'lucide-react';
+import { X, Gift, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -32,14 +32,6 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
   const { updateUser, addCoins } = useAuthStore();
   const [gender, setGender] = useState<'male' | 'female' | 'other' | 'prefer_not_to_say' | null>(null);
   const [ageRange, setAgeRange] = useState<'18-24' | '25-34' | '35-44' | '45-54' | '55+' | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -106,26 +98,24 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9998] backdrop-blur-sm bg-black/20"
+            className="fixed inset-0 z-[9998] backdrop-blur-sm bg-black/20 flex items-center justify-center p-4"
             onClick={handleSkip}
-          />
+          >
 
           {/* Modal */}
           <motion.div
-            initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
-            animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`fixed z-[9999] ${isMobile ? 'inset-x-0 bottom-0' : 'inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto'}`}
+            className="w-full max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`bg-white shadow-2xl overflow-hidden ${isMobile ? 'rounded-t-2xl max-h-[85vh] overflow-y-auto' : 'rounded-2xl'}`}>
+            <div className="bg-white shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
               {/* Header */}
               <div className="bg-orange-500 px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -220,7 +210,7 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
               </div>
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
