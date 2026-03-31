@@ -81,12 +81,12 @@ export default function ProfilePage() {
               <>
                 <div>
                   <p className="text-xs text-slate-400 font-bold uppercase">Coins</p>
-                  <p className="text-2xl font-black text-yellow-500">{user.coins}</p>
+                  <p className="text-2xl font-black text-yellow-500">{user.coins ?? 0}</p>
                 </div>
                 <div className="w-px bg-slate-100"></div>
                 <div>
                   <p className="text-xs text-slate-400 font-bold uppercase">XP</p>
-                  <p className="text-2xl font-black text-blue-500">{user.xp}</p>
+                  <p className="text-2xl font-black text-blue-500">{user.xp ?? 0}</p>
                 </div>
                 <div className="w-px bg-slate-100"></div>
                 <div>

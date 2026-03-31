@@ -492,7 +492,7 @@ export const useAppStore = create<AppState>()(
         set({
           user: {
             ...state.user,
-            coins: state.user.coins + amount
+            coins: (state.user.coins ?? 0) + amount
           }
         });
       },

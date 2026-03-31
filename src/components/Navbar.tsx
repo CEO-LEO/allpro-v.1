@@ -22,7 +22,7 @@ export default function Navbar() {
             {user ? (
               <>
                 <div className="bg-yellow-100 px-2 py-1 rounded-full flex items-center gap-1">
-                  <span className="text-xs font-bold text-yellow-700">🪙 {user.coins}</span>
+                  <span className="text-xs font-bold text-yellow-700">🪙 {user.coins ?? 0}</span>
                 </div>
                 <Link href="/notifications" className="p-2 text-gray-600 hover:text-orange-500 relative">
                   <Bell className="w-5 h-5" />
