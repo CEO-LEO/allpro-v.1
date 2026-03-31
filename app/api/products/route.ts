@@ -33,6 +33,15 @@ export async function POST(request: Request) {
     const imageFile = formData.get('image') as File | null;
     const imageUrl = formData.get('image_url') as string | null;
 
+    // Gallery: multiple additional images
+    const galleryFiles: File[] = [];
+    const galleryEntries = formData.getAll('gallery');
+    for (const entry of galleryEntries) {
+      if (entry instanceof File && entry.size > 0) {
+        galleryFiles.push(entry);
+      }
+    }
+
     if (!title || !price) {
       return NextResponse.json({ error: 'กรุณากรอกชื่อสินค้าและราคา' }, { status: 400 });
     }
@@ -64,6 +73,27 @@ export async function POST(request: Request) {
       finalImage = imageUrl;
     }
 
+    // Step 1b: Upload gallery images
+    const galleryPaths: string[] = [];
+    for (const gFile of galleryFiles) {
+      try {
+        const ext = gFile.name.split('.').pop() || 'jpg';
+        const gName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const gPath = `products/gallery/${gName}`;
+        const buf = Buffer.from(await gFile.arrayBuffer());
+        const { error: gErr } = await supabase.storage
+          .from('promotions')
+          .upload(gPath, buf, { contentType: gFile.type, upsert: false });
+        if (!gErr) {
+          galleryPaths.push(gPath);
+        } else {
+          console.warn('[API] Gallery image upload failed:', gErr.message);
+        }
+      } catch (gUploadErr) {
+        console.warn('[API] Gallery upload error:', gUploadErr);
+      }
+    }
+
     // Step 2: Insert product into DB (snake_case columns — matching fix-products-table.sql)
     const insertData: Record<string, unknown> = {
       title,
@@ -77,6 +107,11 @@ export async function POST(request: Request) {
       location,
       conditions,
     };
+
+    // Add gallery if any images were uploaded
+    if (galleryPaths.length > 0) {
+      insertData.gallery = galleryPaths;
+    }
 
     // Only add shop_id if provided (UUID)
     if (shopId && shopId.length > 10) {

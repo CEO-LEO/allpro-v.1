@@ -19,12 +19,13 @@ export default function UserLayout({
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Show profile completion modal for authenticated users who haven't filled demographics
+  // Delay longer to avoid overlapping with the TagSelectionModal in page.tsx
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'USER' && !user?.profileCompleted) {
-      const timer = setTimeout(() => setShowProfileModal(true), 800);
+    if (isAuthenticated && user?.role === 'USER' && !user?.profileCompleted && user?.onboardingCompleted) {
+      const timer = setTimeout(() => setShowProfileModal(true), 1200);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, user?.role, user?.profileCompleted]);
+  }, [isAuthenticated, user?.role, user?.profileCompleted, user?.onboardingCompleted]);
 
   return (
     <div className="min-h-screen bg-white">

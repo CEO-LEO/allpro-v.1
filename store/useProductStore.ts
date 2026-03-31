@@ -11,6 +11,7 @@ export interface Product {
   promoPrice: number;
   discount: number;
   image: string;
+  gallery?: string[];
   shopName: string;
   shopLogo?: string;
   category: 'Food' | 'Fashion' | 'Travel' | 'Gadget' | 'Beauty' | 'Service' | 'Electronics' | 'Fitness' | 'Other';
@@ -190,6 +191,7 @@ export const useProductStore = create<ProductStore>()(
               promoPrice: row.price || 0,
               discount: row.discount || 0,
               image: row.image || '',
+              gallery: row.gallery || [],
               shopName: row.shop_name || shopName || '',
               category: row.category || 'Other',
               verified: true,

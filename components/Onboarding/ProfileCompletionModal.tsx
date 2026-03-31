@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { X, Gift, User, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const GENDER_OPTIONS = [
   { id: 'male' as const, label: 'ชาย', icon: '👨' },
@@ -40,25 +41,59 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const canSave = gender !== null && ageRange !== null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!canSave) return;
+    setIsSaving(true);
 
-    updateUser({
-      gender,
-      ageRange,
-      profileCompleted: true,
-    });
+    try {
+      // 1. Save to Supabase if configured
+      if (isSupabaseConfigured) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              gender,
+              age_range: ageRange,
+              profile_completed: true,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', session.user.id);
 
-    // Reward 10 coins for completing profile
-    addCoins(10);
+          if (error) {
+            console.error('[ProfileModal] Supabase update error:', error);
+            // Still continue to update local state
+          } else {
+            console.log('[ProfileModal] Saved to Supabase');
+          }
+        }
+      }
 
-    toast.success('บันทึกข้อมูลสำเร็จ! รับ 10 Points', {
-      duration: 3000,
-    });
+      // 2. Update local store
+      updateUser({
+        gender,
+        ageRange,
+        profileCompleted: true,
+      });
 
-    onClose();
+      // Reward 10 coins for completing profile
+      addCoins(10);
+
+      toast.success('บันทึกข้อมูลสำเร็จ! รับ 10 Points', {
+        duration: 3000,
+      });
+
+      onClose();
+    } catch (e) {
+      console.error('[ProfileModal] handleSave error:', e);
+      toast.error('เกิดข้อผิดพลาด กรุณาลองอีกครั้ง');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSkip = () => {

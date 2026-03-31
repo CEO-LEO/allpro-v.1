@@ -299,9 +299,10 @@ export default function Navbar() {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label={mobileMenuOpen ? 'ปิดเมนู' : 'เปิดเมนู'}
               >
-                {mobileMenuOpen ? <XIcon className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
+                {mobileMenuOpen ? <XIcon className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
               </button>
             </div>
           </div>
@@ -327,38 +328,71 @@ export default function Navbar() {
         {/* Mobile Expandable Menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="lg:hidden border-t border-gray-100 overflow-hidden"
-            >
-              <div className="px-3 py-2 space-y-1">
-                {[
-                  { href: '/', label: 'หน้าแรก', icon: Home, color: 'orange' },
-                  { href: '/map', label: 'แผนที่', icon: Map, color: 'blue' },
-                  { href: '/flash-sale', label: 'แฟลชเซล', icon: Zap, color: 'orange' },
-                  { href: '/community', label: 'ชุมชน', icon: Users, color: 'purple' },
-                  { href: '/rewards', label: 'รางวัล', icon: Gift, color: 'green' },
-                ].map(({ href, label, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      if (href === '/') setSelectedCategory('All');
-                    }}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      pathname === href ? 'text-orange-600 bg-orange-50 font-semibold' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon size={16} />
-                    <span>{label}</span>
-                  </Link>
-                ))}
-              </div>
-            </motion.div>
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="lg:hidden fixed inset-0 bg-black/20 z-[60]"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="lg:hidden border-t border-gray-100 overflow-hidden relative z-[70] bg-white"
+              >
+                <div className="px-3 py-3 space-y-1">
+                  {[
+                    { href: '/', label: 'หน้าแรก', icon: Home, color: 'orange' },
+                    { href: '/map', label: 'แผนที่ดีล', icon: Map, color: 'blue' },
+                    { href: '/flash-sale', label: 'แฟลชเซล', icon: Zap, color: 'orange' },
+                    { href: '/community', label: 'ชุมชน', icon: Users, color: 'purple' },
+                    { href: '/rewards', label: 'รางวัล', icon: Gift, color: 'green' },
+                  ].map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        if (href === '/') setSelectedCategory('All');
+                      }}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
+                        pathname === href ? 'text-orange-600 bg-orange-50 font-semibold' : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                      }`}
+                    >
+                      <Icon size={18} />
+                      <span>{label}</span>
+                    </Link>
+                  ))}
+
+                  {/* User quick links */}
+                  {user && (
+                    <>
+                      <div className="border-t border-gray-100 my-2" />
+                      <Link
+                        href="/wallet"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                      >
+                        <Wallet size={18} />
+                        <span>กระเป๋าของฉัน</span>
+                      </Link>
+                      <Link
+                        href="/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                      >
+                        <User size={18} />
+                        <span>โปรไฟล์</span>
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
 

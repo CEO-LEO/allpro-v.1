@@ -255,15 +255,45 @@ export default function Reviews({ productId }: ReviewsProps) {
 
   const allReviews = [...dbReviews, ...(reviewData?.reviews || [])];
 
-  const handleMarkHelpful = (reviewId: string) => {
-    const success = markReviewHelpful(reviewId, productId);
-    if (success) {
-      setHelpfulReviews(prev => new Set([...prev, reviewId]));
-      toast.success('ขอบคุณสำหรับความคิดเห็น');
-      setReviewData(getProductReviews(productId));
-    } else {
+  const handleMarkHelpful = async (reviewId: string) => {
+    // Already voted check (localStorage-based)
+    if (localStorage.getItem(`helpful_${reviewId}`)) {
       toast.error('คุณโหวตรีวิวนี้ไปแล้ว');
+      return;
     }
+
+    // Check if this is a Supabase DB review
+    const isDbReview = dbReviews.some(r => r.id === reviewId);
+
+    if (isDbReview && isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.rpc('increment_helpful_count', { review_id: reviewId });
+        if (error) {
+          // Fallback: direct update
+          const { error: updateError } = await supabase
+            .from('reviews')
+            .update({ helpful_count: dbReviews.find(r => r.id === reviewId)!.helpful + 1 })
+            .eq('id', reviewId);
+          if (updateError) {
+            console.error('[Reviews] helpful update error:', updateError);
+          }
+        }
+        // Update local state
+        setDbReviews(prev => prev.map(r =>
+          r.id === reviewId ? { ...r, helpful: r.helpful + 1 } : r
+        ));
+      } catch (e) {
+        console.error('[Reviews] handleMarkHelpful error:', e);
+      }
+    } else {
+      // Mock data review — use existing local function
+      markReviewHelpful(reviewId, productId);
+      setReviewData(getProductReviews(productId));
+    }
+
+    setHelpfulReviews(prev => new Set([...prev, reviewId]));
+    localStorage.setItem(`helpful_${reviewId}`, 'true');
+    toast.success('ขอบคุณสำหรับความคิดเห็น');
   };
 
   // Check if current user already has a review for this product

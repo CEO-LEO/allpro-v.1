@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Sparkles, Check, Tag } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import toast from 'react-hot-toast';
@@ -33,17 +33,48 @@ interface TagSelectionModalProps {
 export default function TagSelectionModal({ isOpen, onClose }: TagSelectionModalProps) {
   const { user, updateUser } = useAuthStore();
   const [selectedTags, setSelectedTags] = useState<string[]>(user?.preferred_tags || []);
+  const [mounted, setMounted] = useState(false);
+  const scrollYRef = useRef(0);
 
-  const toggleTag = (tagId: string) => {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll when open — use position:fixed to prevent iOS background scroll
+  useEffect(() => {
+    if (isOpen) {
+      scrollYRef.current = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollYRef.current);
+    }
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  const toggleTag = useCallback((tagId: string) => {
     setSelectedTags(prev =>
       prev.includes(tagId)
         ? prev.filter(t => t !== tagId)
         : [...prev, tagId]
     );
-  };
+  }, []);
 
-  const handleSave = () => {
-    // บันทึก preferred_tags ลง store (และ Supabase ถ้าเชื่อมต่อแล้ว)
+  const handleSave = useCallback(() => {
     updateUser({
       preferred_tags: selectedTags,
       onboardingCompleted: true,
@@ -54,129 +85,226 @@ export default function TagSelectionModal({ isOpen, onClose }: TagSelectionModal
     });
 
     onClose();
-  };
+  }, [selectedTags, updateUser, onClose]);
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     updateUser({ onboardingCompleted: true });
     onClose();
-  };
+  }, [updateUser, onClose]);
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-        >
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleSkip();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, handleSkip]);
+
+  if (!isOpen || !mounted) return null;
+
+  const modalContent = (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="เลือกสิ่งที่คุณสนใจ"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        touchAction: 'manipulation',
+      }}
+    >
+      {/* Backdrop */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          touchAction: 'none',
+        }}
+        onClick={handleSkip}
+      />
+
+      {/* Modal */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          width: '100%',
+          maxWidth: '32rem',
+          backgroundColor: 'white',
+          borderRadius: '1.5rem',
+          boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+          overflow: 'hidden',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(to right, #f97316, #ef4444)', padding: '1.5rem', color: 'white', position: 'relative' }}>
+          <button
+            type="button"
             onClick={handleSkip}
-          />
-
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 30 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            style={{
+              position: 'absolute',
+              top: '0.75rem',
+              right: '0.75rem',
+              width: '2.75rem',
+              height: '2.75rem',
+              minWidth: '44px',
+              minHeight: '44px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.25)',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              zIndex: 2,
+            }}
+            aria-label="ปิด"
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-6 text-white">
-              <button
-                onClick={handleSkip}
-                className="absolute top-4 right-4 p-1.5 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white/20 p-2.5 rounded-xl">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">เลือกสิ่งที่คุณสนใจ</h2>
-                  <p className="text-orange-100 text-sm">เพื่อให้เราแนะนำดีลที่ตรงใจคุณที่สุด</p>
-                </div>
-              </div>
+            <X className="w-6 h-6" />
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.625rem', borderRadius: '0.75rem' }}>
+              <Sparkles className="w-6 h-6" />
             </div>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>เลือกสิ่งที่คุณสนใจ</h2>
+              <p style={{ fontSize: '0.875rem', opacity: 0.8, margin: 0 }}>เพื่อให้เราแนะนำดีลที่ตรงใจคุณที่สุด</p>
+            </div>
+          </div>
+        </div>
 
-            {/* Tag Grid */}
-            <div className="flex-1 overflow-y-auto px-6 py-5">
-              <p className="text-sm text-gray-500 mb-4 flex items-center gap-1.5">
-                <Tag className="w-4 h-4" />
-                เลือกหมวดหมู่ที่สนใจ (เลือกได้หลายรายการ)
-              </p>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {ALL_TAGS.map((tag) => {
-                  const isSelected = selectedTags.includes(tag.id);
-                  return (
-                    <motion.button
-                      key={tag.id}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => toggleTag(tag.id)}
-                      className={`
-                        relative flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all
-                        ${isSelected
-                          ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-200'
-                          : tag.color + ' border'
-                        }
-                      `}
-                    >
-                      <span className="text-lg">{tag.emoji}</span>
-                      <span className="truncate">{tag.label}</span>
-                      {isSelected && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-0.5 shadow"
-                        >
-                          <Check className="w-3.5 h-3.5 text-orange-500" />
-                        </motion.div>
-                      )}
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
+        {/* Tag Grid */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem', WebkitOverflowScrolling: 'touch' }}>
+          <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <Tag className="w-4 h-4" />
+            เลือกหมวดหมู่ที่สนใจ (เลือกได้หลายรายการ)
+          </p>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+            {ALL_TAGS.map((tag) => {
+              const isSelected = selectedTags.includes(tag.id);
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleTag(tag.id)}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '0.75rem',
+                    border: isSelected ? '2px solid #f97316' : '2px solid #e5e7eb',
+                    backgroundColor: isSelected ? '#f97316' : '#f9fafb',
+                    color: isSelected ? 'white' : '#374151',
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <span style={{ fontSize: '1.125rem' }}>{tag.emoji}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tag.label}</span>
+                  {isSelected && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-0.375rem',
+                      right: '-0.375rem',
+                      backgroundColor: 'white',
+                      borderRadius: '50%',
+                      padding: '2px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      pointerEvents: 'none',
+                    }}>
+                      <Check className="w-3.5 h-3.5" style={{ color: '#f97316' }} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between gap-3">
-              <button
-                onClick={handleSkip}
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors px-4 py-2"
-              >
-                ข้ามไปก่อน
-              </button>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleSave}
-                disabled={selectedTags.length === 0}
-                className={`
-                  px-6 py-2.5 rounded-xl font-bold text-white transition-all flex items-center gap-2
-                  ${selectedTags.length > 0
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 shadow-lg hover:shadow-xl'
-                    : 'bg-gray-300 cursor-not-allowed'
-                  }
-                `}
-              >
-                <Sparkles className="w-4 h-4" />
-                บันทึก ({selectedTags.length})
-              </motion.button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {/* Footer */}
+        <div style={{
+          padding: '1rem 1.5rem',
+          borderTop: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+        }}>
+          <button
+            type="button"
+            onClick={handleSkip}
+            style={{
+              fontSize: '0.875rem',
+              color: '#6b7280',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '0.75rem 1rem',
+              minHeight: '44px',
+              fontFamily: 'inherit',
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
+          >
+            ข้ามไปก่อน
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={selectedTags.length === 0}
+            style={{
+              padding: '0.75rem 1.5rem',
+              minHeight: '44px',
+              borderRadius: '0.75rem',
+              fontWeight: 'bold',
+              color: 'white',
+              border: 'none',
+              cursor: selectedTags.length > 0 ? 'pointer' : 'not-allowed',
+              background: selectedTags.length > 0 ? 'linear-gradient(to right, #f97316, #ef4444)' : '#d1d5db',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontFamily: 'inherit',
+              fontSize: '0.875rem',
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
+          >
+            <Sparkles className="w-4 h-4" />
+            บันทึก ({selectedTags.length})
+          </button>
+        </div>
+      </div>
+    </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

@@ -52,6 +52,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
         location: storeProduct.distance || 'ทุกสาขา',
         search_volume: 0,
         image: resolveImageUrl(storeProduct.image, getCategoryFallbackImage(storeProduct.category)),
+        gallery: storeProduct.gallery,
         valid_until: storeProduct.validUntil,
         views: storeProduct.likes || 0,
         saves: 0,
@@ -83,6 +84,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
             location: String(data.location || data.distance || 'ทุกสาขา'),
             search_volume: 0,
             image: String(data.image || ''),
+            gallery: Array.isArray(data.gallery) ? data.gallery : undefined,
             valid_until: String(data.valid_until || data.validUntil || new Date(Date.now() + 7 * 86400000).toISOString()),
             views: Number(data.views || data.likes || 0),
             saves: 0,
@@ -238,20 +240,15 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
         </div>
 
         {/* Photo Gallery - Real Photos from Users */}
-        <div className="mb-6">
-          <PhotoGallery
-            photos={[
-              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600',
-              'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600',
-              'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600',
-              'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600',
-              'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600',
-              'https://images.unsplash.com/photo-1547592180-85f173990554?w=600',
-            ]}
-            officialImage={displayImage || `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600`}
-            productName={finalPromo.title}
-          />
-        </div>
+        {finalPromo.gallery && finalPromo.gallery.length > 0 && (
+          <div className="mb-6">
+            <PhotoGallery
+              photos={finalPromo.gallery}
+              officialImage={displayImage || ''}
+              productName={finalPromo.title}
+            />
+          </div>
+        )}
 
         {/* Content */}
         <div className="card p-6 mb-6">

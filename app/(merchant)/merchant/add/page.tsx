@@ -36,19 +36,44 @@ export default function AddProductPage() {
   const [serviceUrl, setServiceUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
-
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   // Handle Image Selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
-      // Convert to Base64 for local storage persistence
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Handle Gallery Images Selection (multiple)
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Limit to 6 gallery images total
+    const remaining = 6 - galleryFiles.length;
+    const newFiles = files.slice(0, remaining);
+
+    setGalleryFiles(prev => [...prev, ...newFiles]);
+
+    newFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setGalleryPreviews(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryFiles(prev => prev.filter((_, i) => i !== index));
+    setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   // Handle Form Submit
@@ -85,10 +110,10 @@ export default function AddProductPage() {
         title,
         description: description || `${title} ลดราคาสุดพิเศษ!`,
         originalPrice: Number(originalPrice),
-        promoPrice: Number(price), // Map price to promoPrice
+        promoPrice: Number(price),
         discount,
-        // Use uploaded image preview or fallback to placeholder
         image: imagePreview || `https://source.unsplash.com/400x300/?${category.toLowerCase()},product`,
+        gallery: galleryPreviews.length > 0 ? galleryPreviews : undefined,
         shopName: user.shopName || user.name || 'ร้านค้าของฉัน',
         shopLogo: user.shopLogo || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.shopName || user.name || 'Shop')}&background=random`,
         category: category,
@@ -110,6 +135,8 @@ export default function AddProductPage() {
       setDescription('');
       setImageFile(null);
       setImagePreview('');
+      setGalleryFiles([]);
+      setGalleryPreviews([]);
       
       // Redirect to stock page to see the product
       setTimeout(() => {
@@ -228,6 +255,60 @@ export default function AddProductPage() {
                   />
                 </label>
               )}
+            </div>
+
+            {/* Gallery Upload Section */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                🖼️ รูปเพิ่มเติม (Gallery) — สูงสุด 6 รูป
+              </label>
+              
+              {/* Gallery Previews */}
+              {galleryPreviews.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  {galleryPreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview}
+                        alt={`Gallery ${index + 1}`}
+                        className="w-full h-28 object-cover rounded-xl border-2 border-gray-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(index)}
+                        className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                      <span className="absolute bottom-1.5 left-1.5 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                        {index + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add Gallery Button */}
+              {galleryPreviews.length < 6 && (
+                <label className="group flex items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 transition bg-gray-50 hover:bg-orange-50">
+                  <div className="flex items-center gap-2 text-gray-500 group-hover:text-orange-500 transition-colors">
+                    <PhotoIcon className="w-6 h-6" />
+                    <span className="text-sm font-medium">
+                      เพิ่มรูป Gallery ({galleryPreviews.length}/6)
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleGalleryChange}
+                  />
+                </label>
+              )}
+              <p className="text-xs text-gray-400 mt-1.5">
+                💡 รูป Gallery จะแสดงในหน้ารายละเอียดสินค้า ช่วยให้ลูกค้าตัดสินใจได้ง่ายขึ้น
+              </p>
             </div>
 
             {/* Product Name */}
