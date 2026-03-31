@@ -37,6 +37,53 @@ interface SupabaseReview {
   images: string[];
   helpful_count: number;
   created_at: string;
+  profiles?: {
+    username: string | null;
+    avatar_url: string | null;
+  }[] | {
+    username: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
+// Avatar fallback: show first letter of name in a colored circle
+const AVATAR_COLORS = [
+  'bg-orange-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500',
+  'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-rose-500',
+];
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function UserAvatar({ name, avatarUrl, size = 48 }: { name: string; avatarUrl?: string | null; size?: number }) {
+  const [imgError, setImgError] = useState(false);
+  const initial = (name || '?').charAt(0).toUpperCase();
+  const colorClass = getAvatarColor(name);
+
+  if (avatarUrl && !imgError) {
+    return (
+      <Image
+        src={avatarUrl}
+        alt={name}
+        width={size}
+        height={size}
+        className="rounded-full border-2 border-white shadow-md object-cover"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${colorClass} rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold`}
+      style={{ width: size, height: size, fontSize: size * 0.4 }}
+    >
+      {initial}
+    </div>
+  );
 }
 
 // ─── Write Review Modal (rendered via Portal) ─────────────────────────────
@@ -228,23 +275,38 @@ export default function Reviews({ productId }: ReviewsProps) {
       try {
         const { data, error } = await supabase
           .from('reviews')
-          .select('*')
+          .select(`
+            id,
+            user_id,
+            rating,
+            comment,
+            images,
+            helpful_count,
+            created_at,
+            profiles:user_id ( username, avatar_url )
+          `)
           .eq('promotion_id', productId)
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          const mapped: Review[] = (data as SupabaseReview[]).map(r => ({
-            id: r.id,
-            userId: r.user_id,
-            userName: user?.name || 'ผู้ใช้งาน',
-            userAvatar: user?.avatar || 'https://i.pravatar.cc/150?img=68',
-            rating: r.rating,
-            isVerifiedBuyer: true,
-            comment: r.comment || '',
-            photos: r.images || [],
-            helpful: r.helpful_count || 0,
-            timestamp: new Date(r.created_at),
-          }));
+          const mapped: Review[] = (data as SupabaseReview[]).map(r => {
+            // profiles can be object or array depending on Supabase join type
+            const profile = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+            const profileName = profile?.username || null;
+            const profileAvatar = profile?.avatar_url || null;
+            return {
+              id: r.id,
+              userId: r.user_id,
+              userName: profileName || 'ผู้ใช้งาน',
+              userAvatar: profileAvatar || '',
+              rating: r.rating,
+              isVerifiedBuyer: true,
+              comment: r.comment || '',
+              photos: r.images || [],
+              helpful: r.helpful_count || 0,
+              timestamp: new Date(r.created_at),
+            };
+          });
           setDbReviews(mapped);
         }
       } catch (e) {
@@ -349,7 +411,7 @@ export default function Reviews({ productId }: ReviewsProps) {
               id: inserted.id,
               userId: sessionUserId,
               userName: user?.name || 'ผู้ใช้งาน',
-              userAvatar: user?.avatar || 'https://i.pravatar.cc/150?img=68',
+              userAvatar: user?.avatar || '',
               rating,
               isVerifiedBuyer: true,
               comment: comment.trim(),
@@ -370,7 +432,7 @@ export default function Reviews({ productId }: ReviewsProps) {
           id: `local-${Date.now()}`,
           userId: user?.id || 'anonymous',
           userName: user?.name || 'ผู้ใช้งาน',
-          userAvatar: user?.avatar || 'https://i.pravatar.cc/150?img=68',
+          userAvatar: user?.avatar || '',
           rating,
           isVerifiedBuyer: false,
           comment: comment.trim(),
@@ -448,12 +510,10 @@ export default function Reviews({ productId }: ReviewsProps) {
             {displayedReviews.map((review) => (
               <div key={review.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                 <div className="flex items-start gap-3 mb-3">
-                  <Image
-                    src={review.userAvatar}
-                    alt={review.userName}
-                    width={48}
-                    height={48}
-                    className="rounded-full border-2 border-white shadow-md"
+                  <UserAvatar
+                    name={review.userName}
+                    avatarUrl={review.userAvatar}
+                    size={48}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
