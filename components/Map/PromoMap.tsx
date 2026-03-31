@@ -54,6 +54,19 @@ const userIcon = L.icon({
   iconAnchor: [12, 12],
 });
 
+// Sub-component to invalidate map size after mount (fixes blank tiles)
+function InvalidateSize() {
+  const map = useMap();
+  useEffect(() => {
+    // Leaflet needs a size invalidation when rendered in dynamic containers
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+}
+
 // Sub-component to recenter map
 function RecenterButton({ position }: { position: [number, number] | null }) {
   const map = useMap();
@@ -134,6 +147,9 @@ export default function PromoMap({ stores, activeFilters, onStoreClick }: PromoM
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {/* Fix: invalidate size after mount */}
+        <InvalidateSize />
 
         {/* User location */}
         {userLocation && (

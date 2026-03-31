@@ -568,11 +568,14 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
 
-  // ── Google Maps loader ──
-  const { isLoaded: isMapsLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
+  // ── Google Maps loader (skip if no API key to avoid NoApiKeys warning) ──
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  const { isLoaded: _isMapsLoaded } = useLoadScript({
+    googleMapsApiKey,
     libraries: GOOGLE_MAPS_LIBS,
   });
+  // Only consider maps loaded if we actually have an API key
+  const isMapsLoaded = googleMapsApiKey ? _isMapsLoaded : false;
 
   // — Mutable feed arrays —
   const [extraBrandItems, setExtraBrandItems] = useState<FeedItem[]>([]);

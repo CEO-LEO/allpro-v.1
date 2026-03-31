@@ -57,20 +57,22 @@ export default function MapPage() {
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 relative" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="flex-1 relative" style={{ height: 'calc(100vh - 200px)', minHeight: '400px' }}>
         {/* Filter Bar */}
         <FilterBar 
           activeFilters={activeFilters}
           onFilterChange={setActiveFilters}
         />
         
-        <PromoMap 
-          stores={mockStores} 
-          activeFilters={activeFilters}
-          onStoreClick={(store) => {
-            setSelectedStore(store);
-          }}
-        />
+        <div className="absolute inset-0">
+          <PromoMap 
+            stores={mockStores} 
+            activeFilters={activeFilters}
+            onStoreClick={(store) => {
+              setSelectedStore(store);
+            }}
+          />
+        </div>
       </div>
 
       {/* Store Bottom Sheet */}
