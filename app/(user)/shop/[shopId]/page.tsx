@@ -95,26 +95,29 @@ export default function PublicShopPage() {
                 .eq('shop_name', decodedName);
 
               if (dbProducts && dbProducts.length > 0) {
-                const asProducts: Product[] = dbProducts.map((p: Record<string, unknown>) => ({
-                  id: p.id as string,
-                  title: p.title as string,
-                  description: (p.description as string) || '',
-                  originalPrice: Number(p.original_price) || Number(p.price) || 0,
-                  promoPrice: Number(p.price) || 0,
-                  discount: Number(p.discount) || 0,
-                  image: (p.image as string) || '',
-                  shopName: (p.shop_name as string) || decodedName,
-                  category: ((p.category as string) || 'Other') as Product['category'],
-                  verified: true,
-                  likes: Number(p.likes) || 0,
-                  isLiked: false,
-                  reviews: Number(p.reviews) || 0,
-                  rating: Number(p.rating) || 0,
-                  distance: (p.distance as string) || '',
-                  validUntil: '',
-                  createdAt: (p.created_at as string) || '',
-                  tags: [],
-                }));
+                const asProducts: Product[] = dbProducts.map((p: Record<string, unknown>) => {
+                  const cat = ((p.category as string) || 'Other') as Product['category'];
+                  return {
+                    id: p.id as string,
+                    title: p.title as string,
+                    description: (p.description as string) || '',
+                    originalPrice: Number(p.original_price) || Number(p.price) || 0,
+                    promoPrice: Number(p.price) || 0,
+                    discount: Number(p.discount) || 0,
+                    image: resolveImageUrl(p.image as string, getCategoryFallbackImage(cat)),
+                    shopName: (p.shop_name as string) || decodedName,
+                    category: cat,
+                    verified: true,
+                    likes: Number(p.likes) || 0,
+                    isLiked: false,
+                    reviews: Number(p.reviews) || 0,
+                    rating: Number(p.rating) || 0,
+                    distance: (p.distance as string) || '',
+                    validUntil: '',
+                    createdAt: (p.created_at as string) || '',
+                    tags: [],
+                  };
+                });
                 setApiProducts(asProducts);
               }
 
@@ -168,18 +171,20 @@ export default function PublicShopPage() {
         if (staticMatching.length > 0) {
           const first = staticMatching[0];
           // Convert static promos to Product-like objects for shopProducts
-          const asProducts: Product[] = staticMatching.map(p => ({
-            id: p.id,
-            title: p.title,
-            description: p.description,
-            originalPrice: p.price,
-            promoPrice: Math.round(p.price * (1 - p.discount_rate / 100)),
-            discount: p.discount_rate,
-            image: p.image || '',
-            shopName: p.shop_name,
-            category: (p.category || 'Other') as Product['category'],
-            verified: p.is_verified,
-            likes: p.views || 0,
+          const asProducts: Product[] = staticMatching.map(p => {
+            const cat = (p.category || 'Other') as Product['category'];
+            return {
+              id: p.id,
+              title: p.title,
+              description: p.description,
+              originalPrice: p.price,
+              promoPrice: Math.round(p.price * (1 - p.discount_rate / 100)),
+              discount: p.discount_rate,
+              image: resolveImageUrl(p.image, getCategoryFallbackImage(cat)),
+              shopName: p.shop_name,
+              category: cat,
+              verified: p.is_verified,
+              likes: p.views || 0,
             isLiked: false,
             reviews: 0,
             rating: 0,
@@ -187,7 +192,8 @@ export default function PublicShopPage() {
             validUntil: p.valid_until || '',
             createdAt: '',
             tags: p.tags || [],
-          }));
+            };
+          });
           setApiProducts(asProducts);
 
           setShopInfo({
