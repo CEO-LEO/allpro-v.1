@@ -52,6 +52,7 @@ function WriteReviewModal({
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -63,12 +64,13 @@ function WriteReviewModal({
   }, []);
 
   const handleSubmit = () => {
+    setValidationError(null);
     if (rating === 0) {
-      toast.error('กรุณาให้คะแนน');
+      setValidationError('กรุณาให้คะแนนดาว');
       return;
     }
     if (comment.trim().length < 10) {
-      toast.error('กรุณาเขียนรีวิวอย่างน้อย 10 ตัวอักษร');
+      setValidationError(`กรุณาเขียนรีวิวอย่างน้อย 10 ตัวอักษร (ตอนนี้ ${comment.trim().length} ตัวอักษร)`);
       return;
     }
     onSubmit(rating, comment);
@@ -134,10 +136,17 @@ function WriteReviewModal({
               rows={5}
               style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #e5e7eb', borderRadius: '0.75rem', fontSize: '0.875rem', resize: 'none', outline: 'none', fontFamily: 'inherit' }}
             />
-            <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-              {comment.length} ตัวอักษร
+            <p style={{ fontSize: '0.75rem', color: comment.trim().length >= 10 ? '#22c55e' : '#9ca3af', marginTop: '0.25rem' }}>
+              {comment.trim().length}/10 ตัวอักษร {comment.trim().length >= 10 ? '✓' : ''}
             </p>
           </div>
+
+          {/* Inline Validation Error */}
+          {validationError && (
+            <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', color: '#dc2626', fontSize: '0.875rem', fontWeight: 500 }}>
+              ⚠️ {validationError}
+            </div>
+          )}
 
           {/* Submit */}
           <button
@@ -257,23 +266,20 @@ export default function Reviews({ productId }: ReviewsProps) {
     }
   };
 
-  const handleSubmitReview = async (rating: number, comment: string) => {
-    // ── 1. ตรวจสอบว่ามี user จาก Zustand store หรือไม่ ──
-    if (!user) {
-      console.warn('[Reviews] handleSubmitReview — user is null in useAuthStore');
-      toast.error('กรุณาเข้าสู่ระบบก่อนเขียนรีวิว');
-      return;
-    }
+  // Check if current user already has a review for this product
+  const userAlreadyReviewed = user
+    ? allReviews.some(r => r.userId === user.id)
+    : false;
 
-    console.log('[Reviews] Submitting review — user:', user.id, 'product:', productId, 'rating:', rating);
+  const handleSubmitReview = async (rating: number, comment: string) => {
+    console.log('[Reviews] Submitting review — user:', user?.id ?? 'anonymous', 'product:', productId, 'rating:', rating);
     setIsSubmitting(true);
 
     try {
       let savedToDb = false;
 
-      // ── 2. ลอง save ลง Supabase (ถ้ามี session จริง) ──
+      // ── 1. ลอง save ลง Supabase (ถ้ามี session จริง) ──
       if (isSupabaseConfigured) {
-        // เช็ก Supabase session จริงก่อน (ไม่ใช่แค่ Zustand)
         let sessionUserId: string | null = null;
         try {
           const { data: { session } } = await supabase.auth.getSession();
@@ -289,7 +295,7 @@ export default function Reviews({ productId }: ReviewsProps) {
             .from('reviews')
             .insert({
               user_id: sessionUserId,
-              promotion_id: productId,
+              promotion_id: productId,  // Now TEXT column — works with any ID format
               rating,
               comment: comment.trim(),
               images: [],
@@ -298,6 +304,12 @@ export default function Reviews({ productId }: ReviewsProps) {
             .single();
 
           if (error) {
+            // Check for duplicate review (unique constraint violation)
+            if (error.code === '23505') {
+              toast.error('คุณเขียนรีวิวสินค้านี้ไปแล้ว');
+              setShowWriteReview(false);
+              return;
+            }
             console.error('[Reviews] Supabase insert error:', error.message, error.details, error.hint);
             // ไม่ return — จะ fallback เป็น local save
           } else if (inserted) {
@@ -306,8 +318,8 @@ export default function Reviews({ productId }: ReviewsProps) {
             const newReview: Review = {
               id: inserted.id,
               userId: sessionUserId,
-              userName: user.name || 'ผู้ใช้งาน',
-              userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=68',
+              userName: user?.name || 'ผู้ใช้งาน',
+              userAvatar: user?.avatar || 'https://i.pravatar.cc/150?img=68',
               rating,
               isVerifiedBuyer: true,
               comment: comment.trim(),
@@ -322,13 +334,13 @@ export default function Reviews({ productId }: ReviewsProps) {
         }
       }
 
-      // ── 3. ถ้ายังไม่ได้ save ลง DB → เพิ่มใน local state เลย ──
+      // ── 2. ถ้ายังไม่ได้ save ลง DB → เพิ่มใน local state ──
       if (!savedToDb) {
         const localReview: Review = {
           id: `local-${Date.now()}`,
-          userId: user.id,
-          userName: user.name || 'ผู้ใช้งาน',
-          userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=68',
+          userId: user?.id || 'anonymous',
+          userName: user?.name || 'ผู้ใช้งาน',
+          userAvatar: user?.avatar || 'https://i.pravatar.cc/150?img=68',
           rating,
           isVerifiedBuyer: false,
           comment: comment.trim(),
@@ -340,7 +352,7 @@ export default function Reviews({ productId }: ReviewsProps) {
         console.log('[Reviews] Saved locally:', localReview.id);
       }
 
-      // ── 4. สำเร็จ → ให้ points + ปิด modal ──
+      // ── 3. สำเร็จ → ให้ points + ปิด modal ──
       addPoints(10, 'เขียนรีวิวครั้งแรก', '✍️');
       toast.success('ส่งรีวิวสำเร็จ! +10 Points', { icon: '✍️', duration: 4000 });
       setShowWriteReview(false);
@@ -385,7 +397,12 @@ export default function Reviews({ productId }: ReviewsProps) {
                 <span className="text-gray-500 text-sm">({allReviews.length} รีวิว)</span>
               </div>
             </div>
-            {canUserReview(productId) && (
+            {userAlreadyReviewed ? (
+              <span className="text-green-600 text-sm font-semibold flex items-center gap-1">
+                <CheckCircle className="w-4 h-4" />
+                รีวิวแล้ว
+              </span>
+            ) : canUserReview(productId) && (
               <button
                 type="button"
                 onClick={() => setShowWriteReview(true)}

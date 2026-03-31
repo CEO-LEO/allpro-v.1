@@ -296,10 +296,15 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       }
     } catch (err) {
       console.error('[Login] Error:', err);
-      if (err instanceof Error && err.message === 'TIMEOUT') {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg === 'TIMEOUT') {
         setError('เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่ หรือใช้โหมดทดลอง');
       } else {
-        setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+        setError('เกิดข้อผิดพลาด: ' + errMsg);
+      }
+      // Show alert for debugging on legacy devices
+      if (typeof alert === 'function') {
+        alert('[Login Error] ' + errMsg);
       }
     } finally {
       console.log('[Login] Finally — setIsLoading(false)');

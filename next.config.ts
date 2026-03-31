@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
   experimental: {
     turbopackUseSystemTlsCerts: true,
   },
+  // Transpile packages that ship modern JS (optional chaining, ??, etc.)
+  transpilePackages: [
+    '@supabase/supabase-js',
+    '@supabase/ssr',
+    'zustand',
+  ],
   env: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || '',
   },

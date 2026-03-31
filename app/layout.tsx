@@ -6,6 +6,7 @@ import { FlashSaleProvider } from '@/lib/flashSaleContext'
 import GameificationEventListener from '@/components/Common/GameificationEventListener'
 import AuthListener from '@/components/Auth/AuthListener'
 import { Toaster } from 'sonner'
+import Script from 'next/script'
 
 const kanit = Kanit({
   subsets: ['thai', 'latin'],
@@ -67,6 +68,7 @@ export default function RootLayout({
   return (
     <html lang="th" className={`${kanit.variable} scroll-smooth`}>
       <head>
+        <Script src="/polyfills.js" strategy="beforeInteractive" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
