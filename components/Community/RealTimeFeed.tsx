@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Copy,
   Check,
+  PenLine,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useLoadScript } from '@react-google-maps/api';
@@ -817,13 +818,9 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
           onClick={openModal}
           className="mx-4 mb-6 w-[calc(100%-2rem)] bg-white border-2 border-dashed border-gray-300 rounded-2xl p-4 hover:border-orange-400 hover:bg-orange-50/30 transition-all flex items-center gap-3"
         >
-          <Image
-            src="https://i.pravatar.cc/150?img=68"
-            alt="You"
-            width={40}
-            height={40}
-            className="rounded-full ring-2 ring-orange-200 flex-shrink-0"
-          />
+          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 ring-2 ring-orange-200">
+            <PenLine className="w-5 h-5 text-orange-500" />
+          </div>
           <span className="text-gray-400 text-[15px]">แชร์ดีลดีๆ ที่เจอ...</span>
         </button>
 
