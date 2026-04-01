@@ -21,7 +21,6 @@ import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import BranchAvailability from '@/components/BranchAvailability';
 import PriceHistory from '@/components/Product/PriceHistory';
 import NotifyButton from '@/components/Product/NotifyButton';
-import PartyList from '@/components/Product/PartyList';
 import PhotoGallery from '@/components/Product/PhotoGallery';
 import WorthItMeter from '@/components/Product/WorthItMeter';
 import Reviews from '@/components/Product/Reviews';
@@ -418,14 +417,6 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
             </div>
           </div>
         </div>
-
-        {/* Party Finder - Group Buying */}
-        <PartyList
-          productId={finalPromo.id}
-          productName={finalPromo.title}
-          dealType={finalPromo.description}
-          discount={finalPromo.discount_rate}
-        />
 
         {/* Worth It Meter - Quick Voting */}
         <div className="mb-6">
