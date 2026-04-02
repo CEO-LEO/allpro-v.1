@@ -175,6 +175,7 @@ async function sharePost(item: FeedItem) {
 
 // ─── Single Post Row ────────────────────────────────────────────────────────
 function PostRow({ item }: { item: FeedItem }) {
+  const user = useAuthStore((s) => s.user);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(item.likes);
   const [reposted, setReposted] = useState(false);
@@ -186,7 +187,13 @@ function PostRow({ item }: { item: FeedItem }) {
   const [commentText, setCommentText] = useState('');
   const [commentsList, setCommentsList] = useState<CommentItem[]>([]);
   const [commentCount, setCommentCount] = useState(item.comments);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
   const commentRef = useRef<HTMLInputElement>(null);
+
+  // Current user info
+  const currentUserName = user?.name || 'Anonymous';
+  const currentUserAvatar = user?.avatar || '';
+  const currentUsername = user?.email?.split('@')[0] || 'user';
 
   const handleLike = () => {
     setLiked(!liked);
@@ -206,28 +213,86 @@ function PostRow({ item }: { item: FeedItem }) {
     }
   };
 
-  const handleComment = () => {
-    setShowComments(!showComments);
-    if (!showComments) {
+  const handleComment = async () => {
+    const opening = !showComments;
+    setShowComments(opening);
+    if (opening) {
       setTimeout(() => commentRef.current?.focus(), 100);
+      // Load comments from DB if not loaded yet
+      if (!commentsLoaded && isSupabaseConfigured) {
+        try {
+          const res = await fetch(`/api/community-posts/comments?post_id=${item.id}`);
+          const json = await res.json();
+          if (json.comments && Array.isArray(json.comments)) {
+            const loaded: CommentItem[] = json.comments.map((c: Record<string, unknown>) => ({
+              id: c.id as string,
+              author: c.display_name as string || 'Anonymous',
+              avatar: c.avatar_url as string || '',
+              text: c.content as string,
+              timeAgo: formatTimeAgo(c.created_at as string),
+            }));
+            setCommentsList(loaded);
+            setCommentCount(Math.max(loaded.length, item.comments));
+          }
+        } catch (e) {
+          console.error('Failed to load comments:', e);
+        }
+        setCommentsLoaded(true);
+      }
     }
   };
 
-  const submitComment = () => {
+  const submitComment = async () => {
     const text = commentText.trim();
     if (!text) return;
-    setCommentsList((prev) => [
-      ...prev,
-      {
-        id: `cmt-${Date.now()}`,
-        author: 'You',
-        avatar: 'https://i.pravatar.cc/150?img=68',
-        text,
-        timeAgo: 'เมื่อกี้',
-      },
-    ]);
+
+    // Optimistic: add to local list immediately
+    const tempComment: CommentItem = {
+      id: `cmt-${Date.now()}`,
+      author: currentUserName,
+      avatar: currentUserAvatar,
+      text,
+      timeAgo: 'เมื่อกี้',
+    };
+    setCommentsList((prev) => [...prev, tempComment]);
     setCommentCount((c) => c + 1);
     setCommentText('');
+
+    // Save to DB if possible
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const res = await fetch('/api/community-posts/comments', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              post_id: item.id,
+              content: text,
+              display_name: currentUserName,
+              username: currentUsername,
+              avatar_url: currentUserAvatar || null,
+            }),
+          });
+          const json = await res.json();
+          if (json.comment) {
+            // Replace temp with real comment
+            setCommentsList((prev) =>
+              prev.map((c) =>
+                c.id === tempComment.id
+                  ? { ...c, id: json.comment.id }
+                  : c
+              )
+            );
+          }
+        }
+      } catch (e) {
+        console.error('Failed to save comment:', e);
+      }
+    }
   };
 
   return (
@@ -235,13 +300,19 @@ function PostRow({ item }: { item: FeedItem }) {
       <div className="flex gap-3 px-4 py-4">
         {/* Avatar */}
         <div className="flex-shrink-0 pt-0.5">
-          <Image
-            src={item.avatar}
-            alt={item.displayName}
-            width={46}
-            height={46}
-            className="rounded-full ring-2 ring-white shadow-sm"
-          />
+          {item.avatar ? (
+            <Image
+              src={item.avatar}
+              alt={item.displayName}
+              width={46}
+              height={46}
+              className="rounded-full ring-2 ring-white shadow-sm"
+            />
+          ) : (
+            <div className="w-[46px] h-[46px] rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-lg ring-2 ring-white shadow-sm">
+              {(item.displayName || '?').charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
 
         {/* Right side */}
@@ -374,7 +445,13 @@ function PostRow({ item }: { item: FeedItem }) {
             <div className="space-y-3 mb-3">
               {commentsList.map((cmt) => (
                 <div key={cmt.id} className="flex gap-2.5">
-                  <Image src={cmt.avatar} alt={cmt.author} width={28} height={28} className="rounded-full flex-shrink-0" />
+                  {cmt.avatar ? (
+                    <Image src={cmt.avatar} alt={cmt.author} width={28} height={28} className="rounded-full flex-shrink-0" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      {(cmt.author || '?').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="bg-gray-100 rounded-2xl px-3.5 py-2 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-gray-800">{cmt.author}</span>
@@ -389,13 +466,19 @@ function PostRow({ item }: { item: FeedItem }) {
 
           {/* Comment input */}
           <div className="flex gap-2.5 items-center">
-            <Image
-              src="https://i.pravatar.cc/150?img=68"
-              alt="You"
-              width={28}
-              height={28}
-              className="rounded-full flex-shrink-0"
-            />
+            {currentUserAvatar ? (
+              <Image
+                src={currentUserAvatar}
+                alt={currentUserName}
+                width={28}
+                height={28}
+                className="rounded-full flex-shrink-0"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                {currentUserName.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
               <input
                 ref={commentRef}
@@ -596,7 +679,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
           id: p.id as string,
           displayName: p.display_name as string || 'Anonymous',
           username: p.username as string || 'user',
-          avatar: p.avatar_url as string || 'https://i.pravatar.cc/150?img=68',
+          avatar: p.avatar_url as string || '',
           verified: false,
           timeAgo: formatTimeAgo(p.created_at as string),
           content: p.content as string,
@@ -714,7 +797,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
         id: `new-${Date.now()}`,
         displayName: user?.name || 'You',
         username: user?.email?.split('@')[0] || 'hunter_you',
-        avatar: user?.avatar || 'https://i.pravatar.cc/150?img=68',
+        avatar: user?.avatar || '',
         verified: false,
         timeAgo: 'เมื่อกี้',
         content: modalText.trim(),
@@ -873,13 +956,19 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
             <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
               {/* Author row */}
               <div className="flex items-center gap-3">
-                <Image
-                  src="https://i.pravatar.cc/150?img=68"
-                  alt="You"
-                  width={40}
-                  height={40}
-                  className="rounded-full ring-2 ring-orange-200"
-                />
+                {user?.avatar ? (
+                  <Image
+                    src={user.avatar}
+                    alt={user?.name || 'You'}
+                    width={40}
+                    height={40}
+                    className="rounded-full ring-2 ring-orange-200"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold ring-2 ring-orange-200">
+                    {(user?.name || 'A').charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <p className="font-bold text-gray-900 text-sm">You</p>
                   <p className="text-xs text-gray-400">@hunter_you</p>

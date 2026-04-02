@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         .upload(filePath, buffer, {
           contentType: imageFile.type,
           upsert: false,
+          cacheControl: '60',
         });
 
       if (uploadError) {
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
         const buf = Buffer.from(await gFile.arrayBuffer());
         const { error: gErr } = await supabase.storage
           .from('promotions')
-          .upload(gPath, buf, { contentType: gFile.type, upsert: false });
+          .upload(gPath, buf, { contentType: gFile.type, upsert: false, cacheControl: '60' });
         if (!gErr) {
           galleryPaths.push(gPath);
         } else {

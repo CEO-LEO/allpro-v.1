@@ -1,14 +1,61 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useAppStore } from '@/store/useAppStore';
-import { X, Clock } from 'lucide-react';
+import { useProductStore } from '@/store/useProductStore';
+import { getPromotionById } from '@/lib/getPromotions';
+import { X, Clock, Loader2 } from 'lucide-react';
+
+interface CouponProduct {
+  id: string;
+  shopName: string;
+  title: string;
+}
 
 export default function UseCouponPage() {
   const router = useRouter();
   const { id } = useParams();
-  const product = useAppStore((state) => state.getProductById(id as string));
+  const decodedId = decodeURIComponent(id as string);
+  const [product, setProduct] = useState<CouponProduct | null>(null);
+  const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 นาที
+  const [refCode] = useState(() => `${Math.floor(1000 + Math.random() * 9000)}`);
+
+  // Find product from multiple sources
+  useEffect(() => {
+    async function findProduct() {
+      // Source 1: Zustand product store
+      const storeProduct = useProductStore.getState().products.find(p => p.id === decodedId);
+      if (storeProduct) {
+        setProduct({ id: storeProduct.id, shopName: storeProduct.shopName, title: storeProduct.title });
+        setLoading(false);
+        return;
+      }
+
+      // Source 2: Static promotions
+      const staticPromo = getPromotionById(decodedId);
+      if (staticPromo) {
+        setProduct({ id: staticPromo.id, shopName: staticPromo.shop_name, title: staticPromo.title });
+        setLoading(false);
+        return;
+      }
+
+      // Source 3: API fallback
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(decodedId)}`);
+        const json = await res.json();
+        if (json.data) {
+          setProduct({
+            id: String(json.data.id),
+            shopName: String(json.data.shop_name || json.data.shopName || 'ร้านค้า'),
+            title: String(json.data.title || ''),
+          });
+        }
+      } catch {}
+
+      setLoading(false);
+    }
+    findProduct();
+  }, [decodedId]);
 
   // นับถอยหลัง
   useEffect(() => {
@@ -25,7 +72,22 @@ export default function UseCouponPage() {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  if (!product) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-white/70 mb-4">ไม่พบคูปองนี้</p>
+        <button onClick={() => router.push('/wallet')} className="text-orange-400 underline">กลับกระเป๋า</button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 relative">
@@ -61,7 +123,7 @@ export default function UseCouponPage() {
              </div>
           </div>
           
-          <p className="text-slate-400 text-sm mt-4">รหัสอ้างอิง: {product.id.toUpperCase()}-{Math.floor(Math.random() * 9999)}</p>
+          <p className="text-slate-400 text-sm mt-4">รหัสอ้างอิง: {product.id.slice(0, 8).toUpperCase()}-{refCode}</p>
         </div>
 
         {/* Timer Bar */}
