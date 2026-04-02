@@ -1,7 +1,12 @@
--- Table: community_comments
--- Stores comments on community posts
--- NOTE: post_id is TEXT to support both UUID (DB posts) and string (mock posts)
-CREATE TABLE IF NOT EXISTS community_comments (
+-- ============================================
+-- DROP & RECREATE community_comments
+-- (table is empty so safe to drop)
+-- ============================================
+DROP TRIGGER IF EXISTS trg_update_comment_count ON community_comments;
+DROP TABLE IF EXISTS community_comments;
+
+-- Recreate with post_id as TEXT (supports UUID + mock IDs)
+CREATE TABLE community_comments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   post_id TEXT NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
