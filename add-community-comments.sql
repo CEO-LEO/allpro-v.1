@@ -1,8 +1,9 @@
 -- Table: community_comments
 -- Stores comments on community posts
+-- NOTE: post_id is TEXT to support both UUID (DB posts) and string (mock posts)
 CREATE TABLE IF NOT EXISTS community_comments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  post_id UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
+  post_id TEXT NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   display_name TEXT NOT NULL DEFAULT 'Anonymous',
   username TEXT NOT NULL DEFAULT 'user',
@@ -33,14 +34,14 @@ CREATE POLICY "Users can delete own comments"
   ON community_comments FOR DELETE
   USING (auth.uid() = user_id);
 
--- Update community_posts comment count via trigger
+-- Update community_posts comment count via trigger (only for UUID post_ids)
 CREATE OR REPLACE FUNCTION update_post_comment_count()
 RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    UPDATE community_posts SET comments = comments + 1 WHERE id = NEW.post_id;
+    UPDATE community_posts SET comments = comments + 1 WHERE id::TEXT = NEW.post_id;
   ELSIF TG_OP = 'DELETE' THEN
-    UPDATE community_posts SET comments = GREATEST(0, comments - 1) WHERE id = OLD.post_id;
+    UPDATE community_posts SET comments = GREATEST(0, comments - 1) WHERE id::TEXT = OLD.post_id;
   END IF;
   RETURN NULL;
 END;

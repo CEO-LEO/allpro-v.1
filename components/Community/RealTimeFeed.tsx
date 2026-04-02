@@ -213,52 +213,85 @@ function PostRow({ item }: { item: FeedItem }) {
     }
   };
 
+  // localStorage key for this post's comments
+  const storageKey = `comments_${item.id}`;
+
+  // Load saved comments on first expand
   const handleComment = async () => {
     const opening = !showComments;
     setShowComments(opening);
     if (opening) {
       setTimeout(() => commentRef.current?.focus(), 100);
-      // Load comments from DB if not loaded yet
-      if (!commentsLoaded && isSupabaseConfigured) {
-        try {
-          const res = await fetch(`/api/community-posts/comments?post_id=${item.id}`);
-          const json = await res.json();
-          if (json.comments && Array.isArray(json.comments)) {
-            const loaded: CommentItem[] = json.comments.map((c: Record<string, unknown>) => ({
-              id: c.id as string,
-              author: c.display_name as string || 'Anonymous',
-              avatar: c.avatar_url as string || '',
-              text: c.content as string,
-              timeAgo: formatTimeAgo(c.created_at as string),
-            }));
-            setCommentsList(loaded);
-            setCommentCount(Math.max(loaded.length, item.comments));
+      if (!commentsLoaded) {
+        let loaded: CommentItem[] = [];
+
+        // 1. Try loading from DB
+        if (isSupabaseConfigured) {
+          try {
+            const res = await fetch(`/api/community-posts/comments?post_id=${item.id}`);
+            const json = await res.json();
+            if (json.comments && Array.isArray(json.comments) && json.comments.length > 0) {
+              loaded = json.comments.map((c: Record<string, unknown>) => ({
+                id: c.id as string,
+                author: c.display_name as string || 'Anonymous',
+                avatar: c.avatar_url as string || '',
+                text: c.content as string,
+                timeAgo: formatTimeAgo(c.created_at as string),
+              }));
+            }
+          } catch (e) {
+            console.error('Failed to load comments from DB:', e);
           }
-        } catch (e) {
-          console.error('Failed to load comments:', e);
+        }
+
+        // 2. If DB returned nothing, load from localStorage
+        if (loaded.length === 0) {
+          try {
+            const stored = localStorage.getItem(storageKey);
+            if (stored) {
+              loaded = JSON.parse(stored) as CommentItem[];
+            }
+          } catch {}
+        }
+
+        if (loaded.length > 0) {
+          setCommentsList(loaded);
+          setCommentCount(Math.max(loaded.length, item.comments));
         }
         setCommentsLoaded(true);
       }
     }
   };
 
+  // Save comments to localStorage
+  const saveToLocalStorage = (comments: CommentItem[]) => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(comments));
+    } catch {}
+  };
+
   const submitComment = async () => {
     const text = commentText.trim();
     if (!text) return;
 
-    // Optimistic: add to local list immediately
-    const tempComment: CommentItem = {
+    const newComment: CommentItem = {
       id: `cmt-${Date.now()}`,
       author: currentUserName,
       avatar: currentUserAvatar,
       text,
       timeAgo: 'เมื่อกี้',
     };
-    setCommentsList((prev) => [...prev, tempComment]);
+
+    // Update UI immediately
+    const updatedList = [...commentsList, newComment];
+    setCommentsList(updatedList);
     setCommentCount((c) => c + 1);
     setCommentText('');
 
-    // Save to DB if possible
+    // Always save to localStorage (guaranteed persistence)
+    saveToLocalStorage(updatedList);
+
+    // Also try to save to DB (bonus — not required for persistence)
     if (isSupabaseConfigured) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -279,18 +312,15 @@ function PostRow({ item }: { item: FeedItem }) {
           });
           const json = await res.json();
           if (json.comment) {
-            // Replace temp with real comment
             setCommentsList((prev) =>
               prev.map((c) =>
-                c.id === tempComment.id
-                  ? { ...c, id: json.comment.id }
-                  : c
+                c.id === newComment.id ? { ...c, id: json.comment.id } : c
               )
             );
           }
         }
       } catch (e) {
-        console.error('Failed to save comment:', e);
+        console.error('DB comment save failed (localStorage OK):', e);
       }
     }
   };
