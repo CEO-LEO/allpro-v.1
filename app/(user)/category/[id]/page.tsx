@@ -8,6 +8,7 @@ import { ArrowLeftIcon, StarIcon, MapPinIcon, CalendarIcon } from '@heroicons/re
 import { useProductStore, type Product } from '@/store/useProductStore';
 import { getPromotions } from '@/lib/getPromotions';
 import { Promotion } from '@/lib/types';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import {
   ShoppingBagIcon,
   CakeIcon,
@@ -330,13 +331,18 @@ export default function CategoryDetailPage() {
                         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg transition-all group">
                           {/* Image */}
                           <div className="relative h-44 bg-gradient-to-br from-orange-50 to-red-50 overflow-hidden">
-                            {promo.image ? (
-                              <img src={promo.image} alt={promo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <ShoppingBagIcon className="w-16 h-16 text-gray-300" />
-                              </div>
-                            )}
+                            <img
+                              src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))}
+                              alt={promo.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                if (!target.dataset.fallback) {
+                                  target.dataset.fallback = '1';
+                                  target.src = getCategoryFallbackImage(promo.category);
+                                }
+                              }}
+                            />
                             {promo.discount_rate > 0 && (
                               <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
                                 -{promo.discount_rate}%
