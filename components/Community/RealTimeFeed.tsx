@@ -181,6 +181,7 @@ function PostRow({ item }: { item: FeedItem }) {
   const [reposted, setReposted] = useState(false);
   const [repostCount, setRepostCount] = useState(item.reposts);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Comments
   const [showComments, setShowComments] = useState(false);
@@ -188,6 +189,7 @@ function PostRow({ item }: { item: FeedItem }) {
   const [commentsList, setCommentsList] = useState<CommentItem[]>([]);
   const [commentCount, setCommentCount] = useState(item.comments);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [latestComment, setLatestComment] = useState<CommentItem | null>(null);
   const commentRef = useRef<HTMLInputElement>(null);
 
   // Current user info
@@ -195,9 +197,112 @@ function PostRow({ item }: { item: FeedItem }) {
   const currentUserAvatar = user?.avatar || '';
   const currentUsername = user?.email?.split('@')[0] || 'user';
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount((c) => (liked ? c - 1 : c + 1));
+  // ── Preload comment count + latest comment on mount ──
+  useEffect(() => {
+    let cancelled = false;
+    const loadPreview = async () => {
+      // Try DB first
+      if (isSupabaseConfigured) {
+        try {
+          const res = await fetch(`/api/community-posts/comments?post_id=${item.id}`);
+          const json = await res.json();
+          if (!cancelled && json.comments && Array.isArray(json.comments)) {
+            const dbComments: CommentItem[] = json.comments.map((c: Record<string, unknown>) => ({
+              id: c.id as string,
+              author: c.display_name as string || 'Anonymous',
+              avatar: c.avatar_url as string || '',
+              text: c.content as string,
+              timeAgo: formatTimeAgo(c.created_at as string),
+            }));
+            if (dbComments.length > 0) {
+              setCommentCount(dbComments.length);
+              setLatestComment(dbComments[dbComments.length - 1]);
+              setCommentsList(dbComments);
+              setCommentsLoaded(true);
+              return;
+            }
+          }
+        } catch {}
+      }
+      // Fallback: localStorage
+      try {
+        const stored = localStorage.getItem(`comments_${item.id}`);
+        if (!cancelled && stored) {
+          const parsed = JSON.parse(stored) as CommentItem[];
+          if (parsed.length > 0) {
+            setCommentCount(Math.max(parsed.length, item.comments));
+            setLatestComment(parsed[parsed.length - 1]);
+            setCommentsList(parsed);
+            setCommentsLoaded(true);
+          }
+        }
+      } catch {}
+    };
+    loadPreview();
+    return () => { cancelled = true; };
+  }, [item.id, item.comments]);
+
+  // ── Preload like status on mount ──
+  useEffect(() => {
+    let cancelled = false;
+    const loadLikeStatus = async () => {
+      if (!isSupabaseConfigured) return;
+      try {
+        const headers: Record<string, string> = {};
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        const res = await fetch(`/api/community-posts/likes?post_id=${item.id}`, { headers });
+        const json = await res.json();
+        if (!cancelled) {
+          if (typeof json.count === 'number') setLikeCount(json.count);
+          if (json.liked) setLiked(true);
+        }
+      } catch {}
+    };
+    loadLikeStatus();
+    return () => { cancelled = true; };
+  }, [item.id]);
+
+  const handleLike = async () => {
+    // Optimistic UI
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount((c) => (wasLiked ? c - 1 : c + 1));
+
+    // Persist to Supabase
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          // Not logged in — revert
+          setLiked(wasLiked);
+          setLikeCount((c) => (wasLiked ? c + 1 : c - 1));
+          setToastMsg('กรุณาล็อกอินก่อนกดไลก์');
+          setTimeout(() => setToastMsg(null), 2500);
+          return;
+        }
+        const res = await fetch('/api/community-posts/likes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ post_id: item.id }),
+        });
+        const json = await res.json();
+        if (json.error) {
+          // Revert on error
+          setLiked(wasLiked);
+          setLikeCount((c) => (wasLiked ? c + 1 : c - 1));
+        }
+      } catch {
+        // Revert on network error
+        setLiked(wasLiked);
+        setLikeCount((c) => (wasLiked ? c + 1 : c - 1));
+      }
+    }
   };
 
   const handleRepost = () => {
@@ -209,57 +314,23 @@ function PostRow({ item }: { item: FeedItem }) {
     const result = await sharePost(item);
     if (result === 'copied') {
       setShareStatus('copied');
-      setTimeout(() => setShareStatus('idle'), 2000);
+      setToastMsg('📋 คัดลอกลิงก์แล้ว!');
+      setTimeout(() => { setShareStatus('idle'); setToastMsg(null); }, 2500);
+    } else if (result === 'shared') {
+      setToastMsg('✅ แชร์สำเร็จ!');
+      setTimeout(() => setToastMsg(null), 2500);
     }
   };
 
   // localStorage key for this post's comments
   const storageKey = `comments_${item.id}`;
 
-  // Load saved comments on first expand
-  const handleComment = async () => {
+  // Toggle comment section open/close (data already preloaded)
+  const handleComment = () => {
     const opening = !showComments;
     setShowComments(opening);
     if (opening) {
       setTimeout(() => commentRef.current?.focus(), 100);
-      if (!commentsLoaded) {
-        let loaded: CommentItem[] = [];
-
-        // 1. Try loading from DB
-        if (isSupabaseConfigured) {
-          try {
-            const res = await fetch(`/api/community-posts/comments?post_id=${item.id}`);
-            const json = await res.json();
-            if (json.comments && Array.isArray(json.comments) && json.comments.length > 0) {
-              loaded = json.comments.map((c: Record<string, unknown>) => ({
-                id: c.id as string,
-                author: c.display_name as string || 'Anonymous',
-                avatar: c.avatar_url as string || '',
-                text: c.content as string,
-                timeAgo: formatTimeAgo(c.created_at as string),
-              }));
-            }
-          } catch (e) {
-            console.error('Failed to load comments from DB:', e);
-          }
-        }
-
-        // 2. If DB returned nothing, load from localStorage
-        if (loaded.length === 0) {
-          try {
-            const stored = localStorage.getItem(storageKey);
-            if (stored) {
-              loaded = JSON.parse(stored) as CommentItem[];
-            }
-          } catch {}
-        }
-
-        if (loaded.length > 0) {
-          setCommentsList(loaded);
-          setCommentCount(Math.max(loaded.length, item.comments));
-        }
-        setCommentsLoaded(true);
-      }
     }
   };
 
@@ -287,6 +358,7 @@ function PostRow({ item }: { item: FeedItem }) {
     setCommentsList(updatedList);
     setCommentCount((c) => c + 1);
     setCommentText('');
+    setLatestComment(newComment);
 
     // Always save to localStorage (guaranteed persistence)
     saveToLocalStorage(updatedList);
@@ -464,6 +536,35 @@ function PostRow({ item }: { item: FeedItem }) {
               )}
             </button>
           </div>
+
+          {/* Toast notification */}
+          {toastMsg && (
+            <div className="mt-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-full w-fit animate-in fade-in slide-in-from-bottom-2 duration-200">
+              {toastMsg}
+            </div>
+          )}
+
+          {/* Latest comment preview (always visible when not expanded) */}
+          {!showComments && latestComment && (
+            <button
+              type="button"
+              onClick={handleComment}
+              className="mt-2 flex gap-2 items-start text-left w-full group"
+            >
+              {latestComment.avatar ? (
+                <Image src={latestComment.avatar} alt={latestComment.author} width={22} height={22} className="rounded-full flex-shrink-0 mt-0.5" />
+              ) : (
+                <div className="w-[22px] h-[22px] rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5">
+                  {(latestComment.author || '?').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-bold text-gray-700">{latestComment.author}</span>{' '}
+                <span className="text-xs text-gray-500 line-clamp-1">{latestComment.text}</span>
+              </div>
+              <span className="text-[10px] text-blue-400 group-hover:text-blue-500 flex-shrink-0 mt-0.5">ดูทั้งหมด</span>
+            </button>
+          )}
         </div>
       </div>
 
