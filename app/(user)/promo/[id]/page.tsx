@@ -396,6 +396,12 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
 
             <div className="flex gap-3">
               <Link 
+                href={`/wallet/use/${encodeURIComponent(finalPromo.id)}`}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 text-lg text-center rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+              >
+                🎟️ ใช้คูปอง
+              </Link>
+              <Link 
                 href={`/shop/${encodeURIComponent(finalPromo.shop_name)}`}
                 className="flex-1 btn-primary py-4 text-lg text-center flex items-center justify-center gap-2"
               >

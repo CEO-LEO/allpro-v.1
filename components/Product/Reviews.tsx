@@ -318,31 +318,29 @@ export default function Reviews({ productId }: ReviewsProps) {
   const allReviews = [...dbReviews, ...(reviewData?.reviews || [])];
 
   const handleMarkHelpful = async (reviewId: string) => {
-    // Already voted check (localStorage-based)
-    if (localStorage.getItem(`helpful_${reviewId}`)) {
-      toast.error('คุณโหวตรีวิวนี้ไปแล้ว');
-      return;
-    }
+    const alreadyVoted = helpfulReviews.has(reviewId);
 
     // Check if this is a Supabase DB review
     const isDbReview = dbReviews.some(r => r.id === reviewId);
 
     if (isDbReview && isSupabaseConfigured) {
       try {
-        const { error } = await supabase.rpc('increment_helpful_count', { review_id: reviewId });
+        const currentReview = dbReviews.find(r => r.id === reviewId)!;
+        const newCount = alreadyVoted
+          ? Math.max(0, currentReview.helpful - 1)
+          : currentReview.helpful + 1;
+
+        const { error } = await supabase
+          .from('reviews')
+          .update({ helpful_count: newCount })
+          .eq('id', reviewId);
+
         if (error) {
-          // Fallback: direct update
-          const { error: updateError } = await supabase
-            .from('reviews')
-            .update({ helpful_count: dbReviews.find(r => r.id === reviewId)!.helpful + 1 })
-            .eq('id', reviewId);
-          if (updateError) {
-            console.error('[Reviews] helpful update error:', updateError);
-          }
+          console.error('[Reviews] helpful update error:', error);
         }
         // Update local state
         setDbReviews(prev => prev.map(r =>
-          r.id === reviewId ? { ...r, helpful: r.helpful + 1 } : r
+          r.id === reviewId ? { ...r, helpful: newCount } : r
         ));
       } catch (e) {
         console.error('[Reviews] handleMarkHelpful error:', e);
@@ -353,9 +351,18 @@ export default function Reviews({ productId }: ReviewsProps) {
       setReviewData(getProductReviews(productId));
     }
 
-    setHelpfulReviews(prev => new Set([...prev, reviewId]));
-    localStorage.setItem(`helpful_${reviewId}`, 'true');
-    toast.success('ขอบคุณสำหรับความคิดเห็น');
+    if (alreadyVoted) {
+      setHelpfulReviews(prev => {
+        const next = new Set(prev);
+        next.delete(reviewId);
+        return next;
+      });
+      localStorage.removeItem(`helpful_${reviewId}`);
+    } else {
+      setHelpfulReviews(prev => new Set([...prev, reviewId]));
+      localStorage.setItem(`helpful_${reviewId}`, 'true');
+      toast.success('ขอบคุณสำหรับความคิดเห็น');
+    }
   };
 
   // Check if current user already has a review for this product
@@ -550,10 +557,9 @@ export default function Reviews({ productId }: ReviewsProps) {
                 )}
                 <button
                   onClick={() => handleMarkHelpful(review.id)}
-                  disabled={helpfulReviews.has(review.id)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                     helpfulReviews.has(review.id)
-                      ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
                       : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                   }`}
                 >

@@ -33,6 +33,11 @@ export function resolveImageUrl(image: string | null | undefined, fallback?: str
     image.startsWith('https://') ||
     image.startsWith('data:')
   ) {
+    // Add cache-busting for Supabase storage URLs
+    if (image.includes('.supabase.co/storage/')) {
+      const sep = image.includes('?') ? '&' : '?';
+      return `${image}${sep}t=${Date.now()}`;
+    }
     return image;
   }
 
@@ -44,7 +49,7 @@ export function resolveImageUrl(image: string | null | undefined, fallback?: str
   // Otherwise it's a Supabase Storage path → build public URL
   if (isSupabaseConfigured && SUPABASE_URL) {
     const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(image);
-    return data.publicUrl;
+    return `${data.publicUrl}?t=${Date.now()}`;
   }
 
   // Fallback: construct URL manually

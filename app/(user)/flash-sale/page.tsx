@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, ClockIcon, FireIcon, BoltIcon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/solid';
 import { MapPinIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { useProductStore } from '@/store/useProductStore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 /*
  * Expected API Response: GET /api/flash-sales
@@ -190,13 +192,14 @@ export default function FlashSalePage() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<FlashSaleItem | null>(null);
 
-  // ── Load flash sale products from product store ──
+  // ── Load flash sale products from product store + Supabase ──
   const products = useProductStore((s) => s.products);
   const [isLoading, setIsLoading] = useState(true);
   const [isError] = useState(false);
+  const [apiFlashSales, setApiFlashSales] = useState<FlashSaleItem[]>([]);
 
   // Convert product-store items tagged "Flash Sale" into FlashSaleItem[]
-  const flashSales: FlashSaleItem[] = products
+  const storeFlashSales: FlashSaleItem[] = products
     .filter((p) => p.tags?.includes('Flash Sale'))
     .map((p, idx) => ({
       id: idx + 1,
@@ -205,7 +208,7 @@ export default function FlashSalePage() {
       discount: p.discount || Math.round(((p.originalPrice - p.promoPrice) / p.originalPrice) * 100),
       originalPrice: p.originalPrice,
       salePrice: p.promoPrice,
-      image: p.image,
+      image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
       endTime: new Date(p.validUntil),
       claimed: p.reviews || 0,
       total: Math.max(p.likes || 50, (p.reviews || 0) + 10),
@@ -213,10 +216,89 @@ export default function FlashSalePage() {
       category: p.category,
     }));
 
+  // Fetch flash sale deals from Supabase promotions + products tables
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 400);
-    return () => clearTimeout(timer);
+    async function fetchDeals() {
+      if (!isSupabaseConfigured) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        // Source A: promotions table
+        const { data: promoData } = await supabase
+          .from('promotions')
+          .select('*')
+          .eq('status', 'active')
+          .gte('valid_until', new Date().toISOString())
+          .order('created_at', { ascending: false });
+
+        // Source B: products table (merchant-created products with discount)
+        const { data: productData } = await supabase
+          .from('products')
+          .select('*')
+          .gt('discount', 0)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        const results: FlashSaleItem[] = [];
+
+        if (promoData && promoData.length > 0) {
+          promoData.forEach((d: Record<string, unknown>, idx: number) => {
+            const origPrice = Number(d.original_price || 0);
+            const promoPrice = Number(d.promo_price || 0);
+            const discPct = Number(d.discount_pct || 0) || (origPrice > 0 ? Math.round(((origPrice - promoPrice) / origPrice) * 100) : 0);
+            results.push({
+              id: 1000 + idx,
+              title: String(d.title || ''),
+              merchant: String(d.merchant_id || 'ร้านค้า'),
+              discount: discPct,
+              originalPrice: origPrice || promoPrice,
+              salePrice: promoPrice || origPrice,
+              image: resolveImageUrl(String(d.image_url || ''), getCategoryFallbackImage(String(d.category || ''))),
+              endTime: new Date(String(d.valid_until || Date.now())),
+              claimed: Number(d.quota_used || 0),
+              total: Number(d.quota_total || 50),
+              location: 'กรุงเทพฯ',
+              category: String(d.category || 'อื่นๆ'),
+            });
+          });
+        }
+
+        if (productData && productData.length > 0) {
+          productData.forEach((d: Record<string, unknown>, idx: number) => {
+            const origPrice = Number(d.original_price || d.price || 0);
+            const promoPrice = Number(d.promo_price || d.price || 0);
+            const discPct = Number(d.discount || 0) || (origPrice > 0 ? Math.round(((origPrice - promoPrice) / origPrice) * 100) : 0);
+            if (discPct <= 0) return;
+            const validUntil = String(d.valid_until || new Date(Date.now() + 24 * 3600000).toISOString());
+            results.push({
+              id: 2000 + idx,
+              title: String(d.title || ''),
+              merchant: String(d.shop_name || 'ร้านค้า'),
+              discount: discPct,
+              originalPrice: origPrice,
+              salePrice: promoPrice,
+              image: resolveImageUrl(String(d.image || ''), getCategoryFallbackImage(String(d.category || ''))),
+              endTime: new Date(validUntil),
+              claimed: Math.floor(Math.random() * 20),
+              total: 50,
+              location: String(d.location || 'กรุงเทพฯ'),
+              category: String(d.category || 'อื่นๆ'),
+            });
+          });
+        }
+
+        setApiFlashSales(results);
+      } catch (e) {
+        console.error('[FlashSale] fetch error:', e);
+      }
+      setIsLoading(false);
+    }
+    fetchDeals();
   }, []);
+
+  // Merge both sources
+  const flashSales = [...storeFlashSales, ...apiFlashSales];
 
   const categories = ['ทั้งหมด', ...Array.from(new Set(flashSales.map(s => s.category)))];
 
