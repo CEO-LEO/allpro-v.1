@@ -89,6 +89,12 @@ export default function AuthListener() {
           xp: sessionUser.xp,
           coins: sessionUser.coins,
           level: sessionUser.level,
+          // Demographics
+          gender: sessionUser.gender,
+          ageRange: sessionUser.ageRange,
+          profileCompleted: sessionUser.profileCompleted,
+          onboardingCompleted: sessionUser.onboardingCompleted,
+          preferred_tags: sessionUser.preferred_tags,
           // Merchant fields ดึงมาจาก merchant_profiles table
           // login() จะ merge กับ savedMerchantProfile อัตโนมัติ
           shopName: sessionUser.shopName,
@@ -184,6 +190,12 @@ export default function AuthListener() {
               xp: profile?.xp ?? 0,
               coins: profile?.coins ?? 100,
               level: profile?.level ?? 1,
+              // Demographics
+              gender: profile?.gender || undefined,
+              ageRange: profile?.age_range || undefined,
+              profileCompleted: profile?.profile_completed || false,
+              onboardingCompleted: profile?.onboarding_completed || false,
+              preferred_tags: profile?.preferred_tags || undefined,
               // Merchant fields จาก DB
               shopName: merchantData?.shop_name || undefined,
               shopLogo: merchantData?.shop_logo || undefined,

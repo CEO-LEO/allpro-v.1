@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { X, Sparkles, Check, Tag } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import toast from 'react-hot-toast';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // แท็ก/หมวดหมู่ทั้งหมดที่มีในระบบ
 const ALL_TAGS = [
@@ -74,11 +75,29 @@ export default function TagSelectionModal({ isOpen, onClose }: TagSelectionModal
     );
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     updateUser({
       preferred_tags: selectedTags,
       onboardingCompleted: true,
     });
+
+    // Save to Supabase
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await supabase
+            .from('profiles')
+            .update({
+              preferred_tags: selectedTags,
+              onboarding_completed: true,
+            })
+            .eq('id', session.user.id);
+        }
+      } catch (e) {
+        console.error('[TagSelection] Supabase save error:', e);
+      }
+    }
 
     toast.success('🎉 บันทึกความสนใจเรียบร้อย! เราจะแนะนำดีลที่ตรงใจคุณ', {
       duration: 4000,
@@ -87,8 +106,19 @@ export default function TagSelectionModal({ isOpen, onClose }: TagSelectionModal
     onClose();
   }, [selectedTags, updateUser, onClose]);
 
-  const handleSkip = useCallback(() => {
+  const handleSkip = useCallback(async () => {
     updateUser({ onboardingCompleted: true });
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await supabase
+            .from('profiles')
+            .update({ onboarding_completed: true })
+            .eq('id', session.user.id);
+        }
+      } catch {}
+    }
     onClose();
   }, [updateUser, onClose]);
 

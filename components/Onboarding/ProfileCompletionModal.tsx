@@ -29,7 +29,7 @@ interface ProfileCompletionModalProps {
 }
 
 export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompletionModalProps) {
-  const { updateUser, addCoins } = useAuthStore();
+  const { user, updateUser, addCoins } = useAuthStore();
   const [gender, setGender] = useState<'male' | 'female' | 'other' | 'prefer_not_to_say' | null>(null);
   const [ageRange, setAgeRange] = useState<'18-24' | '25-34' | '35-44' | '45-54' | '55+' | null>(null);
 
@@ -41,11 +41,27 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
     if (!canSave) return;
     setIsSaving(true);
 
+    // Check if user already completed profile (prevent double points)
+    const alreadyCompleted = user?.profileCompleted === true;
+
     try {
       // 1. Save to Supabase if configured
       if (isSupabaseConfigured) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
+          // Double-check DB to prevent point farming
+          let dbAlreadyCompleted = alreadyCompleted;
+          if (!dbAlreadyCompleted) {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('profile_completed')
+                .eq('id', session.user.id)
+                .single();
+              dbAlreadyCompleted = profile?.profile_completed === true;
+            } catch {}
+          }
+
           const { error } = await supabase
             .from('profiles')
             .update({
@@ -58,9 +74,24 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
 
           if (error) {
             console.error('[ProfileModal] Supabase update error:', error);
-            // Still continue to update local state
           } else {
             console.log('[ProfileModal] Saved to Supabase');
+          }
+
+          // Only award points if not already completed in DB
+          if (!dbAlreadyCompleted) {
+            // Update coins in DB too
+            const { data: currentProfile } = await supabase
+              .from('profiles')
+              .select('coins')
+              .eq('id', session.user.id)
+              .single();
+            if (currentProfile) {
+              await supabase
+                .from('profiles')
+                .update({ coins: (currentProfile.coins || 0) + 10 })
+                .eq('id', session.user.id);
+            }
           }
         }
       }
@@ -72,12 +103,17 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
         profileCompleted: true,
       });
 
-      // Reward 10 coins for completing profile
-      addCoins(10);
-
-      toast.success('บันทึกข้อมูลสำเร็จ! รับ 10 Points', {
-        duration: 3000,
-      });
+      // Reward 10 coins only if not already completed
+      if (!alreadyCompleted) {
+        addCoins(10);
+        toast.success('บันทึกข้อมูลสำเร็จ! รับ 10 Points', {
+          duration: 3000,
+        });
+      } else {
+        toast.success('บันทึกข้อมูลสำเร็จ!', {
+          duration: 3000,
+        });
+      }
 
       onClose();
     } catch (e) {
@@ -88,8 +124,19 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     updateUser({ profileCompleted: true });
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await supabase
+            .from('profiles')
+            .update({ profile_completed: true })
+            .eq('id', session.user.id);
+        }
+      } catch {}
+    }
     onClose();
   };
 

@@ -375,6 +375,12 @@ export async function getCurrentSession() {
       xp: profile?.xp ?? 0,
       coins: profile?.coins ?? 100,
       level: profile?.level ?? 1,
+      // Demographics
+      gender: profile?.gender || undefined,
+      ageRange: profile?.age_range || undefined,
+      profileCompleted: profile?.profile_completed || false,
+      onboardingCompleted: profile?.onboarding_completed || false,
+      preferred_tags: profile?.preferred_tags || undefined,
       // Merchant-specific fields
       shopName: merchantData?.shop_name || undefined,
       shopLogo: merchantData?.shop_logo || undefined,
