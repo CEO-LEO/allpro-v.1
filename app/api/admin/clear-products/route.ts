@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceRoleClient } from '@/lib/supabase';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 /**
  * DELETE /api/admin/clear-products
@@ -14,11 +14,10 @@ export async function DELETE() {
     const supabase = createServiceRoleClient();
 
     // 1. ลบ products ทั้งหมด (cascade จะลบ saved_deals, views, claims, ad_clicks ด้วย)
-    const { error: productsError, count: productsCount } = await supabase
+    const { error: productsError } = await supabase
       .from('products')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000') // match all rows
-      .select('*', { count: 'exact', head: true });
+      .neq('id', '00000000-0000-0000-0000-000000000000');
 
     if (productsError) {
       console.error('Error deleting products:', productsError);
@@ -60,7 +59,7 @@ export async function DELETE() {
       .list('products', { limit: 1000 });
 
     if (files && files.length > 0) {
-      const filePaths = files.map(f => `products/${f.name}`);
+      const filePaths = files.map((f: { name: string }) => `products/${f.name}`);
       const { error: storageError } = await supabase.storage
         .from('promotions')
         .remove(filePaths);
