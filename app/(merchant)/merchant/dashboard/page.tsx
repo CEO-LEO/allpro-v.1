@@ -20,7 +20,6 @@ import { getSearchInsights } from "@/lib/getPromotions";
 import { Package as PackageIcon } from "lucide-react";
 import { useFlashSale } from "@/lib/flashSaleContext";
 import UpgradeBanner from "@/components/Merchant/UpgradeBanner";
-import DynamicNavbar from "@/components/Layout/DynamicNavbar";
 import { useProductStore } from "@/store/useProductStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
@@ -261,7 +260,6 @@ export default function MerchantDashboard() {
 
   return (
     <div>
-      <DynamicNavbar />
       {/* Show access denied if not merchant */}
       {(!user || user.role !== "MERCHANT") ? (
         <div className="min-h-screen flex items-center justify-center">

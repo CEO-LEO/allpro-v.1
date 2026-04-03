@@ -66,7 +66,7 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
   };
 
   return (
-    <aside className="hidden lg:block fixed left-0 top-0 bottom-0 w-64 h-screen z-50 overflow-y-auto bg-slate-900">
+    <aside className="hidden lg:block fixed left-0 top-0 bottom-0 w-64 h-screen z-50 overflow-y-auto bg-slate-900" aria-label="Desktop sidebar">
       <div className="flex flex-col h-full p-5">
         {/* Logo & Brand */}
         <div className="mb-8">
@@ -156,6 +156,86 @@ function MerchantSidebar({ onCreateDeal }: { onCreateDeal: () => void }) {
         </div>
       </div>
     </aside>
+  );
+}
+
+// Mobile Bottom Navigation Component - matches MerchantSidebar design
+function MerchantBottomNav({ onCreateDeal }: { onCreateDeal: () => void }) {
+  const pathname = usePathname();
+  const { user } = useAuthStore();
+  const router = useRouter();
+  const profileComplete = isMerchantProfileComplete(user);
+
+  const navItems = [
+    { href: '/merchant/dashboard', icon: LayoutDashboard, label: 'แดชบอร์ด', activePaths: ['/merchant/dashboard'] },
+    { href: '/merchant/shop', icon: Store, label: 'ร้านของฉัน', activePaths: ['/merchant/shop'] },
+    { href: '/merchant/ads', icon: TrendingUp, label: 'โฆษณา', activePaths: ['/merchant/ads'] },
+    { href: '/merchant/settings', icon: Settings, label: 'ตั้งค่า', activePaths: ['/merchant/settings'] }
+  ];
+
+  const isActive = (paths: string[]) => {
+    return paths.some(path => pathname.startsWith(path));
+  };
+
+  const handleFAB = () => {
+    if (!profileComplete) {
+      toast.error('กรุณากรอกข้อมูลร้านค้าให้ครบก่อนสร้างดีล');
+      router.push('/merchant/shop?setup=true');
+      return;
+    }
+    onCreateDeal();
+  };
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-slate-900 border-t border-slate-700 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] pb-safe" aria-label="Mobile navigation">
+      <div className="max-w-lg mx-auto relative">
+        {/* Navigation Items */}
+        <div className="flex items-center justify-around px-2 py-3">
+          {navItems.map((item, index) => {
+            const Icon = item.icon;
+            const active = isActive(item.activePaths);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
+                  active
+                    ? 'text-white'
+                    : 'text-slate-400 hover:text-slate-200'
+                } ${index === 1 ? 'mr-10' : ''} ${index === 2 ? 'ml-10' : ''}`}
+              >
+                <div className="relative">
+                  <Icon className={`w-6 h-6 ${active ? 'scale-110' : ''} transition-transform`} />
+                  {active && (
+                    <motion.div
+                      layoutId="merchant-bottom-nav-indicator"
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-blue-400"
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                </div>
+                <span className={`text-[10px] leading-tight ${active ? 'font-bold' : ''}`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Center FAB Button */}
+        <button
+          onClick={handleFAB}
+          className={`absolute -top-7 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform ${
+            profileComplete
+              ? 'bg-blue-500 text-white shadow-blue-500/40'
+              : 'bg-slate-700 text-slate-400'
+          }`}
+        >
+          <Zap className="w-6 h-6" />
+        </button>
+      </div>
+    </nav>
   );
 }
 
@@ -253,8 +333,11 @@ export default function MerchantLayout({
         {/* Merchant Sidebar - Desktop Only */}
         <MerchantSidebar onCreateDeal={() => setShowCreateDeal(true)} />
         
-        {/* Main Content - Pushed right by sidebar */}
-        <main className="min-h-screen lg:ml-64 transition-all duration-200">
+        {/* Merchant Bottom Nav - Mobile Only */}
+        <MerchantBottomNav onCreateDeal={() => setShowCreateDeal(true)} />
+        
+        {/* Main Content - Pushed right by sidebar on desktop, padded bottom on mobile */}
+        <main className="min-h-screen lg:ml-64 pb-24 lg:pb-0 transition-all duration-200">
           {children}
         </main>
         

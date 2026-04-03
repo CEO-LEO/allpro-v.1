@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import dynamic from 'next/dynamic';
-import DynamicNavbar from '@/components/Layout/DynamicNavbar';
 
 const MerchantSettingsDashboard = dynamic(
   () => import('@/components/Merchant/MerchantSettingsDashboard'),
@@ -9,10 +8,5 @@ const MerchantSettingsDashboard = dynamic(
 );
 
 export default function MerchantSettingsPage() {
-  return (
-    <div className="pb-24">
-      <MerchantSettingsDashboard />
-      <DynamicNavbar />
-    </div>
-  );
+  return <MerchantSettingsDashboard />;
 }
