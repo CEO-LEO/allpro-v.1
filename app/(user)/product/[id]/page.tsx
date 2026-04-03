@@ -6,6 +6,7 @@ import { FASTWORK_URLS } from '@/lib/config';
 import { ArrowLeft, Heart, Share2, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 const BranchAvailability = dynamic(() => import('@/components/BranchAvailability'), { ssr: false });
 
@@ -111,7 +112,7 @@ export default function ProductDetailPage() {
       <div className="relative h-80 w-full bg-gradient-to-br from-orange-100 to-orange-50">
         {product.image ? (
           <img 
-            src={product.image} 
+            src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))} 
             alt={product.title} 
             className="w-full h-full object-cover" 
             onError={(e) => {

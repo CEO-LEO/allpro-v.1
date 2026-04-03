@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
 import { supabase } from '@/lib/supabase';
+import { uploadProductImage } from '@/lib/uploadImage';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 
@@ -22,6 +23,7 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const imageFileRef = useRef<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   
@@ -48,6 +50,7 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     
     const originalPrice = parseFloat(formData.originalPrice);
     const promoPrice = parseFloat(formData.promoPrice);
@@ -62,6 +65,7 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
       return;
     }
     
+    setIsSubmitting(true);
     const discount = Math.round(((originalPrice - promoPrice) / originalPrice) * 100);
     
     // Send everything to server API (bypasses client-side RLS issues)
@@ -116,15 +120,18 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
       console.warn('[CreateDealModal] Fetch error:', err);
     }
 
-    // Attempt 2: Direct Supabase insert (fallback)
+    // Attempt 2: Client-side upload + direct Supabase insert (fallback)
     if (!success) {
       try {
+        // Upload image client-side to Supabase Storage
+        const imagePath = await uploadProductImage(imageFileRef.current);
+
         const insertData: Record<string, unknown> = {
           title: formData.title,
           description: formData.description || 'โปรโมชั่นพิเศษ!',
           price: promoPrice,
           original_price: originalPrice,
-          image: '',
+          image: imagePath,
           category: formData.category,
           shop_name: user?.shopName || user?.name || 'Your Shop',
         };
@@ -144,28 +151,11 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
 
     if (!success) {
       toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
+      setIsSubmitting(false);
       return;
     }
 
     toast.success('ลงประกาศโปรโมชั่นสำเร็จ! 🎉', { id: 'create-deal' });
-
-    // Add to local Zustand store so dashboard shows it immediately
-    const origP = parseFloat(formData.originalPrice);
-    const promoP = parseFloat(formData.promoPrice);
-    addProduct({
-      title: formData.title,
-      description: formData.description || 'โปรโมชั่นพิเศษ!',
-      originalPrice: origP,
-      promoPrice: promoP,
-      discount,
-      image: imagePreview || '',
-      shopName: user?.shopName || user?.name || 'Your Shop',
-      category: formData.category as any,
-      verified: true,
-      validUntil: formData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [formData.category],
-      isBoosted: false,
-    });
 
     // Success animation
     confetti({
@@ -186,6 +176,7 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
     });
     setImagePreview('');
     imageFileRef.current = null;
+    setIsSubmitting(false);
     
     onClose();
   };
@@ -434,9 +425,10 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/50 transition-all hover:scale-105 active:scale-95"
+                    disabled={isSubmitting}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/50 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    🚀 Post Deal
+                    {isSubmitting ? '⏳ กำลังบันทึก...' : '🚀 Post Deal'}
                   </button>
                 </div>
               </form>

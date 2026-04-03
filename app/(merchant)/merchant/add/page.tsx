@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore'; // Import Store
+import { supabase } from '@/lib/supabase';
+import { uploadProductImage, uploadGalleryImages } from '@/lib/uploadImage';
 import { toast } from 'sonner';
 import { FASTWORK_URLS } from '@/lib/config';
 import { PhotoIcon, XMarkIcon, ShieldExclamationIcon } from '@heroicons/react/24/solid'; // UI Icons
@@ -79,6 +81,7 @@ export default function AddProductPage() {
   // Handle Form Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // ป้องกันกดซ้ำ
     
     if (!user) {
       toast.error('⚠️ กรุณาล็อกอินก่อนลงขายสินค้า!');
@@ -99,34 +102,103 @@ export default function AddProductPage() {
     setLoading(true);
 
     try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
       // Calculate discount
       const discount = Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100);
 
-      // Create new product object
-      const newProduct = {
-        title,
-        description: description || `${title} ลดราคาสุดพิเศษ!`,
-        originalPrice: Number(originalPrice),
-        promoPrice: Number(price),
-        discount,
-        image: imagePreview || `https://source.unsplash.com/400x300/?${category.toLowerCase()},product`,
-        gallery: galleryPreviews.length > 0 ? galleryPreviews : undefined,
-        shopName: user.shopName || user.name || 'ร้านค้าของฉัน',
-        shopLogo: user.shopLogo || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.shopName || user.name || 'Shop')}&background=random`,
-        category: category,
-        verified: !!user.verified,
-        distance: '0.0 km', // Mock distance
-        validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // +7 days
-        tags: [category, 'New Arrival', 'Promo']
-      };
+      toast.loading('กำลังอัพโหลดสินค้า...', { id: 'add-product' });
 
-      // Add to store
-      addProduct(newProduct);
+      // Build FormData for API upload (uploads image to Supabase Storage)
+      const apiFormData = new FormData();
+      apiFormData.append('title', title);
+      apiFormData.append('description', description || `${title} ลดราคาสุดพิเศษ!`);
+      apiFormData.append('price', price);
+      apiFormData.append('original_price', originalPrice);
+      apiFormData.append('category', category);
+      apiFormData.append('shop_name', user.shopName || user.name || 'ร้านค้าของฉัน');
+      apiFormData.append('discount', String(discount));
+      apiFormData.append('location', 'กรุงเทพฯ');
 
-      toast.success('🎉 ลงสินค้าสำเร็จ!');
+      // Attach main image file
+      if (imageFile) {
+        apiFormData.append('image', imageFile);
+      }
+
+      // Attach gallery files
+      galleryFiles.forEach(gf => {
+        apiFormData.append('gallery', gf);
+      });
+
+      // Get shop_id from Supabase session
+      try {
+        const sessionRes = await supabase.auth.getSession();
+        if (sessionRes?.data?.session?.user?.id) {
+          apiFormData.append('shop_id', sessionRes.data.session.user.id);
+        }
+      } catch {
+        // Continue without shop_id
+      }
+
+      let success = false;
+
+      // Attempt 1: Server API (uploads image to Supabase Storage)
+      try {
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          body: apiFormData,
+        });
+        const result = await res.json();
+        if (res.ok && !result.error) {
+          console.log('[AddProduct] ✅ API success:', result.data);
+          success = true;
+        } else {
+          console.warn('[AddProduct] API error:', result.error);
+        }
+      } catch (err) {
+        console.warn('[AddProduct] Fetch error:', err);
+      }
+
+      // Attempt 2: Client-side upload + direct Supabase insert fallback
+      if (!success) {
+        try {
+          // Upload image client-side to Supabase Storage
+          const imagePath = await uploadProductImage(imageFile);
+          const galleryPaths = await uploadGalleryImages(galleryFiles);
+
+          const insertData: Record<string, unknown> = {
+            title,
+            description: description || `${title} ลดราคาสุดพิเศษ!`,
+            price: Number(price),
+            original_price: Number(originalPrice),
+            image: imagePath,
+            category,
+            shop_name: user.shopName || user.name || 'ร้านค้าของฉัน',
+            discount,
+          };
+
+          if (galleryPaths.length > 0) {
+            insertData.gallery = galleryPaths;
+          }
+
+          const sessionRes = await supabase.auth.getSession();
+          if (sessionRes?.data?.session?.user?.id) {
+            insertData.shop_id = sessionRes.data.session.user.id;
+          }
+
+          const { error: dbError } = await supabase.from('products').insert(insertData);
+          if (!dbError) {
+            success = true;
+          }
+        } catch (directErr) {
+          console.warn('[AddProduct] Direct insert failed:', directErr);
+        }
+      }
+
+      if (!success) {
+        toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'add-product' });
+        return;
+      }
+
+      toast.success('🎉 ลงสินค้าสำเร็จ!', { id: 'add-product' });
       
       // Reset form
       setTitle('');

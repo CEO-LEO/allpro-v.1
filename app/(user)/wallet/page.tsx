@@ -196,7 +196,7 @@ export default function WalletPage() {
                       <Link href={`/promo/${product.id}`} className="flex-shrink-0">
                         <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-50 relative">
                           <img
-                            src={product.image}
+                            src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                             alt={product.title}
                             className="w-full h-full object-cover"
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -257,7 +257,7 @@ export default function WalletPage() {
                       <div key={product.id} className="bg-gray-50/50 rounded-xl border border-gray-100 p-3 flex gap-3 opacity-60">
                         <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 relative flex-shrink-0">
                           <img
-                            src={product.image}
+                            src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                             alt={product.title}
                             className="w-full h-full object-cover grayscale"
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}

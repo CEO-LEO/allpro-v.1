@@ -35,7 +35,7 @@ interface ProductStore {
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'likes' | 'isLiked' | 'reviews' | 'rating'>) => void;
   toggleLike: (id: string) => void;
   toggleSave: (id: string, userId?: string) => void;
-  deleteProduct: (id: string) => void;
+  deleteProduct: (id: string) => Promise<void>;
   resetProducts: () => void;
   setSelectedCategory: (category: string) => void;
   boostProduct: (id: string) => void;
@@ -108,9 +108,19 @@ export const useProductStore = create<ProductStore>()(
         return { savedProductIds: newIds };
       }),
       
-      deleteProduct: (id) => set((state) => ({
-        products: state.products.filter((product) => product.id !== id)
-      })),
+      deleteProduct: async (id) => {
+        // ลบจาก Supabase DB ก่อน
+        if (isSupabaseConfigured) {
+          const { error } = await supabase.from('products').delete().eq('id', id);
+          if (error) {
+            console.error('[ProductStore] deleteProduct DB error:', error.message);
+          }
+        }
+        // ลบจาก local state
+        set((state) => ({
+          products: state.products.filter((product) => product.id !== id)
+        }));
+      },
       
       boostProduct: (id) => set((state) => ({
         products: state.products.map((product) =>

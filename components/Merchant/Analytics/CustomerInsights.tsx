@@ -28,21 +28,21 @@ interface CustomerInsightsProps {
 }
 
 // ═══════════════════════════════════════════════════════
-// Mock Data (replace with API: GET /api/merchant/analytics/demographics)
+// Default Empty Data (ยังไม่มีข้อมูลจริง)
 // ═══════════════════════════════════════════════════════
-const MOCK_GENDER: GenderData[] = [
-  { name: 'female', value: 58, color: '#f97316', label: 'หญิง' },
-  { name: 'male', value: 32, color: '#64748b', label: 'ชาย' },
-  { name: 'other', value: 7, color: '#cbd5e1', label: 'อื่นๆ' },
-  { name: 'unknown', value: 3, color: '#e2e8f0', label: 'ไม่ระบุ' },
+const EMPTY_GENDER: GenderData[] = [
+  { name: 'female', value: 0, color: '#f97316', label: 'หญิง' },
+  { name: 'male', value: 0, color: '#64748b', label: 'ชาย' },
+  { name: 'other', value: 0, color: '#cbd5e1', label: 'อื่นๆ' },
+  { name: 'unknown', value: 0, color: '#e2e8f0', label: 'ไม่ระบุ' },
 ];
 
-const MOCK_AGE: AgeGroupData[] = [
-  { range: '18-24', label: 'Gen Z', count: 342, percent: 38, color: '#f97316' },
-  { range: '25-34', label: 'Young Pro', count: 278, percent: 31, color: '#fb923c' },
-  { range: '35-44', label: 'Family', count: 156, percent: 17, color: '#fdba74' },
-  { range: '45-54', label: 'Mature', count: 89, percent: 10, color: '#fed7aa' },
-  { range: '55+', label: 'Senior', count: 35, percent: 4, color: '#e2e8f0' },
+const EMPTY_AGE: AgeGroupData[] = [
+  { range: '18-24', label: 'Gen Z', count: 0, percent: 0, color: '#f97316' },
+  { range: '25-34', label: 'Young Pro', count: 0, percent: 0, color: '#fb923c' },
+  { range: '35-44', label: 'Family', count: 0, percent: 0, color: '#fdba74' },
+  { range: '45-54', label: 'Mature', count: 0, percent: 0, color: '#fed7aa' },
+  { range: '55+', label: 'Senior', count: 0, percent: 0, color: '#e2e8f0' },
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -63,8 +63,8 @@ function AgeTooltip({ active, payload }: { active?: boolean; payload?: Array<{ p
 // Component
 // ═══════════════════════════════════════════════════════
 export default function CustomerInsights({
-  genderData = MOCK_GENDER,
-  ageData = MOCK_AGE,
+  genderData = EMPTY_GENDER,
+  ageData = EMPTY_AGE,
 }: CustomerInsightsProps) {
   // Derive primary audience summary
   const summary = useMemo(() => {
@@ -73,6 +73,8 @@ export default function CustomerInsights({
     const totalCustomers = ageData.reduce((sum, a) => sum + a.count, 0);
     return { topGender, topAge, totalCustomers };
   }, [genderData, ageData]);
+
+  const hasData = summary.totalCustomers > 0 || genderData.some(g => g.value > 0);
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -87,6 +89,17 @@ export default function CustomerInsights({
       </div>
 
       <div className="p-5">
+        {!hasData ? (
+          /* Empty State — ยังไม่มีข้อมูลลูกค้า */
+          <div className="py-10 text-center">
+            <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 mb-1">ยังไม่มีข้อมูลลูกค้า</p>
+            <p className="text-xs text-gray-400">เมื่อมีลูกค้าเข้าชมและกดรับโปรโมชัน ข้อมูลจะแสดงที่นี่</p>
+          </div>
+        ) : (
+        <>
         {/* Summary Card */}
         <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl px-4 py-3 mb-5 flex items-center gap-3">
           <div className="w-9 h-9 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -208,6 +221,8 @@ export default function CustomerInsights({
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

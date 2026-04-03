@@ -28,6 +28,8 @@ import CreateDealWidget from "@/components/Merchant/CreateDealWidget";
 import BoostPromotionModal from "@/components/Merchant/BoostPromotionModal";
 import EditPromotionModal from "@/components/Merchant/EditPromotionModal";
 import { Product } from "@/store/useProductStore";
+import { fetchMerchantAnalytics, type MerchantDashboardStats, type ActivityItem as AnalyticsActivityItem } from "@/lib/analytics";
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 // Dynamic Imports for Heavy Components (Charts/Analytics)
 const PredictiveInsights = dynamic(() => import("@/components/PredictiveInsights"), { ssr: false });
@@ -139,23 +141,22 @@ export default function MerchantDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Activity Log — คาดหวัง data structure จาก API:
-   * GET /api/merchant/activity
-   * Response: ActivityItem[]
-   * { id: string, type: 'view'|'save'|'location'|'search', title: string, subtitle: string, count: number, timestamp: string (ISO) }
+   * Activity Log — ดึงจาก promotion_claims + promotion_views
    */
   const [activityData, setActivityData] = useState<ActivityItem[]>([]);
 
   /**
-   * Dashboard Stats — คาดหวัง data structure จาก API:
-   * GET /api/merchant/dashboard/stats
-   * Response: { totalViews: number, totalUsed: number, avgDiscount: number }
+   * Dashboard Stats — ดึงจาก Supabase Real Data
    */
   const [dashboardStats, setDashboardStats] = useState<{
     totalViews: number;
+    totalClaims: number;
     totalUsed: number;
-    avgDiscount: number;
+    conversionRate: number;
+    totalAmountSaved: number;
   } | null>(null);
+
+  const [analyticsData, setAnalyticsData] = useState<MerchantDashboardStats | null>(null);
 
   // Fetch dashboard data on mount
   useEffect(() => {
@@ -164,15 +165,39 @@ export default function MerchantDashboard() {
         setIsLoading(true);
         setError(null);
 
-        // Fetch merchant's products from Supabase
-        await fetchMerchantProducts(
-          user?.id || '',
-          user?.shopName || user?.name || ''
-        );
+        const merchantId = user?.id || '';
+        const merchantShopName = user?.shopName || user?.name || '';
 
-        // TODO: Replace with real API calls for activity/stats
-        setActivityData([]);
-        setDashboardStats(null);
+        // Fetch merchant's products from Supabase
+        await fetchMerchantProducts(merchantId, merchantShopName);
+
+        // Fetch real analytics data from Supabase
+        const analytics = await fetchMerchantAnalytics(merchantId, merchantShopName, 30);
+
+        if (analytics) {
+          setAnalyticsData(analytics);
+          setDashboardStats({
+            totalViews: analytics.totalViews,
+            totalClaims: analytics.totalClaims,
+            totalUsed: analytics.totalUsed,
+            conversionRate: analytics.conversionRate,
+            totalAmountSaved: analytics.totalAmountSaved,
+          });
+
+          // Convert analytics activity to dashboard format
+          const mappedActivity: ActivityItem[] = analytics.recentActivity.map((a) => ({
+            id: a.id,
+            type: a.type === 'claim' ? 'save' as ActivityType : a.type === 'used' ? 'view' as ActivityType : 'view' as ActivityType,
+            title: a.title,
+            subtitle: a.subtitle,
+            count: a.count,
+            timestamp: a.timestamp,
+          }));
+          setActivityData(mappedActivity);
+        } else {
+          setActivityData([]);
+          setDashboardStats(null);
+        }
       } catch (err: any) {
         setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
@@ -209,10 +234,13 @@ export default function MerchantDashboard() {
     }
   });
 
-  // Calculate stats (use API data if available, fallback to local product store)
-  const totalViews = dashboardStats?.totalViews ?? myProducts.reduce((sum, p) => sum + (p.likes || 0) * 10, 0);
-  const totalUsed = dashboardStats?.totalUsed ?? myProducts.reduce((sum, p) => sum + (p.reviews || 0), 0);
-  const avgDiscount = dashboardStats?.avgDiscount ?? (myProducts.length > 0
+  // Calculate stats (use real analytics data only — no mock fallback)
+  const totalViews = dashboardStats?.totalViews ?? 0;
+  const totalClaims = dashboardStats?.totalClaims ?? 0;
+  const totalUsed = dashboardStats?.totalUsed ?? 0;
+  const conversionRate = dashboardStats?.conversionRate ?? 0;
+  const totalAmountSaved = dashboardStats?.totalAmountSaved ?? 0;
+  const avgDiscount = myProducts.length > 0
     ? Math.round(
         myProducts.reduce((sum, p) => {
           const price = p.promoPrice || 0;
@@ -220,13 +248,13 @@ export default function MerchantDashboard() {
           return sum + discount;
         }, 0) / myProducts.length
       )
-    : 0);
+    : 0;
 
   const insights = useMemo(() => getSearchInsights(selectedLocation), [selectedLocation]);
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`คุณต้องการลบ "${name}" ใช่หรือไม่?`)) {
-      deleteProduct(id);
+      await deleteProduct(id);
       toast.success(`ลบ "${name}" แล้ว`);
     }
   };
@@ -416,11 +444,11 @@ export default function MerchantDashboard() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 border-b border-gray-200">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 border-b border-gray-200">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-600 text-sm font-medium">ยอดคนดู</p>
+                  <p className="text-blue-600 text-sm font-medium">ยอดเข้าชม</p>
                   <p className="text-3xl font-bold text-blue-900 mt-1">
                     {totalViews.toLocaleString()}
                   </p>
@@ -429,13 +457,31 @@ export default function MerchantDashboard() {
               </div>
             </div>
 
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-600 text-sm font-medium">กดรับโปร</p>
+                  <p className="text-3xl font-bold text-purple-900 mt-1">
+                    {totalClaims.toLocaleString()}
+                  </p>
+                  {conversionRate > 0 && (
+                    <p className="text-xs text-purple-500 mt-0.5">{conversionRate}% conversion</p>
+                  )}
+                </div>
+                <TrophyIcon className="w-10 h-10 text-purple-300" />
+              </div>
+            </div>
+
             <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-600 text-sm font-medium">คูปองใช้</p>
+                  <p className="text-green-600 text-sm font-medium">ใช้จริง</p>
                   <p className="text-3xl font-bold text-green-900 mt-1">
-                    {totalUsed}
+                    {totalUsed.toLocaleString()}
                   </p>
+                  {totalAmountSaved > 0 && (
+                    <p className="text-xs text-green-500 mt-0.5">ประหยัด ฿{totalAmountSaved.toLocaleString()}</p>
+                  )}
                 </div>
                 <CheckCircleIcon className="w-10 h-10 text-green-300" />
               </div>
@@ -471,10 +517,11 @@ export default function MerchantDashboard() {
             <div className="divide-y divide-gray-200">
               {/* Table Header - Desktop */}
               <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 font-bold text-sm text-gray-600">
-                <div className="col-span-4">สินค้า</div>
+                <div className="col-span-3">สินค้า</div>
                 <div className="col-span-2 text-center">ราคา</div>
-                <div className="col-span-2 text-center">ลดราคา</div>
-                <div className="col-span-2 text-center">ยอดคน</div>
+                <div className="col-span-1 text-center">ลด</div>
+                <div className="col-span-2 text-center">เข้าชม / กดรับ</div>
+                <div className="col-span-2 text-center">Conversion</div>
                 <div className="col-span-2 text-right">การดำเนินการ</div>
               </div>
 
@@ -484,15 +531,21 @@ export default function MerchantDashboard() {
                   ((product.originalPrice - product.promoPrice) / product.originalPrice) * 100
                 );
 
+                // ดึงสถิติจริงจาก analytics data
+                const pStat = analyticsData?.productStats?.find((s) => s.productId === product.id);
+                const pViews = pStat?.views ?? 0;
+                const pClaims = pStat?.claims ?? 0;
+                const pConversion = pStat?.conversionRate ?? 0;
+
                 return (
                   <div
                     key={product.id}
                     className="grid md:grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors items-center"
                   >
                     {/* Product Info */}
-                    <div className="md:col-span-4 flex gap-3">
+                    <div className="md:col-span-3 flex gap-3">
                       <img
-                        src={product.image}
+                        src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                         alt={product.title}
                         className="w-12 h-12 rounded-lg object-cover"
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -519,20 +572,31 @@ export default function MerchantDashboard() {
                     </div>
 
                     {/* Discount */}
-                    <div className="md:col-span-2 md:text-center">
+                    <div className="md:col-span-1 md:text-center">
                       <p className="text-sm text-gray-500 md:hidden">ลดราคา:</p>
                       <p className="font-bold text-red-600 text-lg">
                         -{discountPercent}%
                       </p>
                     </div>
 
-                    {/* Views */}
+                    {/* Views & Claims */}
                     <div className="md:col-span-2 md:text-center">
-                      <p className="text-sm text-gray-500 md:hidden">ยอดคน:</p>
+                      <p className="text-sm text-gray-500 md:hidden">เข้าชม / กดรับ:</p>
                       <p className="font-medium text-gray-800">
-                        {(product.likes || 0).toLocaleString()}
+                        {pViews.toLocaleString()} / {pClaims.toLocaleString()}
                       </p>
-                      <p className="text-xs text-gray-500">ผู้เข้าชม (ไลค์)</p>
+                      <p className="text-xs text-gray-500">ดู / รับ</p>
+                    </div>
+
+                    {/* Conversion */}
+                    <div className="md:col-span-2 md:text-center">
+                      <p className="text-sm text-gray-500 md:hidden">Conversion:</p>
+                      <p className={`font-bold ${pConversion > 5 ? 'text-green-600' : pConversion > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+                        {pConversion}%
+                      </p>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                        <div className={`h-1.5 rounded-full ${pConversion > 5 ? 'bg-green-500' : pConversion > 0 ? 'bg-orange-500' : 'bg-gray-300'}`} style={{ width: `${Math.min(pConversion, 100)}%` }} />
+                      </div>
                     </div>
 
                     {/* Actions */}

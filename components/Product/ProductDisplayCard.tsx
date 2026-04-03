@@ -8,6 +8,7 @@ import { Heart, Bookmark, Star, Clock, MapPin, TrendingUp } from 'lucide-react';
 import { useProductStore } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 interface ProductDisplayCardProps {
   product: Product;
@@ -69,7 +70,7 @@ export default function ProductDisplayCard({ product, showSaveButton = true }: P
         <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
           <motion.img
             whileHover={{ scale: 1.05 }}
-            src={product.image}
+            src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
             alt={product.title}
             className="w-full h-full object-cover"
           />

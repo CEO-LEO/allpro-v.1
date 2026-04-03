@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
+
+// Server-side client — prefer service role key to bypass RLS
+function getServerClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  return createClient(url, serviceKey || anonKey);
+}
 
 // GET /api/products/[id] — fetch a single product with resolved image URL
 export async function GET(
@@ -12,6 +21,8 @@ export async function GET(
   if (!isSupabaseConfigured) {
     return NextResponse.json({ data: null, error: 'Supabase not configured' }, { status: 503 });
   }
+
+  const supabase = getServerClient();
 
   try {
     const { data, error } = await supabase

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   SparklesIcon,
@@ -8,46 +8,97 @@ import {
   ShoppingBagIcon,
   MapPinIcon,
 } from '@heroicons/react/24/solid';
+// ─── CountUp Hook ───────────────────────────────────────
+function useCountUp(end: number, duration = 1500, start = 0) {
+  const [value, setValue] = useState(start);
+  const rafRef = useRef<number>(0);
 
-// Interface สำหรับข้อมูลสถิติ
-interface StatItem {
+  useEffect(() => {
+    if (end <= start) { setValue(end); return; }
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutExpo
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      setValue(Math.round(start + (end - start) * eased));
+      if (progress < 1) rafRef.current = requestAnimationFrame(animate);
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [end, duration, start]);
+
+  return value;
+}
+
+// ─── Stat Display Component ─────────────────────────────
+function AnimatedStat({ value, suffix }: { value: number; suffix: string }) {
+  const animated = useCountUp(value, 1800);
+  return <>{animated.toLocaleString()}{suffix}</>;
+}
+
+// ─── Stat Definitions ───────────────────────────────────
+interface StatDef {
   id: number;
-  iconName: string;
-  value: string;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
+  suffix: string;
   color: string;
   bgColor: string;
 }
 
-// Map สำหรับ resolve icon จากชื่อ string (API)
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  ShoppingBagIcon,
-  UserGroupIcon,
-  MapPinIcon,
-  SparklesIcon,
-};
-
-// ข้อมูลสถิติจำลอง — ใช้ขณะยังไม่มี API จริง
-const MOCK_STATS: StatItem[] = [
-  { id: 1, iconName: 'ShoppingBagIcon', value: '500+',   label: 'โปรโมชั่นทั้งหมด', color: 'from-orange-500 to-red-500',   bgColor: 'from-orange-50 to-red-50' },
-  { id: 2, iconName: 'UserGroupIcon',   value: '10,000+', label: 'ผู้ใช้งาน',         color: 'from-blue-500 to-indigo-500', bgColor: 'from-blue-50 to-indigo-50' },
-  { id: 3, iconName: 'MapPinIcon',      value: '100+',   label: 'ร้านค้าพาร์ทเนอร์',  color: 'from-orange-500 to-amber-500', bgColor: 'from-orange-50 to-amber-50' },
-  { id: 4, iconName: 'SparklesIcon',    value: '70%',    label: 'ประหยัดสูงสุด',      color: 'from-purple-500 to-pink-500', bgColor: 'from-purple-50 to-pink-50' },
+const STAT_DEFS: StatDef[] = [
+  { id: 1, icon: ShoppingBagIcon, label: 'โปรโมชั่นทั้งหมด', suffix: '+', color: 'from-orange-500 to-red-500', bgColor: 'from-orange-50 to-red-50' },
+  { id: 2, icon: UserGroupIcon,   label: 'ผู้ใช้งาน',         suffix: '+', color: 'from-blue-500 to-indigo-500', bgColor: 'from-blue-50 to-indigo-50' },
+  { id: 3, icon: MapPinIcon,      label: 'ร้านค้าพาร์ทเนอร์',  suffix: '+', color: 'from-orange-500 to-amber-500', bgColor: 'from-orange-50 to-amber-50' },
+  { id: 4, icon: SparklesIcon,    label: 'ประหยัดสูงสุด',      suffix: '%', color: 'from-purple-500 to-pink-500', bgColor: 'from-purple-50 to-pink-50' },
 ];
 
 export default function Infographic() {
-  const [stats, setStats] = useState<StatItem[]>([]);
+  const [values, setValues] = useState<number[]>([0, 0, 0, 0]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // TODO: เชื่อมต่อ API จริง — เปลี่ยน MOCK_STATS เป็น response จาก API
-  // e.g. const res = await fetch('/api/stats/overview'); const data = await res.json(); setStats(data.stats);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setStats(MOCK_STATS);
+  const fetchStats = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      if (!isSupabaseConfigured) throw new Error('not configured');
+
+      // ดึงข้อมูลทั้ง 4 ตัวพร้อมกัน
+      const [productsRes, profilesRes, merchantsRes, discountRes] = await Promise.all([
+        // 1) จำนวนโปรโมชั่น (products)
+        supabase.from('products').select('*', { count: 'exact', head: true }),
+        // 2) จำนวนผู้ใช้ (profiles)
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        // 3) จำนวนร้านค้า (merchant_profiles)
+        supabase.from('merchant_profiles').select('*', { count: 'exact', head: true }),
+        // 4) ส่วนลดสูงสุด (MAX discount จาก products)
+        supabase.from('products').select('discount').order('discount', { ascending: false }).limit(1),
+      ]);
+
+      const totalPromos = productsRes.count ?? 0;
+      const totalUsers = profilesRes.count ?? 0;
+      const totalMerchants = merchantsRes.count ?? 0;
+
+      // คำนวณส่วนลดสูงสุด
+      let maxDiscount = 0;
+      if (discountRes.data && discountRes.data.length > 0) {
+        maxDiscount = discountRes.data[0].discount || 0;
+      }
+
+      setValues([totalPromos, totalUsers, totalMerchants, maxDiscount]);
+    } catch (err) {
+      console.error('[Infographic] Fetch stats failed:', err);
+      // Fallback — ใช้ค่า 0 ไปก่อน
+      setValues([0, 0, 0, 0]);
+    } finally {
       setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    }
   }, []);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   return (
     <div className="mb-10">
@@ -78,18 +129,10 @@ export default function Infographic() {
             </div>
           ))}
         </div>
-      ) : stats.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <ShoppingBagIcon className="w-8 h-8 text-gray-300" />
-          </div>
-          <p className="text-gray-500 font-medium">ยังไม่มีข้อมูลสถิติ</p>
-          <p className="text-gray-400 text-sm mt-1">ข้อมูลจะปรากฏเมื่อระบบพร้อมใช้งาน</p>
-        </div>
       ) : (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        {stats.map((stat, index) => {
-          const Icon = ICON_MAP[stat.iconName] || ShoppingBagIcon;
+        {STAT_DEFS.map((stat, index) => {
+          const Icon = stat.icon;
           
           return (
             <motion.div
@@ -113,11 +156,11 @@ export default function Infographic() {
                   <Icon className="w-5 h-5 text-white" />
                 </div>
 
-                {/* Value */}
+                {/* Value with CountUp Animation */}
                 <div
                   className={`text-2xl sm:text-3xl font-extrabold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-0.5 leading-tight`}
                 >
-                  {stat.value}
+                  <AnimatedStat value={values[index]} suffix={stat.suffix} />
                 </div>
 
                 {/* Label */}
@@ -146,7 +189,7 @@ export default function Infographic() {
             <span className="font-bold text-orange-800">💡 ประหยัดได้มากกว่า</span>
             <span className="text-orange-600 font-extrabold">30–70%</span>
             <span className="text-gray-600">กับโปรโมชั่นกว่า</span>
-            <span className="text-orange-600 font-extrabold">100+ ร้านค้า</span>
+            <span className="text-orange-600 font-extrabold">{values[2]}+ ร้านค้า</span>
             <span className="text-gray-600">ทุกวัน!</span>
           </div>
         </div>

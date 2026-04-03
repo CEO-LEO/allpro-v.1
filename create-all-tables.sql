@@ -318,10 +318,10 @@ DROP POLICY IF EXISTS "anon can view products" ON products;
 
 -- SELECT: allow ALL roles (anon + authenticated)
 CREATE POLICY "Anyone can view products" ON products FOR SELECT USING (true);
--- INSERT/UPDATE/DELETE: authenticated only
-CREATE POLICY "Auth users can insert products" ON products FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Auth users can update products" ON products FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Auth users can delete products" ON products FOR DELETE TO authenticated USING (true);
+-- INSERT/UPDATE/DELETE: allow all roles
+CREATE POLICY "Auth users can insert products" ON products FOR INSERT WITH CHECK (true);
+CREATE POLICY "Auth users can update products" ON products FOR UPDATE USING (true);
+CREATE POLICY "Auth users can delete products" ON products FOR DELETE USING (true);
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products (category);
 CREATE INDEX IF NOT EXISTS idx_products_shop_id ON products (shop_id);

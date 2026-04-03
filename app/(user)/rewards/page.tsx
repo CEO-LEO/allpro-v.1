@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import LoginModal from '@/components/Auth/LoginModal';
 import { useProductStore } from '@/store/useProductStore';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 /*
  * Expected API Response: GET /api/rewards
@@ -314,7 +315,7 @@ export default function RewardsPage() {
                 >
                   <div className="w-28 h-28 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <img
-                      src={product.image}
+                      src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                       alt={product.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       onError={(e) => {

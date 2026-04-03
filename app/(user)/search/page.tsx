@@ -1,21 +1,24 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeftIcon, FunnelIcon } from '@heroicons/react/24/solid';
-import { Search } from 'lucide-react';
+import { Search, Megaphone } from 'lucide-react';
 import PromoCard from '@/components/PromoCard';
 import ShopSearchBar from '@/components/Common/ShopSearchBar';
 import { getPromotions } from '@/lib/getPromotions';
 import { useProductStore, Product } from '@/store/useProductStore';
 import { Promotion } from '@/lib/types';
+import { searchWithSEM, handleAdClick, type SEMProduct } from '@/lib/sem';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 /*
  * Search Results Page — /search?q=xxx&category=xxx
  *
- * Data Source: getPromotions() + useProductStore (merchant-created products)
+ * Data Source: SEM (Supabase RPC) + getPromotions() + useProductStore
+ * SEM ผลลัพธ์จะแสดงด้านบนพร้อมป้าย "โฆษณา"
  */
 
 // Convert Product (from store) to Promotion (used by UI components)
@@ -65,6 +68,7 @@ export default function SearchPage() {
   const [filterBy, setFilterBy] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [semResults, setSemResults] = useState<SEMProduct[]>([]);
   const storeProducts = useProductStore((s) => s.products);
 
   // Merge static promotions + store products (merchant-created)
@@ -76,11 +80,24 @@ export default function SearchPage() {
     return [...storePromos, ...staticOnly];
   }, [storeProducts]);
 
-  // จำลอง loading delay (ลบเมื่อเชื่อม API จริง)
+  // จำลอง loading + ดึง SEM results
   useEffect(() => {
     setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 400);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+
+    const load = async () => {
+      // ดึง SEM results จาก Supabase
+      if (searchText.trim()) {
+        const sem = await searchWithSEM(searchText.trim());
+        if (!cancelled) setSemResults(sem.filter(s => s.is_sem_result));
+      } else {
+        setSemResults([]);
+      }
+      if (!cancelled) setIsLoading(false);
+    };
+
+    const timer = setTimeout(load, 300); // debounce
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [searchText, category]);
 
   // Sync searchText เมื่อ URL query เปลี่ยน (เช่น กด Back)
@@ -148,6 +165,17 @@ export default function SearchPage() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSearch();
   };
+
+  // SEM ad click — charge CPC to the shop
+  const handleSEMClick = useCallback(async (ad: SEMProduct) => {
+    // Fire and forget — don't block navigation
+    handleAdClick({
+      productId: ad.id,
+      shopId: ad.shop_id,
+      keyword: searchText.trim(),
+      cpcAmount: ad.cpc_bid,
+    });
+  }, [searchText]);
 
   const displayTitle = query
     ? `ผลลัพธ์การค้นหาสำหรับ: "${query}"`
@@ -282,6 +310,56 @@ export default function SearchPage() {
 
       {/* ── Results ── */}
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* SEM Sponsored Results */}
+        {!isLoading && semResults.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <Megaphone className="w-4 h-4 text-orange-500" />
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">โฆษณา</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {semResults.map((ad, index) => (
+                <motion.div
+                  key={`sem-${ad.id}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Link
+                    href={`/promo/${ad.id}`}
+                    onClick={() => handleSEMClick(ad)}
+                    className="block relative"
+                  >
+                    <div className="relative rounded-2xl overflow-hidden border-2 border-orange-200 bg-white shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all">
+                      {/* โฆษณา badge */}
+                      <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full">
+                        โฆษณา
+                      </div>
+                      <div className="h-40 bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
+                        {ad.image ? (
+                          <img src={resolveImageUrl(ad.image, getCategoryFallbackImage(ad.category))} alt={ad.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <Megaphone className="w-10 h-10 text-orange-300" />
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <p className="font-semibold text-gray-900 text-sm truncate">{ad.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{ad.shop_name}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-orange-600 font-bold text-sm">฿{ad.price?.toLocaleString()}</span>
+                          {ad.discount > 0 && (
+                            <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium">-{ad.discount}%</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Skeleton Loading */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

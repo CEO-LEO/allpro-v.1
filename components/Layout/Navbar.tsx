@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -103,9 +104,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-12">
             {/* Logo */}
             <Link href="/" onClick={() => setSelectedCategory('All')} className="flex items-center gap-1.5 flex-shrink-0">
-              <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
-                <Package className="w-4 h-4 text-white" />
-              </div>
+              <Image src="/logo-circle.png" alt="All Pro" width={36} height={36} className="w-9 h-9" priority />
               <span className="text-base font-bold text-gray-900 hidden sm:inline">
                 All Pro
               </span>

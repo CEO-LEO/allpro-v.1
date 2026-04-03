@@ -6,6 +6,7 @@ import { X, Rocket, Check, Zap, Clock, TrendingUp } from "lucide-react";
 import { useProductStore, Product } from "@/store/useProductStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 interface BoostPromotionModalProps {
   isOpen: boolean;
@@ -129,7 +130,7 @@ export default function BoostPromotionModal({ isOpen, onClose }: BoostPromotionM
                       <div className="flex gap-3">
                         {/* Product Image */}
                         <img
-                          src={product.image}
+                          src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                           alt={product.title}
                           className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                         />

@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { 
@@ -125,27 +124,33 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
 
           {/* รูปภาพโปรโมชั่น */}
           <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
-            {!imageError && promo.image ? (
-              <Image
-                src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))}
-                alt={promo.title}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover group-hover:scale-110 transition-transform duration-500"
-                onError={() => setImageError(true)}
-                loading="lazy"
-                placeholder="blur"
-                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2VlZSIvPjwvc3ZnPg=="
-              />
-            ) : (
-              <div className={`w-full h-full flex items-center justify-center ${brandStyles.iconBg}`}>
-                {isBigBrand ? (
-                  <SparklesIcon className={`w-16 h-16 ${brandStyles.iconColor} opacity-40`} />
-                ) : (
-                  <BuildingStorefrontIcon className={`w-16 h-16 ${brandStyles.iconColor} opacity-40`} />
-                )}
-              </div>
-            )}
+            {(() => {
+              // Resolve image: promo.image may already be a full URL (from API) or a storage path
+              const imageUrl = resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category));
+              const hasImage = !imageError && imageUrl && !imageUrl.includes('unsplash.com') ? true : !imageError && promo.image;
+              
+              if (hasImage && imageUrl) {
+                return (
+                  <img
+                    src={imageUrl}
+                    alt={promo.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    onError={() => setImageError(true)}
+                    loading="lazy"
+                  />
+                );
+              }
+              
+              return (
+                <div className={`w-full h-full flex items-center justify-center ${brandStyles.iconBg}`}>
+                  {isBigBrand ? (
+                    <SparklesIcon className={`w-16 h-16 ${brandStyles.iconColor} opacity-40`} />
+                  ) : (
+                    <BuildingStorefrontIcon className={`w-16 h-16 ${brandStyles.iconColor} opacity-40`} />
+                  )}
+                </div>
+              );
+            })()}
             
             {/* Discount Badge */}
             {promo.discount_rate && promo.discount_rate > 0 && (

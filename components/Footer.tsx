@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const PROMO_LINKS = [
   { label: 'โปร 1 แถม 1', href: '/category/Food' },
@@ -122,11 +123,7 @@ export default function Footer() {
           <div className="sm:col-span-2 lg:col-span-1">
             {/* Logo */}
             <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                </svg>
-              </div>
+              <Image src="/logo-circle.png" alt="All Pro" width={44} height={44} className="w-11 h-11" />
               <span className="text-xl font-bold tracking-tight">All Pro</span>
             </div>
 

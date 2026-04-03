@@ -18,6 +18,8 @@ import { getPromotionById, getPromotions } from '@/lib/getPromotions';
 import { useProductStore } from '@/store/useProductStore';
 import { Promotion } from '@/lib/types';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
+import { trackPromotionView, claimPromotion } from '@/lib/analytics';
+import { useAuthStore } from '@/store/useAuthStore';
 import BranchAvailability from '@/components/BranchAvailability';
 import PriceHistory from '@/components/Product/PriceHistory';
 import NotifyButton from '@/components/Product/NotifyButton';
@@ -99,8 +101,49 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
     fetchFromApi();
   }, [decodedId]);
 
+  // Track view when promo is loaded
+  const [viewTracked, setViewTracked] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const { user } = useAuthStore();
+
   // Use DB promo as final fallback
   const finalPromo = promo || dbPromo;
+
+  useEffect(() => {
+    if (finalPromo && !viewTracked) {
+      trackPromotionView(finalPromo.id, undefined, 'promo_page');
+      setViewTracked(true);
+    }
+  }, [finalPromo, viewTracked]);
+
+  const handleClaimPromotion = async () => {
+    if (!finalPromo) return;
+    if (!user) {
+      setClaimError('กรุณาเข้าสู่ระบบก่อนกดรับโปรโมชั่น');
+      return;
+    }
+
+    setClaiming(true);
+    setClaimError(null);
+
+    const originalPrice = Math.round(finalPromo.price / (1 - finalPromo.discount_rate / 100));
+    const result = await claimPromotion({
+      productId: finalPromo.id,
+      originalPrice,
+      promoPrice: finalPromo.price,
+      source: 'promo_page',
+    });
+
+    setClaiming(false);
+
+    if (result.success) {
+      setClaimed(true);
+    } else {
+      setClaimError(result.error || 'เกิดข้อผิดพลาด');
+    }
+  };
 
   if (dbLoading) {
     return (
@@ -144,7 +187,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                     <div className="relative h-40 bg-gray-100">
                       {promo.image ? (
                         <img 
-                          src={promo.image} 
+                          src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))} 
                           alt={promo.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -393,6 +436,36 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
               branchName="All Branches"
               stockStatus={finalPromo.stockStatus || 'in_stock'}
             />
+
+            <div className="space-y-3">
+              {/* Claim Promotion Button */}
+              <button
+                onClick={handleClaimPromotion}
+                disabled={claiming || claimed}
+                className={`w-full py-4 text-lg rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                  claimed
+                    ? 'bg-green-100 text-green-700 border-2 border-green-300 cursor-default'
+                    : claiming
+                    ? 'bg-orange-300 text-white cursor-wait'
+                    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                }`}
+              >
+                {claimed ? (
+                  <>✅ รับโปรโมชั่นแล้ว!</>
+                ) : claiming ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    กำลังดำเนินการ...
+                  </>
+                ) : (
+                  <>🎁 รับโปรโมชั่น</>
+                )}
+              </button>
+
+              {claimError && (
+                <p className="text-red-500 text-sm text-center">{claimError}</p>
+              )}
+            </div>
 
             <div className="flex gap-3">
               <Link 

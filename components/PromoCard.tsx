@@ -1,6 +1,7 @@
 'use client';
 
 import { Promotion } from '@/lib/types';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import Link from 'next/link';
 import { CheckBadgeIcon, MapPinIcon, CalendarIcon, TrophyIcon } from '@heroicons/react/24/solid';
 import { 
@@ -60,20 +61,25 @@ export default function PromoCard({ promo }: PromoCardProps) {
       }`}>
         {/* Image - Ready for Real Photos */}
         <div className="relative h-48 sm:h-56 bg-gradient-to-br from-gray-100 to-gray-50 overflow-hidden group">
-          {promo.imageUrl ? (
-            <img 
-              src={promo.imageUrl} 
-              alt={promo.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                const target = e.currentTarget;
-                target.style.display = 'none';
-                const fallback = target.nextElementSibling as HTMLElement;
-                if (fallback) fallback.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          <div className={`w-full h-full items-center justify-center bg-gradient-to-br from-orange-100 via-orange-50 to-red-50 ${promo.imageUrl ? 'hidden' : 'flex'}`}>
+          {(() => {
+            const rawImage = promo.imageUrl || promo.image;
+            if (!rawImage) return null;
+            const resolvedImage = resolveImageUrl(rawImage, getCategoryFallbackImage(promo.category));
+            return (
+              <img 
+                src={resolvedImage} 
+                alt={promo.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            );
+          })()}
+          <div className={`w-full h-full items-center justify-center bg-gradient-to-br from-orange-100 via-orange-50 to-red-50 ${(promo.imageUrl || promo.image) ? 'hidden' : 'flex'}`}>
             <div className="text-center">
               {(() => {
                 const iconData = getIconByCategory(promo.category);

@@ -33,8 +33,8 @@ export function resolveImageUrl(image: string | null | undefined, fallback?: str
     image.startsWith('https://') ||
     image.startsWith('data:')
   ) {
-    // Add cache-busting for Supabase storage URLs
-    if (image.includes('.supabase.co/storage/')) {
+    // Add cache-busting for Supabase storage URLs (only if not already present)
+    if (image.includes('.supabase.co/storage/') && !image.includes('?t=') && !image.includes('&t=')) {
       const sep = image.includes('?') ? '&' : '?';
       return `${image}${sep}t=${Date.now()}`;
     }

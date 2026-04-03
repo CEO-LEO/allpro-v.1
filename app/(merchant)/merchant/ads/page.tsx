@@ -28,6 +28,7 @@ import {
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import Image from 'next/image';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
 
@@ -549,7 +550,7 @@ export default function AdsManagerPage() {
                           >
                             <div className="w-12 h-12 relative flex-shrink-0">
                                <Image 
-                                src={product.image} 
+                                src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))} 
                                 alt={product.title}
                                 fill
                                 className="rounded-lg object-cover"
@@ -645,7 +646,7 @@ export default function AdsManagerPage() {
                               <div className="w-20 h-20 relative flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
                                 {product ? (
                                   <Image
-                                    src={product.image}
+                                    src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                                     alt={product.title}
                                     fill
                                     className="object-cover"

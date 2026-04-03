@@ -114,7 +114,7 @@ function DealDetailModal({
         {/* Image */}
         <div className="relative aspect-[4/3] flex-shrink-0">
           <img 
-            src={deal.image} 
+            src={resolveImageUrl(deal.image, getCategoryFallbackImage(deal.category))} 
             alt={deal.title} 
             className="w-full h-full object-cover" 
             onError={(e) => {
@@ -425,7 +425,7 @@ export default function FlashSalePage() {
                   {/* Image */}
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
-                      src={sale.image}
+                      src={resolveImageUrl(sale.image, getCategoryFallbackImage(sale.category))}
                       alt={sale.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
