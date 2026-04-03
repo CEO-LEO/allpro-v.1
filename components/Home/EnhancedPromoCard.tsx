@@ -127,9 +127,8 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
             {(() => {
               // Resolve image: promo.image may already be a full URL (from API) or a storage path
               const imageUrl = resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category));
-              const hasImage = !imageError && imageUrl && !imageUrl.includes('unsplash.com') ? true : !imageError && promo.image;
               
-              if (hasImage && imageUrl) {
+              if (!imageError && imageUrl) {
                 return (
                   <img
                     src={imageUrl}

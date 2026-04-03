@@ -46,15 +46,28 @@ export function resolveImageUrl(image: string | null | undefined, fallback?: str
     return image;
   }
 
+  // UUID pattern (e.g. "3b07cabc-ce21-499a-a8c8-8ee6788d72f2") — not an image path
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (UUID_RE.test(image)) {
+    return fallback || CATEGORY_IMAGES.Other;
+  }
+
+  // Bare filename (e.g. "1775231249808_abc.png") — prepend "products/" folder
+  const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
+  let storagePath = image;
+  if (!image.includes('/') && IMAGE_EXT_RE.test(image)) {
+    storagePath = `products/${image}`;
+  }
+
   // Otherwise it's a Supabase Storage path → build public URL
   if (isSupabaseConfigured && SUPABASE_URL) {
-    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(image);
+    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
     return `${data.publicUrl}?t=${Date.now()}`;
   }
 
   // Fallback: construct URL manually
   if (SUPABASE_URL) {
-    return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${image}`;
+    return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${storagePath}`;
   }
 
   return fallback || '';
