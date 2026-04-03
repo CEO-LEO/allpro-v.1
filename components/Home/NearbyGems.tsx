@@ -2,8 +2,8 @@
 
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import { 
   MapPinIcon, 
   SparklesIcon,
@@ -20,6 +20,7 @@ interface NearbyPromo {
   description: string;
   price?: number;
   discount_rate?: number;
+  category?: string;
   location?: string;
   image?: string;
   distance?: number; // in km
@@ -153,12 +154,10 @@ function NearbyGemCard({ promo, index }: { promo: NearbyPromo; index: number }) 
           {/* Image */}
           <div className="relative w-full aspect-square bg-gray-50">
             {!imageError && promo.image ? (
-              <Image
-                src={promo.image}
+              <img
+                src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))}
                 alt={promo.title}
-                fill
-                sizes="(max-width: 640px) 224px, (max-width: 1024px) 256px, 288px"
-                className="object-cover"
+                className="w-full h-full object-cover"
                 onError={() => setImageError(true)}
                 loading="lazy"
               />

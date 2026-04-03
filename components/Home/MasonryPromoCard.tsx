@@ -70,11 +70,9 @@ export default function MasonryPromoCard({ promo, index }: MasonryPromoCardProps
         >
           {/* Image Container - รูปเด่น */}
           <div className="relative overflow-hidden bg-gray-100">
-            <Image
+            <img
               src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))}
               alt={promo.title}
-              width={400}
-              height={500}
               className={`w-full h-auto object-cover transition-transform duration-500 ${
                 isHovered ? 'scale-110' : 'scale-100'
               }`}

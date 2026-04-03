@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Navigation, ChevronLeft, ChevronRight, Locate, XCircle } from 'lucide-react';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import { useGeolocation, calcDistanceKm } from '@/hooks/useGeolocation';
 import { Product } from '@/store/useAppStore';
 import { supabase } from '@/lib/supabase';
@@ -265,12 +265,11 @@ export default function NearbyDeals({ products }: NearbyDealsProps) {
               <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all group">
                 {/* Image */}
                 <div className="relative h-40 overflow-hidden bg-gray-100">
-                  <Image
-                    src={product.image || 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=600'}
+                  <img
+                    src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                     alt={product.title}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                    sizes="256px"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    loading="lazy"
                   />
 
                   {/* Distance Badge */}
