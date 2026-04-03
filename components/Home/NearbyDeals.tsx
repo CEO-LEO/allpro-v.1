@@ -56,16 +56,39 @@ export default function NearbyDeals({ products }: NearbyDealsProps) {
       setIsLoadingNearby(true);
       
       try {
-        // เรียก Supabase RPC Function
-        const { data, error } = await supabase.rpc('nearby_products', {
-          user_lat: userLat,
-          user_lng: userLng,
-          radius_km: MAX_RADIUS_KM,
-        });
+        // Try Supabase RPC Function (only if it exists)
+        let rpcSuccess = false;
+        try {
+          const { data, error } = await supabase.rpc('nearby_products', {
+            user_lat: userLat,
+            user_lng: userLng,
+            radius_km: MAX_RADIUS_KM,
+          });
 
-        if (error) {
-          console.warn('RPC nearby_products not available, using fallback:', error);
-          // Fallback: ใช้ Mock Coords
+          if (!error && data) {
+            const nearbyList: ProductWithDistance[] = data.map((item: any) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              price: item.price || 0,
+              originalPrice: item.originalPrice || item.price,
+              promoPrice: item.promoPrice,
+              image: item.image,
+              category: item.category,
+              shopName: item.shopName,
+              discount: item.discount,
+              rating: item.rating,
+              distanceKm: item.distance_km,
+            }));
+            setNearbyProducts(nearbyList);
+            rpcSuccess = true;
+          }
+        } catch {
+          // RPC not available — fall through to local fallback
+        }
+
+        if (!rpcSuccess) {
+          // Fallback: calculate distance from local products with mock coords
           const fallbackProducts = products
             .map(p => {
               const coords = MOCK_COORDS[p.id];
@@ -77,24 +100,6 @@ export default function NearbyDeals({ products }: NearbyDealsProps) {
             .sort((a, b) => a.distanceKm - b.distanceKm);
           
           setNearbyProducts(fallbackProducts);
-        } else if (data) {
-          // แปลง RPC result เป็น ProductWithDistance
-          const nearbyList: ProductWithDistance[] = data.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            price: item.price || 0,
-            originalPrice: item.originalPrice || item.price,
-            promoPrice: item.promoPrice,
-            image: item.image,
-            category: item.category,
-            shopName: item.shopName,
-            discount: item.discount,
-            rating: item.rating,
-            distanceKm: item.distance_km,
-          }));
-          
-          setNearbyProducts(nearbyList);
         }
       } catch (err) {
         console.error('Error fetching nearby products:', err);
