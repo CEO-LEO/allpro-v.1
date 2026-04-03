@@ -8,6 +8,7 @@ import {
   ShoppingBagIcon,
   MapPinIcon,
 } from '@heroicons/react/24/solid';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 // ─── CountUp Hook ───────────────────────────────────────
 function useCountUp(end: number, duration = 1500, start = 0) {
   const [value, setValue] = useState(start);

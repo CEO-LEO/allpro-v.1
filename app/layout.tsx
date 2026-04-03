@@ -15,6 +15,7 @@ const kanit = Kanit({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://all-promotion.vercel.app'),
   title: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
   description: 'แพลตฟอร์มค้นหาโปรโมชั่นจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศ พร้อม AI Insights และการวิเคราะห์ตลาดแบบเรียลไทม์',
   keywords: ['โปรโมชั่น', 'ส่วนลด', '7-11', 'Lotus', 'Makro', 'ของแถม', 'ลดราคา', 'คูปอง', 'ดีล'],
@@ -24,13 +25,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'th_TH',
-    url: 'https://allpro.app',
+    url: 'https://all-promotion.vercel.app',
     siteName: 'All Pro',
     title: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
     description: 'แพลตฟอร์มค้นหาโปรโมชั่นจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศ พร้อม AI Insights',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/og-default.jpg',
         width: 1200,
         height: 630,
         alt: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
     description: 'แพลตฟอร์มค้นหาโปรโมชั่นจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศ',
-    images: ['/og-image.jpg'],
+    images: ['/og-default.jpg'],
     creator: '@allpro',
   },
   robots: {
@@ -71,7 +72,7 @@ export default function RootLayout({
         <Script src="/polyfills.js" strategy="beforeInteractive" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#f97316" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

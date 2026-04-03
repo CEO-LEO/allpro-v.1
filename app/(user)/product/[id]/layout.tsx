@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 type ParamsInput = { id: string } | Promise<{ id: string }>;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://allpromo.co';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://all-promotion.vercel.app';
 
 function toTHB(value?: number) {
   if (typeof value !== 'number' || Number.isNaN(value)) return 'พิเศษ';

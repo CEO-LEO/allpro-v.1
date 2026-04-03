@@ -5,7 +5,7 @@
   "framework": "nextjs",
   "regions": ["sin1"],
   "env": {
-    "NEXT_PUBLIC_APP_URL": "https://allpro-v-1.vercel.app"
+    "NEXT_PUBLIC_APP_URL": "https://all-promotion.vercel.app"
   },
   "headers": [
     {
