@@ -10,9 +10,9 @@ const MerchantSettingsDashboard = dynamic(
 
 export default function MerchantSettingsPage() {
   return (
-    <div className="pb-20">
-      <DynamicNavbar />
+    <div className="pb-24">
       <MerchantSettingsDashboard />
+      <DynamicNavbar />
     </div>
   );
 }

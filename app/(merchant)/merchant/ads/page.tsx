@@ -28,10 +28,10 @@ import {
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import Image from 'next/image';
-import DynamicNavbar from '@/components/Layout/DynamicNavbar';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
+import DynamicNavbar from '@/components/Layout/DynamicNavbar';
 
 export default function AdsManagerPage() {
   const { user } = useAuthStore();
@@ -177,8 +177,7 @@ export default function AdsManagerPage() {
   const totalBudget = dailyBudget * duration;
 
   return (
-    <div className="min-h-screen pb-20">
-      <DynamicNavbar />
+    <div className="min-h-screen pb-24">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
@@ -799,6 +798,8 @@ export default function AdsManagerPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Bottom Navigation */}
+      <DynamicNavbar />
     </div>
   );
 }

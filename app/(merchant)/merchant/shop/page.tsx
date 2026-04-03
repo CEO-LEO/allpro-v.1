@@ -97,7 +97,7 @@ export default function MerchantShopPage() {
   const openEdit = () => setShowEditModal(true);
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-24">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
@@ -388,6 +388,7 @@ export default function MerchantShopPage() {
       {/* Edit Shop Modal */}
       <EditShopModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} />
 
+      {/* Bottom Navigation */}
       <DynamicNavbar />
     </div>
   );
