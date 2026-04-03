@@ -28,6 +28,7 @@ import {
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import Image from 'next/image';
+import DynamicNavbar from '@/components/Layout/DynamicNavbar';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
@@ -177,6 +178,7 @@ export default function AdsManagerPage() {
 
   return (
     <div className="min-h-screen pb-20">
+      <DynamicNavbar />
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
