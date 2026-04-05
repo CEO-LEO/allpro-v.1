@@ -212,9 +212,7 @@ export default function MerchantDashboard() {
   const shopName = user?.shopName || '';
   const possibleNames = [shopName, user?.name, 'My Shop'].filter(Boolean);
   const myProducts = products.filter(
-    (p) =>
-      possibleNames.includes(p.shopName) ||
-      p.id.startsWith('product-') // locally created
+    (p) => possibleNames.includes(p.shopName)
   );
 
   // Sort products

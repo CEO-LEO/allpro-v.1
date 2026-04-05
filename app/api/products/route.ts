@@ -119,39 +119,39 @@ export async function POST(request: Request) {
       insertData.shop_id = shopId;
     }
 
-    // Try primary insert (full columns)
-    let data = null;
-    let insertError = null;
-    
-    const result1 = await (supabase as any).from('products').insert(insertData).select().single();
-    if (!result1.error) {
-      data = result1.data;
-    } else {
-      // Fallback: minimal columns only (in case some columns don't exist)
-      console.warn('[API] Full insert failed, trying minimal:', result1.error.message);
-      const minimalData: Record<string, unknown> = {
-        title,
-        description: description || '',
-        price,
-        original_price: originalPrice || price,
-        image: finalImage,
-        category,
-        shop_name: shopName,
-      };
-      if (shopId && shopId.length > 10) minimalData.shop_id = shopId;
-      
-      const result2 = await (supabase as any).from('products').insert(minimalData).select().single();
-      if (!result2.error) {
-        data = result2.data;
+    // Duplicate check: same title + shop within last 5 minutes = likely double-submit
+    if (title && (shopId || shopName)) {
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      let dupQuery = supabase.from('products').select('id, title, created_at')
+        .eq('title', title)
+        .gte('created_at', fiveMinAgo);
+      if (shopId && shopId.length > 10) {
+        dupQuery = dupQuery.eq('shop_id', shopId);
       } else {
-        insertError = result2.error.message;
+        dupQuery = dupQuery.eq('shop_name', shopName);
+      }
+      const { data: existing } = await dupQuery;
+      if (existing && existing.length > 0) {
+        console.warn('[API] Duplicate blocked:', title, '- already exists (id:', existing[0].id, ')');
+        return NextResponse.json({
+          error: `สินค้า "${title}" ถูกลงประกาศไปแล้ว`,
+          duplicate: true,
+          existingId: existing[0].id,
+        }, { status: 409 });
       }
     }
 
+    // Single insert — NO fallback to prevent double-insert
+    const { data, error: insertError } = await supabase
+      .from('products')
+      .insert(insertData)
+      .select()
+      .single();
+
     if (insertError || !data) {
-      console.error('[API] DB insert error:', insertError);
+      console.error('[API] DB insert error:', insertError?.message);
       return NextResponse.json({
-        error: 'บันทึกข้อมูลไม่สำเร็จ: ' + (insertError || 'unknown'),
+        error: 'บันทึกข้อมูลไม่สำเร็จ: ' + (insertError?.message || 'unknown'),
         step: 'insert',
       }, { status: 500 });
     }

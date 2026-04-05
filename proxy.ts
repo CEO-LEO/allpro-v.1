@@ -37,7 +37,7 @@ const PUBLIC_PREFIXES = [
 /** File extensions to skip */
 const STATIC_EXTENSIONS = /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot|map)$/;
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── 1. Skip static files & internal routes ──

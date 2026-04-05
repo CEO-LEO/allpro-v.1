@@ -15,9 +15,6 @@ const nextConfig: NextConfig = {
     ],
     unoptimized: true,
   },
-  experimental: {
-    turbopackUseSystemTlsCerts: true,
-  },
   env: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || '',
   },

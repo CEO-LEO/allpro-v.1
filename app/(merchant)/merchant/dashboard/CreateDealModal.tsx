@@ -4,7 +4,6 @@ import { useState, useRef } from 'react';
 import { X, Image as ImageIcon, DollarSign, Tag, Calendar, Sparkles, Upload, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useProductStore } from '@/store/useProductStore';
 import { supabase } from '@/lib/supabase';
 import { uploadProductImage } from '@/lib/uploadImage';
 import { toast } from 'sonner';
@@ -19,7 +18,6 @@ const categories = ['Food', 'Fashion', 'Service', 'Electronics', 'Beauty', 'Fitn
 
 export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProps) {
   const { user } = useAuthStore();
-  const addProduct = useProductStore((s) => s.addProduct);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const imageFileRef = useRef<File | null>(null);
@@ -101,7 +99,7 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
 
     let success = false;
 
-    // Attempt 1: Server API
+    // Server API only — single source of insert (no client fallback to prevent duplicates)
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
@@ -109,6 +107,12 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
       });
 
       const result = await res.json();
+
+      if (res.status === 409 && result.duplicate) {
+        toast.error(result.error || 'สินค้านี้ถูกลงประกาศไปแล้ว', { id: 'create-deal' });
+        setIsSubmitting(false);
+        return;
+      }
 
       if (res.ok && !result.error) {
         console.log('[CreateDealModal] ✅ API success:', result.data);
@@ -118,35 +122,6 @@ export default function CreateDealModal({ isOpen, onClose }: CreateDealModalProp
       }
     } catch (err) {
       console.warn('[CreateDealModal] Fetch error:', err);
-    }
-
-    // Attempt 2: Client-side upload + direct Supabase insert (fallback)
-    if (!success) {
-      try {
-        // Upload image client-side to Supabase Storage
-        const imagePath = await uploadProductImage(imageFileRef.current);
-
-        const insertData: Record<string, unknown> = {
-          title: formData.title,
-          description: formData.description || 'โปรโมชั่นพิเศษ!',
-          price: promoPrice,
-          original_price: originalPrice,
-          image: imagePath,
-          category: formData.category,
-          shop_name: user?.shopName || user?.name || 'Your Shop',
-        };
-        if (userId) insertData.shop_id = userId;
-
-        const { error: dbError } = await supabase.from('products').insert(insertData);
-        if (!dbError) {
-          console.log('[CreateDealModal] ✅ Direct insert success');
-          success = true;
-        } else {
-          console.warn('[CreateDealModal] Direct insert failed:', dbError.message);
-        }
-      } catch (directErr) {
-        console.warn('[CreateDealModal] Direct fallback error:', directErr);
-      }
     }
 
     if (!success) {

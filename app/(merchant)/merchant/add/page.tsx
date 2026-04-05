@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useProductStore } from '@/store/useProductStore'; // Import Store
 import { supabase } from '@/lib/supabase';
 import { uploadProductImage, uploadGalleryImages } from '@/lib/uploadImage';
 import { toast } from 'sonner';
@@ -25,7 +24,6 @@ function isMerchantProfileComplete(user: any): boolean {
 export default function AddProductPage() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const addProduct = useProductStore((state) => state.addProduct); // Use Store Action
   const [loading, setLoading] = useState(false);
   const profileComplete = isMerchantProfileComplete(user);
   
@@ -140,13 +138,19 @@ export default function AddProductPage() {
 
       let success = false;
 
-      // Attempt 1: Server API (uploads image to Supabase Storage)
+      // Server API only — single source of insert (no client fallback to prevent duplicates)
       try {
         const res = await fetch('/api/products', {
           method: 'POST',
           body: apiFormData,
         });
         const result = await res.json();
+
+        if (res.status === 409 && result.duplicate) {
+          toast.error(result.error || 'สินค้านี้ถูกลงประกาศไปแล้ว', { id: 'add-product' });
+          return;
+        }
+
         if (res.ok && !result.error) {
           console.log('[AddProduct] ✅ API success:', result.data);
           success = true;
@@ -155,42 +159,6 @@ export default function AddProductPage() {
         }
       } catch (err) {
         console.warn('[AddProduct] Fetch error:', err);
-      }
-
-      // Attempt 2: Client-side upload + direct Supabase insert fallback
-      if (!success) {
-        try {
-          // Upload image client-side to Supabase Storage
-          const imagePath = await uploadProductImage(imageFile);
-          const galleryPaths = await uploadGalleryImages(galleryFiles);
-
-          const insertData: Record<string, unknown> = {
-            title,
-            description: description || `${title} ลดราคาสุดพิเศษ!`,
-            price: Number(price),
-            original_price: Number(originalPrice),
-            image: imagePath,
-            category,
-            shop_name: user.shopName || user.name || 'ร้านค้าของฉัน',
-            discount,
-          };
-
-          if (galleryPaths.length > 0) {
-            insertData.gallery = galleryPaths;
-          }
-
-          const sessionRes = await supabase.auth.getSession();
-          if (sessionRes?.data?.session?.user?.id) {
-            insertData.shop_id = sessionRes.data.session.user.id;
-          }
-
-          const { error: dbError } = await supabase.from('products').insert(insertData);
-          if (!dbError) {
-            success = true;
-          }
-        } catch (directErr) {
-          console.warn('[AddProduct] Direct insert failed:', directErr);
-        }
       }
 
       if (!success) {

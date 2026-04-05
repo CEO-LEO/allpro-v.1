@@ -15,7 +15,7 @@ const kanit = Kanit({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://all-promotion.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://all-promotions.com'),
   title: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
   description: 'แพลตฟอร์มค้นหาโปรโมชั่นจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศ พร้อม AI Insights และการวิเคราะห์ตลาดแบบเรียลไทม์',
   keywords: ['โปรโมชั่น', 'ส่วนลด', '7-11', 'Lotus', 'Makro', 'ของแถม', 'ลดราคา', 'คูปอง', 'ดีล'],
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'th_TH',
-    url: 'https://all-promotion.vercel.app',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://all-promotions.com',
     siteName: 'All Pro',
     title: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
     description: 'แพลตฟอร์มค้นหาโปรโมชั่นจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศ พร้อม AI Insights',
@@ -56,9 +56,9 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: 'your-google-verification-code',
-  },
+  // verification: {
+  //   google: 'your-google-verification-code',
+  // },
 }
 
 export default function RootLayout({

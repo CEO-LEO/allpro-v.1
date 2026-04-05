@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Package, Zap } from 'lucide-react';
-import { useProductStore } from '@/store/useProductStore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 
 export default function CreateDealWidget() {
   const { user } = useAuthStore();
-  const addProduct = useProductStore((state) => state.addProduct);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     productName: '',
@@ -19,7 +19,7 @@ export default function CreateDealWidget() {
     isFlashSale: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -31,6 +31,8 @@ export default function CreateDealWidget() {
       toast.error('Please enter discounted price');
       return;
     }
+
+    setIsSubmitting(true);
 
     const discountedPrice = parseFloat(formData.price);
     
@@ -52,37 +54,60 @@ export default function CreateDealWidget() {
     };
     const selectedImage = categoryImages[formData.category] || categoryImages.Other;
 
-    // Create new product
-    const newProduct = {
-      title: formData.productName,
-      description: `${formData.isFlashSale ? '⚡ Flash Sale!' : 'Special Deal'} from ${user?.shopName || user?.name || 'Our Shop'}`,
-      originalPrice: originalPrice,
-      promoPrice: discountedPrice,
-      discount: discount,
-      image: selectedImage,
-      shopName: user?.shopName || user?.name || 'Your Shop',
-      shopLogo: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.shopName || user?.name || 'YS')}&background=4F46E5&color=fff`,
-      category: formData.category,
-      verified: true,
-      distance: '0.5 km',
-      validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      tags: [
-        formData.category,
-        ...(formData.isFlashSale ? ['Flash Sale', 'Limited Time'] : ['New Deal', 'Special Offer'])
-      ],
-    };
+    const shopName = user?.shopName || user?.name || 'Your Shop';
+    const description = `${formData.isFlashSale ? '⚡ Flash Sale!' : 'Special Deal'} from ${shopName}`;
+    const tags = [
+      formData.category,
+      ...(formData.isFlashSale ? ['Flash Sale', 'Limited Time'] : ['New Deal', 'Special Offer'])
+    ];
 
-    // Add to store (adds to BEGINNING of array)
-    addProduct(newProduct);
+    let success = false;
+
+    // Server API only — single source of insert (no client fallback to prevent duplicates)
+    try {
+      const apiFormData = new FormData();
+      apiFormData.append('title', formData.productName);
+      apiFormData.append('description', description);
+      apiFormData.append('price', String(discountedPrice));
+      apiFormData.append('originalPrice', String(originalPrice));
+      apiFormData.append('category', formData.category);
+
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        body: apiFormData,
+      });
+
+      const result = await res.json();
+
+      if (res.status === 409 && result.duplicate) {
+        toast.error(result.error || 'สินค้านี้ถูกลงประกาศไปแล้ว');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (res.ok && !result.error) {
+        success = true;
+      } else {
+        console.warn('[CreateDealWidget] API error:', result.error);
+      }
+    } catch (err) {
+      console.warn('[CreateDealWidget] Fetch error:', err);
+    }
+
+    if (!success) {
+      toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่');
+      setIsSubmitting(false);
+      return;
+    }
 
     // Dispatch event to trigger notifications for users with matching preferred_tags
     if (typeof window !== 'undefined') {
       const promoEvent = new CustomEvent('newPromoCreated', {
         detail: {
           title: formData.productName,
-          shopName: user?.shopName || user?.name || 'Our Shop',
-          tags: newProduct.tags,
-          category: newProduct.category,
+          shopName,
+          tags,
+          category: formData.category,
         }
       });
       window.dispatchEvent(promoEvent);
@@ -104,6 +129,7 @@ export default function CreateDealWidget() {
       category: 'Food',
       isFlashSale: false,
     });
+    setIsSubmitting(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -221,12 +247,13 @@ export default function CreateDealWidget() {
         {/* Submit Button */}
         <motion.button
           type="submit"
+          disabled={isSubmitting}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors"
         >
           <Sparkles className="w-5 h-5" />
-          Post Deal Now
+          {isSubmitting ? 'Posting...' : 'Post Deal Now'}
         </motion.button>
       </form>
 

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAppStore } from '@/store/useSimpleStore';
+import { resolveImageUrl } from '@/lib/imageUrl';
 
 export default function SimpleDemo() {
   const { products, isLoading, fetchProducts, getProductById } = useAppStore();
@@ -59,7 +60,7 @@ export default function SimpleDemo() {
               {/* Product Image */}
               <div className="relative h-56 overflow-hidden">
                 <img
-                  src={product.image}
+                  src={resolveImageUrl(product.image)}
                   alt={product.title}
                   className="w-full h-full object-cover"
                 />

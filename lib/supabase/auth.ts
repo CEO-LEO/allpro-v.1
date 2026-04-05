@@ -297,8 +297,8 @@ export async function fetchMerchantProfile(userId: string) {
       .from('merchant_profiles')
       .select('*')
       .eq('user_id', userId)
-      .single()
-      .then(({ data, error }) => (error ? null : data));
+      .maybeSingle()
+      .then(({ data }) => data);
 
     return await Promise.race([query, timeout]);
   } catch (err) {

@@ -70,7 +70,8 @@ export function resolveImageUrl(image: string | null | undefined, fallback?: str
     return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${storagePath}`;
   }
 
-  return fallback || '';
+  // NEVER return a relative path — browser would resolve it against the page URL
+  return fallback || CATEGORY_IMAGES.Other;
 }
 
 /**

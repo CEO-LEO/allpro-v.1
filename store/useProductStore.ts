@@ -109,12 +109,15 @@ export const useProductStore = create<ProductStore>()(
       }),
       
       deleteProduct: async (id) => {
-        // ลบจาก Supabase DB ก่อน
-        if (isSupabaseConfigured) {
+        // ลบจาก Supabase DB ก่อน (only if id is a valid UUID)
+        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (isSupabaseConfigured && UUID_RE.test(id)) {
           const { error } = await supabase.from('products').delete().eq('id', id);
           if (error) {
             console.error('[ProductStore] deleteProduct DB error:', error.message);
           }
+        } else if (isSupabaseConfigured && !UUID_RE.test(id)) {
+          console.warn('[ProductStore] Skipping DB delete for non-UUID id:', id);
         }
         // ลบจาก local state
         set((state) => ({
@@ -192,37 +195,42 @@ export const useProductStore = create<ProductStore>()(
             return;
           }
 
+          // DB is Single Source of Truth — always replace local state
           if (data && data.length > 0) {
-            const mapped: Product[] = data.map((row: any) => ({
-              id: row.id,
-              title: row.title || '',
-              description: row.description || '',
-              originalPrice: row.original_price || row.price || 0,
-              promoPrice: row.price || 0,
-              discount: row.discount || 0,
-              image: row.image || '',
-              gallery: row.gallery || [],
-              shopName: row.shop_name || shopName || '',
-              category: row.category || 'Other',
-              verified: true,
-              likes: row.likes || 0,
-              isLiked: false,
-              reviews: row.reviews || 0,
-              rating: row.rating || 0,
-              validUntil: row.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              createdAt: row.created_at || new Date().toISOString(),
-              tags: row.tags || [],
-              isBoosted: row.is_boosted || false,
-            }));
+            // Deduplicate by id (in case DB returns duplicates via OR filter)
+            const seen = new Set<string>();
+            const mapped: Product[] = [];
+            for (const row of data) {
+              if (seen.has(row.id)) continue;
+              seen.add(row.id);
+              mapped.push({
+                id: row.id,
+                title: row.title || '',
+                description: row.description || '',
+                originalPrice: row.original_price || row.price || 0,
+                promoPrice: row.price || 0,
+                discount: row.discount || 0,
+                image: row.image || '',
+                gallery: row.gallery || [],
+                shopName: row.shop_name || shopName || '',
+                category: row.category || 'Other',
+                verified: true,
+                likes: row.likes || 0,
+                isLiked: false,
+                reviews: row.reviews || 0,
+                rating: row.rating || 0,
+                validUntil: row.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                createdAt: row.created_at || new Date().toISOString(),
+                tags: row.tags || [],
+                isBoosted: row.is_boosted || false,
+              });
+            }
 
             console.log('[ProductStore] Loaded', mapped.length, 'products from Supabase');
-
-            set((state) => {
-              // Merge: keep local products that aren't in DB, add all DB products
-              const dbIds = new Set(mapped.map(p => p.id));
-              const localOnly = state.products.filter(p => !dbIds.has(p.id));
-              return { products: [...mapped, ...localOnly] };
-            });
+            set({ products: mapped });
+          } else {
+            // No products in DB — clear local state to remove stale data
+            set({ products: [] });
           }
         } catch (e) {
           console.error('[ProductStore] fetchMerchantProducts unexpected error:', e);
@@ -231,12 +239,12 @@ export const useProductStore = create<ProductStore>()(
     }),
     {
       name: 'product-storage',
-      version: 5,
+      version: 6,
       migrate: (persisted: any, version: number) => {
         const state = persisted as ProductStore;
-        if (version < 5) {
-          // Version 5: Clear ALL local products
-          // All data now comes from Supabase DB via API
+        if (version < 6) {
+          // Version 6: Clear ALL local products to remove stale product-xxx IDs
+          // and blob/relative image URLs. All data comes from Supabase DB.
           return {
             ...state,
             products: [],

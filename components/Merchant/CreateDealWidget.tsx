@@ -29,7 +29,7 @@ export default function CreateDealWidget() {
   const { user, isHydrating } = useAuthStore();
   const stockItems = useStockStore((s) => s.items);
   const deductStock = useStockStore((s) => s.deductStock);
-  const addProduct = useProductStore((s) => s.addProduct);
+  const fetchMerchantProducts = useProductStore((s) => s.fetchMerchantProducts);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -149,7 +149,7 @@ export default function CreateDealWidget() {
 
       let success = false;
 
-      // Attempt 1: Server API (uses service role key, bypasses RLS)
+      // Server API only — single source of insert (no client fallback to prevent duplicates)
       try {
         const res = await fetch('/api/products', {
           method: 'POST',
@@ -157,6 +157,11 @@ export default function CreateDealWidget() {
         });
 
         const result = await res.json();
+
+        if (res.status === 409 && result.duplicate) {
+          toast.error(result.error || 'สินค้านี้ถูกลงประกาศไปแล้ว', { id: 'create-deal' });
+          return;
+        }
 
         if (res.ok && !result.error) {
           console.log('[CreateDeal] ✅ API success:', result.data);
@@ -168,63 +173,17 @@ export default function CreateDealWidget() {
         console.warn('[CreateDeal] API fetch failed:', fetchErr);
       }
 
-      // Attempt 2: Direct client-side Supabase insert (fallback)
-      if (!success && isSupabaseConfigured) {
-        console.log('[CreateDeal] Trying direct Supabase insert...');
-        try {
-          const insertData: Record<string, unknown> = {
-            title: formData.productName,
-            description: formData.description || `ลด ${calculateDiscount()}%`,
-            price: discounted,
-            original_price: original,
-            image: (useImageUrl && imageUrl) ? imageUrl : '',
-            category: formData.category,
-            shop_name: user?.shopName || user?.name || 'My Shop',
-          };
-          if (userId) insertData.shop_id = userId;
-
-          const { error: dbError } = await supabase
-            .from('products')
-            .insert(insertData);
-
-          if (!dbError) {
-            console.log('[CreateDeal] ✅ Direct insert success');
-            success = true;
-          } else {
-            console.warn('[CreateDeal] Direct insert failed:', dbError.message);
-          }
-        } catch (directErr) {
-          console.warn('[CreateDeal] Direct fallback error:', directErr);
-        }
-      }
-
       if (!success) {
-        if (!isSupabaseConfigured) {
-          console.error('[CreateDeal] Supabase not configured — env vars missing on this deployment');
-          toast.error('ระบบยังไม่พร้อม กรุณาตั้งค่า Supabase environment variables', { id: 'create-deal' });
-        } else {
-          toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
-        }
+        toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่', { id: 'create-deal' });
         return;
       }
 
       toast.success('ลงประกาศโปรโมชั่นสำเร็จ! 🎉', { id: 'create-deal' });
 
-      // Add to local Zustand store so dashboard shows it immediately
-      addProduct({
-        title: formData.productName,
-        description: formData.description || `ลด ${calculateDiscount()}%`,
-        originalPrice: original,
-        promoPrice: discounted,
-        discount: calculateDiscount(),
-        image: (useImageUrl && imageUrl) ? imageUrl : imagePreview || '',
-        shopName: user?.shopName || user?.name || 'My Shop',
-        category: formData.category as any,
-        verified: true,
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        tags: [formData.category],
-        isBoosted: false,
-      });
+      // Refresh products from DB so dashboard shows the new item
+      const merchantId = user?.id || '';
+      const merchantShopName = user?.shopName || user?.name || '';
+      fetchMerchantProducts(merchantId, merchantShopName);
 
       // Success feedback
       confetti({

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { ArrowRight, Store, Search, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
-import { useProductStore, Product } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getPromotions } from '@/lib/getPromotions';
 import { Promotion } from '@/lib/types';
@@ -59,34 +58,9 @@ const NAVBAR_CATEGORIES = ['All', 'Food', 'Fashion', 'Travel', 'Gadget', 'Beauty
 
 const ITEMS_PER_PAGE = 6;
 
-// Convert Product (from store) to Promotion (used by UI components)
-function productToPromotion(p: Product): Promotion {
-  return {
-    id: p.id,
-    shop_name: p.shopName,
-    title: p.title,
-    description: p.description,
-    price: p.promoPrice,
-    discount_rate: p.discount,
-    category: p.category,
-    is_verified: p.verified,
-    is_sponsored: false,
-    is_boosted: p.isBoosted || false,
-    boosted_at: p.boostedAt,
-    location: p.distance || 'ทุกสาขา',
-    search_volume: 0,
-    image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
-    valid_until: p.validUntil,
-    views: 0,
-    saves: 0,
-    tags: p.tags,
-  };
-}
-
 export default function Home() {
   const { user, selectedCategory, setSelectedCategory } = useAppStore();
   const { user: authUser } = useAuthStore();
-  const storeProducts = useProductStore((s) => s.products);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -164,16 +138,13 @@ export default function Home() {
     fetchPromotions();
   }, []);
 
-  // Merge static promotions + store products (merchant-created)
+  // Merge: DB/API promotions are the primary source of truth.
+  // Zustand store products are only used as a local cache for merchant views,
+  // NOT merged into the home feed to avoid duplicates.
   // Sort boosted promotions to the top, then by creation date
   const allPromotions = useMemo(() => {
-    const storePromos = storeProducts.map(productToPromotion);
-    // Deduplicate by id
-    const ids = new Set(storePromos.map((p) => p.id));
-    const staticOnly = promotions.filter((p) => !ids.has(p.id));
-    const merged = [...storePromos, ...staticOnly];
-    // Sort: boosted first (by boosted_at desc), then rest by newest
-    return merged.sort((a, b) => {
+    // promotions already contains DB + static data (fetched via /api/debug-products)
+    return [...promotions].sort((a, b) => {
       if (a.is_boosted && !b.is_boosted) return -1;
       if (!a.is_boosted && b.is_boosted) return 1;
       if (a.is_boosted && b.is_boosted) {
@@ -181,7 +152,7 @@ export default function Home() {
       }
       return 0; // keep original order for non-boosted
     });
-  }, [storeProducts, promotions]);
+  }, [promotions]);
 
   // Filter promotions with memoization
   const filteredProducts = useMemo(() => {

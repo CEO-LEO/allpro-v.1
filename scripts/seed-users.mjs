@@ -306,7 +306,9 @@ async function seedUsers() {
 
   // Export JSON
   const { writeFileSync } = await import('fs');
-  const outputPath = new URL('./seed-users-output.json', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+  const { fileURLToPath } = await import('url');
+  const { dirname, join } = await import('path');
+  const outputPath = join(dirname(fileURLToPath(import.meta.url)), 'seed-users-output.json');
   writeFileSync(outputPath, JSON.stringify(results, null, 2), 'utf-8');
   console.log(`📄 ข้อมูลถูกบันทึกที่: ${outputPath}\n`);
 

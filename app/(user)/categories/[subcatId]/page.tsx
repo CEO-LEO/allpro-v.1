@@ -14,6 +14,7 @@ import {
   TagIcon,
 } from '@heroicons/react/24/outline';
 import { Product } from '@/store/useAppStore';
+import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 // ============================================
 // INTERFACES — expected API response shape
@@ -314,7 +315,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
       >
         <div className="relative aspect-square bg-gray-100 overflow-hidden">
           <Image
-            src={product.image}
+            src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
             alt={product.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
