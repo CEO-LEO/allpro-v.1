@@ -272,8 +272,11 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         xp: result.user.xp ?? 0,
         coins: result.user.coins ?? 0,
         level: result.user.level ?? 1,
-        preferred_tags: [],
-        onboardingCompleted: false,
+        preferred_tags: result.user.preferred_tags || [],
+        onboardingCompleted: result.user.onboardingCompleted ?? false,
+        profileCompleted: result.user.profileCompleted ?? false,
+        gender: result.user.gender as any,
+        ageRange: result.user.ageRange as any,
         // Merchant fields from Supabase merchant_profiles table
         shopName: result.user.shopName,
         shopLogo: result.user.shopLogo,

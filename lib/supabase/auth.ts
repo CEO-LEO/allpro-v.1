@@ -27,6 +27,12 @@ export interface AuthResult {
     shopSocialFacebook?: string;
     shopSocialInstagram?: string;
     shopSocialWebsite?: string;
+    // Onboarding/profile status
+    onboardingCompleted?: boolean;
+    profileCompleted?: boolean;
+    preferred_tags?: string[];
+    gender?: string;
+    ageRange?: string;
   };
 }
 
@@ -248,6 +254,12 @@ export async function signIn(
       shopSocialFacebook: merchantData?.facebook || undefined,
       shopSocialInstagram: merchantData?.instagram || undefined,
       shopSocialWebsite: merchantData?.website || undefined,
+      // Onboarding/profile status from DB
+      onboardingCompleted: profile?.onboarding_completed || false,
+      profileCompleted: profile?.profile_completed || false,
+      preferred_tags: profile?.preferred_tags || undefined,
+      gender: profile?.gender || undefined,
+      ageRange: profile?.age_range || undefined,
     },
   };
 }
