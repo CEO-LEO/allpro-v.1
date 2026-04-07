@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useStockStore } from "@/store/useStockStore";
 import { useProductStore } from "@/store/useProductStore";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Upload, X, Zap, Package, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, X, Zap, Package, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle, Loader2, Tag } from "lucide-react";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import EditShopModal from "@/components/Merchant/EditShopModal";
@@ -13,6 +13,18 @@ import EditShopModal from "@/components/Merchant/EditShopModal";
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1505252585461-04db1267ae5b?w=500&q=80";
 
 const CATEGORIES = ['Food', 'Fashion', 'Travel', 'Gadget', 'Beauty'] as const;
+
+const TAG_SUGGESTIONS = [
+  'ซื้อ 1 แถม 1',
+  'ลดล้างสต๊อก',
+  'ส่งฟรี',
+  'Flash Sale',
+  'สินค้าใหม่',
+  'ราคาพิเศษ',
+  'จำนวนจำกัด',
+  'ลดเพิ่ม',
+  'ของแถม',
+];
 
 // Helper: check if merchant profile is complete (derived from fields only)
 function isMerchantProfileComplete(user: any): boolean {
@@ -63,7 +75,9 @@ export default function CreateDealWidget() {
     category: "Food" as string,
     paymentInfo: "",
     isFlashSale: false,
+    tags: [] as string[],
   });
+  const [tagInput, setTagInput] = useState("");
 
   // Handle image file selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,6 +141,11 @@ export default function CreateDealWidget() {
       apiFormData.append('discount', String(calculateDiscount()));
       apiFormData.append('location', 'กรุงเทพฯ');
       apiFormData.append('conditions', formData.isFlashSale ? 'Flash Sale - เวลาจำกัด' : 'โปรโมชั่นพิเศษ');
+
+      // Append tags
+      if (formData.tags.length > 0) {
+        apiFormData.append('tags', JSON.stringify(formData.tags));
+      }
 
       // Attach image file if selected
       if (imageFile) {
@@ -209,7 +228,9 @@ export default function CreateDealWidget() {
         category: "Food",
         paymentInfo: "",
         isFlashSale: false,
+        tags: [],
       });
+      setTagInput("");
       setSelectedStockId("");
       setPromoQuantity("");
       setImageFile(null);
@@ -547,6 +568,80 @@ export default function CreateDealWidget() {
               className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+
+        {/* Tags Section */}
+        <div className="bg-white rounded-xl p-4 border border-slate-200">
+          <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+            <Tag className="w-4 h-4 text-blue-600" />
+            แท็กโปรโมชัน
+          </label>
+
+          {/* Selected Tags */}
+          {formData.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {formData.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        tags: prev.tags.filter((t) => t !== tag),
+                      }))
+                    }
+                    className="hover:text-orange-900"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Tag Input */}
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              placeholder="พิมพ์แท็กแล้วกด Enter"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const val = tagInput.trim();
+                  if (val && !formData.tags.includes(val) && formData.tags.length < 5) {
+                    setFormData((prev) => ({ ...prev, tags: [...prev.tags, val] }));
+                    setTagInput('');
+                  }
+                }
+              }}
+              className="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          {/* Suggestions */}
+          <div className="flex flex-wrap gap-1.5">
+            {TAG_SUGGESTIONS.filter((s) => !formData.tags.includes(s)).map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => {
+                  if (formData.tags.length < 5) {
+                    setFormData((prev) => ({ ...prev, tags: [...prev.tags, suggestion] }));
+                  }
+                }}
+                className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs hover:bg-blue-100 hover:text-blue-700 transition-colors"
+              >
+                + {suggestion}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-400 mt-2">เลือกได้สูงสุด 5 แท็ก</p>
         </div>
 
         {/* Discount Display & Flash Sale Toggle */}

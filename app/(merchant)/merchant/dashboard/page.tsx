@@ -37,50 +37,6 @@ const SEOBidManager = dynamic(() => import("@/components/SEOBidManager"), { ssr:
 const StockControl = dynamic(() => import("@/components/Merchant/StockControl"), { ssr: false });
 const CustomerInsights = dynamic(() => import("@/components/Merchant/Analytics/CustomerInsights"), { ssr: false });
 
-// Static SEO packages — extracted to module level to avoid re-creation each render
-const seoPackages = [
-  {
-    id: "basic",
-    name: "Basic Ranking",
-    price: 299,
-    duration: "30 วัน",
-    features: [
-      "อันดับ 4-10 ในหมวดหมู่",
-      "เพิ่มการมองเห็น 2x",
-      "รายงานสถิติรายวัน",
-    ],
-    color: "from-blue-500 to-blue-600",
-  },
-  {
-    id: "pro",
-    name: "Pro Ranking",
-    price: 899,
-    duration: "30 วัน",
-    features: [
-      "อันดับ 1-3 ในหมวดหมู่",
-      "เพิ่มการมองเห็น 5x",
-      "รายงานสถิติเรียลไทม์",
-      "Data Insights ขั้นสูง",
-    ],
-    color: "from-blue-700 to-blue-900",
-    popular: true,
-  },
-  {
-    id: "premium",
-    name: "Premium Featured",
-    price: 2499,
-    duration: "30 วัน",
-    features: [
-      "อันดับ 1 การันตี",
-      "เพิ่มการมองเห็น 10x",
-      "แสดงในหน้าแรก",
-      'Badge "แนะนำ"',
-      "รายงาน AI ขั้นสูง",
-    ],
-    color: "from-purple-500 to-pink-500",
-  },
-];
-
 // Static activity data — extracted to module level (will be replaced by API)
 type ActivityType = "view" | "save" | "location" | "search";
 
@@ -127,7 +83,7 @@ export default function MerchantDashboard() {
   
   const [sortBy, setSortBy] = useState<"newest" | "popular" | "discount">("newest");
   const [selectedLocation, setSelectedLocation] = useState("อารีย์");
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+
   const { startFlashSale, endFlashSale, isFlashSale } = useFlashSale();
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -770,67 +726,7 @@ export default function MerchantDashboard() {
           <SEOBidManager />
         </div>
 
-        {/* SEO Manager Section (Original Packages) */}
-        <div className="mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <SparklesIcon className="w-6 h-6 text-[#FF5722]" />
-            SEO Ranking Packages - เลือกแพ็กเกจที่เหมาะกับคุณ
-          </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {seoPackages.map((pkg) => (
-              <div 
-                key={pkg.id}
-                className={`card overflow-hidden ${selectedPackage === pkg.id ? 'ring-4 ring-[#FF5722]' : ''}`}
-              >
-                {pkg.popular && (
-                  <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-center py-2 text-sm font-semibold">
-                    ยอดนิยม
-                  </div>
-                )}
-                <div className={`bg-gradient-to-r ${pkg.color} p-6 text-white`}>
-                  <h4 className="text-2xl font-bold mb-2">{pkg.name}</h4>
-                  <p className="text-white/90 text-sm mb-4">{pkg.duration}</p>
-                  <p className="text-4xl font-bold">฿{pkg.price}</p>
-                </div>
-                <div className="p-6">
-                  <ul className="space-y-3 mb-6">
-                    {pkg.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm">
-                        <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={() => setSelectedPackage(pkg.id)}
-                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                      selectedPackage === pkg.id
-                        ? 'bg-[#FF5722] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {selectedPackage === pkg.id ? '✓ เลือกแล้ว' : 'เลือกแพ็กเกจนี้'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {selectedPackage && (
-            <div className="mt-6 card p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200">
-              <p className="text-lg font-bold text-green-900 mb-2 flex items-center gap-2">
-                <CheckCircleIcon className="w-6 h-6 text-green-600" /> คุณได้เลือกแพ็กเกจ {seoPackages.find(p => p.id === selectedPackage)?.name}
-              </p>
-              <p className="text-sm text-green-700 mb-4">
-                กดปุ่มด้านล่างเพื่อชำระเงินและเปิดใช้งาน SEO Ranking ทันที
-              </p>
-              <button className="btn-primary">
-                ชำระเงิน ฿{seoPackages.find(p => p.id === selectedPackage)?.price}
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Activity Log */}
         <div className="mb-8">

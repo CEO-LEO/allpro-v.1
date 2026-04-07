@@ -32,6 +32,20 @@ export async function POST(request: Request) {
     const conditions = (formData.get('conditions') as string) || 'โปรโมชั่นพิเศษ';
     const imageFile = formData.get('image') as File | null;
     const imageUrl = formData.get('image_url') as string | null;
+    const tagsRaw = formData.get('tags') as string | null;
+
+    // Parse tags from JSON string
+    let tags: string[] = [];
+    if (tagsRaw) {
+      try {
+        const parsed = JSON.parse(tagsRaw);
+        if (Array.isArray(parsed)) {
+          tags = parsed.filter((t: unknown) => typeof t === 'string' && t.trim()).map((t: string) => t.trim());
+        }
+      } catch {
+        // ignore invalid JSON
+      }
+    }
 
     // Gallery: multiple additional images
     const galleryFiles: File[] = [];
@@ -112,6 +126,11 @@ export async function POST(request: Request) {
     // Add gallery if any images were uploaded
     if (galleryPaths.length > 0) {
       insertData.gallery = galleryPaths;
+    }
+
+    // Add tags if provided
+    if (tags.length > 0) {
+      insertData.tags = tags;
     }
 
     // Only add shop_id if provided (UUID)

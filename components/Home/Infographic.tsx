@@ -68,20 +68,25 @@ export default function Infographic() {
       if (!isSupabaseConfigured) throw new Error('not configured');
 
       // ดึงข้อมูลทั้ง 4 ตัวพร้อมกัน
-      const [productsRes, profilesRes, merchantsRes, discountRes] = await Promise.all([
+      const [productsRes, profilesRes, shopsRes, discountRes] = await Promise.all([
         // 1) จำนวนโปรโมชั่น (products)
         supabase.from('products').select('*', { count: 'exact', head: true }),
         // 2) จำนวนผู้ใช้ (profiles)
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        // 3) จำนวนร้านค้า (merchant_profiles)
-        supabase.from('merchant_profiles').select('*', { count: 'exact', head: true }),
+        // 3) จำนวนร้านค้าที่มีโปรโมชันจริง (distinct shop_name จาก products)
+        supabase.from('products').select('shop_name'),
         // 4) ส่วนลดสูงสุด (MAX discount จาก products)
         supabase.from('products').select('discount').order('discount', { ascending: false }).limit(1),
       ]);
 
       const totalPromos = productsRes.count ?? 0;
       const totalUsers = profilesRes.count ?? 0;
-      const totalMerchants = merchantsRes.count ?? 0;
+
+      // นับร้านค้าที่ลงโปรโมชันจริง (distinct shop_name)
+      const uniqueShops = new Set(
+        (shopsRes.data || []).map((r: { shop_name: string }) => r.shop_name).filter(Boolean)
+      );
+      const totalMerchants = uniqueShops.size;
 
       // คำนวณส่วนลดสูงสุด
       let maxDiscount = 0;

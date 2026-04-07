@@ -180,6 +180,20 @@ export default function MasonryPromoCard({ promo, index }: MasonryPromoCardProps
               {promo.title}
             </h3>
 
+            {/* Tags */}
+            {promo.tags && promo.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {promo.tags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-block bg-orange-100 text-orange-700 text-[11px] px-2 py-0.5 rounded-full font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Price */}
             {promo.price && (
               <div className="flex items-baseline gap-2 mb-3">
