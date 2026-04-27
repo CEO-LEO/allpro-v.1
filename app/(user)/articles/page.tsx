@@ -10,14 +10,14 @@ const articles = [
     excerpt: 'รู้หรือไม่ว่าการหาโปรโมชั่นให้เป็นสามารถประหยัดเงินได้มากถึง 3,000-5,000 บาทต่อเดือน...',
     image: '📰',
     category: 'Tips & Tricks',
-    author: 'All Pro Team',
+    author: 'IAMROOT AI Team',
     date: '2026-01-20',
     readTime: '5 นาที'
   },
   {
     id: 2,
-    title: 'All Pro เปิดตัวโปรโมชั่นใหม่! ช้อปครบ 300 รับคูปอง 50 บาท',
-    excerpt: 'All Pro ประกาศแคมเปญใหม่สำหรับสมาชิกโดยมีโปรโมชั่นพิเศษตลอดเดือนกุมภาพันธ์...',
+    title: 'IAMROOT AI เปิดตัวโปรโมชั่นใหม่! ช้อปครบ 300 รับคูปอง 50 บาท',
+    excerpt: 'IAMROOT AI ประกาศแคมเปญใหม่สำหรับสมาชิกโดยมีโปรโมชั่นพิเศษตลอดเดือนกุมภาพันธ์...',
     image: '🎁',
     category: 'ข่าวโปรโมชั่น',
     author: 'Admin',
@@ -26,7 +26,7 @@ const articles = [
   },
   {
     id: 3,
-    title: 'วิธีใช้ All Pro เพิ่มยอดขาย 200% สำหรับเจ้าของร้าน',
+    title: 'วิธีใช้ IAMROOT AI เพิ่มยอดขาย 200% สำหรับเจ้าของร้าน',
     excerpt: 'Data-Driven Marketing ด้วย Market Insights และ SEO Ranking ที่จะช่วยให้ร้านของคุณมียอดขายเพิ่มขึ้น...',
     image: '📈',
     category: 'สำหรับร้านค้า',
@@ -54,7 +54,7 @@ export default function ArticlesPage() {
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-base sm:text-xl font-bold text-[#FF5722] hover:text-[#E64A19] transition-colors">
-              ← All Pro
+              ← IAMROOT AI
             </Link>
             <h1 className="text-sm sm:text-lg font-semibold">บทความ</h1>
             <div className="w-8 sm:w-20"></div>

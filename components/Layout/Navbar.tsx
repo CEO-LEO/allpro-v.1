@@ -68,6 +68,23 @@ export default function Navbar() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem('iamroot-recent-searches') || '[]'); } catch { return []; }
+  });
+
+  const TRENDING = ['ลดราคา', 'ส่วนลด 50%', 'บุฟเฟ่ต์', 'กาแฟ', 'เที่ยว', 'แฟชั่น'];
+
+  const suggestions = searchQuery.trim()
+    ? TRENDING.filter(t => t.includes(searchQuery.trim()))
+    : recentSearches.slice(0, 4);
+
+  const saveRecentSearch = (q: string) => {
+    const updated = [q, ...recentSearches.filter(r => r !== q)].slice(0, 8);
+    setRecentSearches(updated);
+    try { localStorage.setItem('iamroot-recent-searches', JSON.stringify(updated)); } catch {}
+  };
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
@@ -78,8 +95,17 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      saveRecentSearch(searchQuery.trim());
+      setShowSuggestions(false);
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    saveRecentSearch(suggestion);
+    setShowSuggestions(false);
+    router.push(`/search?q=${encodeURIComponent(suggestion)}`);
   };
 
   const handleLogout = async () => {
@@ -104,24 +130,70 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-12">
             {/* Logo */}
             <Link href="/" onClick={() => setSelectedCategory('All')} className="flex items-center gap-1.5 flex-shrink-0">
-              <Image src="/logo-circle.png" alt="All Pro" width={36} height={36} className="w-9 h-9" priority />
+              <Image src="/logo-circle.png" alt="IAMROOT AI" width={36} height={36} className="w-9 h-9" priority />
               <span className="text-base font-bold text-gray-900 hidden sm:inline">
-                All Pro
+                IAMROOT AI
               </span>
             </Link>
 
             {/* Search Bar - Desktop */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl mx-4">
+            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl mx-4 relative">
               <div className="relative w-full">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                   placeholder="ค้นหาโปรโมชั่น, ร้านค้า, หมวดหมู่..."
                   className="w-full px-3 py-1.5 pl-9 pr-3 border border-gray-200 rounded-lg bg-gray-50/80 focus:bg-white focus:border-orange-400 focus:outline-none text-sm transition-colors placeholder:text-gray-400"
                 />
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
+              {/* Suggestions dropdown */}
+              <AnimatePresence>
+                {showSuggestions && suggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-[80]"
+                  >
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3 pt-2 pb-1">
+                      {searchQuery.trim() ? 'แนะนำ' : 'ค้นหาล่าสุด'}
+                    </p>
+                    {suggestions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onMouseDown={() => handleSuggestionClick(s)}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-orange-50 text-left text-sm text-gray-700 transition-colors"
+                      >
+                        <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        {s}
+                      </button>
+                    ))}
+                    {!searchQuery.trim() && TRENDING.length > 0 && (
+                      <>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3 pt-2 pb-1 border-t border-gray-100">กำลังฮิต</p>
+                        <div className="flex flex-wrap gap-1.5 px-3 pb-3 pt-1">
+                          {TRENDING.map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onMouseDown={() => handleSuggestionClick(t)}
+                              className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 px-2.5 py-1 rounded-full transition-colors"
+                            >
+                              🔥 {t}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </form>
 
             {/* Navigation Links - Desktop */}

@@ -1,33 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://pro-hunter.vercel.app/</loc>
-    <lastmod>2026-02-10</lastmod>
+    <loc>https://iamroot-ai.com/</loc>
+    <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://pro-hunter.vercel.app/deals</loc>
-    <lastmod>2026-02-10</lastmod>
+    <loc>https://iamroot-ai.com/flash-sale</loc>
+    <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://pro-hunter.vercel.app/flash-sales</loc>
-    <lastmod>2026-02-10</lastmod>
+    <loc>https://iamroot-ai.com/community</loc>
+    <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://pro-hunter.vercel.app/community-discounts</loc>
-    <lastmod>2026-02-10</lastmod>
+    <loc>https://iamroot-ai.com/search</loc>
+    <lastmod>2026-04-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://pro-hunter.vercel.app/promotion-tracking</loc>
-    <lastmod>2026-02-10</lastmod>
+    <loc>https://iamroot-ai.com/categories</loc>
+    <lastmod>2026-04-27</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://iamroot-ai.com/map</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://iamroot-ai.com/rewards</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://iamroot-ai.com/merchant-landing</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 </urlset>

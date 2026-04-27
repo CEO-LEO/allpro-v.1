@@ -1,5 +1,5 @@
 # 🎭 MVP Testing Script - 3 บทบาท
-## All Pro - Final Validation
+## IAMROOT AI - Final Validation
 
 **วันที่ทดสอบ:** ___________  
 **ผู้ทดสอบ:** ___________
@@ -70,7 +70,7 @@
 - [ ] ปุ่มเปลี่ยนเป็น **"คัดลอกแล้ว!"** พร้อม ✓
 - [ ] Paste ใน Notepad → **รหัสมาครบถ้วน**
 
-**Link ที่ได้:** `https://allpro.com/join?ref=________`
+**Link ที่ได้:** `https://iamrootai.com/join?ref=________`
 
 **✅ ผ่าน:** คัดลอกรหัสได้และ link ถูกต้อง
 
@@ -165,7 +165,7 @@
 ### Step 1: Push to GitHub
 
 ```bash
-cd "c:\all pro\all-promotion"
+cd "c:\all pro\iamroot-ai"
 
 # ติดตั้ง Git (ถ้ายังไม่มี)
 # Download: https://git-scm.com/download/win
@@ -177,13 +177,13 @@ git commit -m "🎉 Final MVP Release: All Features Complete"
 
 # Create GitHub repo:
 # 1. ไปที่ https://github.com/new
-# 2. ชื่อ: all-promotion
+# 2. ชื่อ: iamroot-ai
 # 3. Public/Private
 # 4. อย่าเลือก "Initialize with README"
 # 5. Create repository
 
 # Connect & Push
-git remote add origin https://github.com/[your-username]/all-promotion.git
+git remote add origin https://github.com/[your-username]/iamroot-ai.git
 git branch -M main
 git push -u origin main
 ```
@@ -193,7 +193,7 @@ git push -u origin main
 1. **ไปที่:** https://vercel.com
 2. **Login** ด้วย GitHub account
 3. **Click:** "Add New..." → "Project"
-4. **Import** repository: `all-promotion`
+4. **Import** repository: `iamroot-ai`
 5. **Environment Variables:** (สำคัญมาก!)
 
 ```env
@@ -204,7 +204,7 @@ NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_key
 
 6. **Click:** "Deploy"
 7. **รอ 2-3 นาที**
-8. **🎉 Done!** คุณจะได้ URL: `https://all-promotion.vercel.app`
+8. **🎉 Done!** คุณจะได้ URL: `https://iamroot-ai.vercel.app`
 
 ---
 

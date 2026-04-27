@@ -65,7 +65,7 @@ Implemented a **Member-Get-Member (MGM)** referral system to turn every user int
 **C. QR Code Section**
 - 192x192 pixel QR code
 - High error correction (Level H)
-- Embeds full referral link: `https://allpro.app?ref=HUNTER-882`
+- Embeds full referral link: `https://iamrootai.app?ref=HUNTER-882`
 - Centered with shadow for depth
 - "ให้เพื่อนสแกนเพื่อเปิดลิงก์ลงทะเบียน"
 
@@ -118,7 +118,7 @@ getUserReferralCode() → "HUNTER-882"
 
 **C. `getReferralLink(code)`**
 ```typescript
-// Production: https://allpro.app?ref=HUNTER-882
+// Production: https://iamrootai.app?ref=HUNTER-882
 // Dev: http://localhost:3000?ref=HUNTER-882
 getReferralLink("HUNTER-882") → full URL with query param
 ```
@@ -349,7 +349,7 @@ window.open(fbUrl, '_blank', 'width=600,height=400');
 ```javascript
 if (navigator.share) {
   await navigator.share({
-    title: 'All Pro - ล่าโปรโมชั่น',
+    title: 'IAMROOT AI - ล่าโปรโมชั่น',
     text: `🎁 มาล่าโปรโมชั่นกับฉันสิ!`,
     url: referralLink
   });
@@ -420,7 +420,7 @@ const QRCodeSVG = dynamic(
                ↓
 ┌─────────────────────────────────────┐
 │ Friend receives link/code            │
-│ Example: https://allpro.app        │
+│ Example: https://iamrootai.app        │
 │          ?ref=HUNTER-882             │
 └─────────────────────────────────────┘
 ```
@@ -799,7 +799,7 @@ await creditPoints({
 // iOS/Android native sharing
 if (navigator.share) {
   await navigator.share({
-    title: 'All Pro',
+    title: 'IAMROOT AI',
     text: message,
     url: referralLink
   });
@@ -808,8 +808,8 @@ if (navigator.share) {
 
 **2. Deep Linking:**
 ```
-App Schema: allpromo://refer?code=HUNTER-882
-Universal Link: https://allpro.app/refer?code=HUNTER-882
+App Schema: iamrootaimo://refer?code=HUNTER-882
+Universal Link: https://iamrootai.app/refer?code=HUNTER-882
 ```
 
 **3. QR Scanner Integration:**

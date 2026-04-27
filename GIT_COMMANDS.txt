@@ -697,7 +697,7 @@ export default function MerchantSettingsPage() {
                 },
                 {
                   title: 'แจ้งเตือนข่าวสาร',
-                  desc: 'รับข่าวสารและอัพเดทจาก All Pro',
+                  desc: 'รับข่าวสารและอัพเดทจาก IAMROOT AI',
                   key: 'news_notification',
                 },
               ].map((item) => (
@@ -792,7 +792,7 @@ export default function MerchantSettingsPage() {
 }# คำสั่ง Git สำหรับ Push โปรเจ็กต์
 
 # 1. เข้าไปในโฟลเดอร์โปรเจ็กต์
-cd "c:\all pro\all-promotion"
+cd "c:\all pro\iamroot-ai"
 
 # 2. กำหนดค่า Git (ครั้งแรกเท่านั้น)
 git config --global user.name "Your Name"
@@ -805,17 +805,17 @@ git init
 git add .
 
 # 5. Commit
-git commit -m "🎉 Initial commit: All Promotion MVP v1.0"
+git commit -m "🎉 Initial commit: IAMROOT AImotion MVP v1.0"
 
 # 6. สร้าง repo ใหม่บน GitHub (ทำผ่าน browser):
 #    - ไปที่ https://github.com/new
-#    - ตั้งชื่อ: all-promotion
+#    - ตั้งชื่อ: iamroot-ai
 #    - เลือก Public/Private
 #    - อย่าเลือก "Initialize with README"
 #    - คลิก "Create repository"
 
 # 7. เชื่อมต่อกับ GitHub
-git remote add origin https://github.com/[your-username]/all-promotion.git
+git remote add origin https://github.com/[your-username]/iamroot-ai.git
 
 # 8. Push ขึ้น GitHub
 git branch -M main

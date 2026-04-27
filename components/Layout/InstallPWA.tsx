@@ -120,7 +120,7 @@ export default function InstallPWA() {
                 {/* Content */}
                 <div className="flex-1">
                   <h3 className="text-body-sm mb-0.5">
-                    Install All Pro App
+                    Install IAMROOT AI App
                   </h3>
                   <p className="text-caption text-white/90">
                     🚀 Faster access • 📱 Works offline • 💾 Save to home screen

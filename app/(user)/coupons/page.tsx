@@ -75,7 +75,7 @@ export default function CouponsPage() {
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-base sm:text-xl font-bold text-[#FF5722] hover:text-[#E64A19] transition-colors">
-              ← All Pro
+              ← IAMROOT AI
             </Link>
             <h1 className="text-sm sm:text-lg font-semibold">คูปองส่วนลด</h1>
             <div className="w-8 sm:w-20"></div>
@@ -247,7 +247,7 @@ export default function CouponsPage() {
             💡 อยากได้คูปองเพิ่ม?
           </p>
           <p className="text-sm text-blue-700 mb-6">
-            สมัครสมาชิก All Pro วันนี้ รับคูปองส่วนลดทันที!
+            สมัครสมาชิก IAMROOT AI วันนี้ รับคูปองส่วนลดทันที!
           </p>
           <button className="btn-primary">
             สมัครสมาชิกฟรี

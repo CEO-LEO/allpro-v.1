@@ -88,7 +88,7 @@ export default function ReferPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'All Pro - ล่าโปรโมชั่น',
+          title: 'IAMROOT AI - ล่าโปรโมชั่น',
           text: `🎁 มาล่าโปรโมชั่นกับฉันสิ! ใช้โค้ด ${referralCode} รับแต้มฟรี 50 แต้ม!`,
           url: referralLink
         });

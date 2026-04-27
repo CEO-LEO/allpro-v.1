@@ -23,8 +23,8 @@ xl:  1280px - Desktops
 ✅ Icons ปรับขนาดตามหน้าจอ
 
 **ตัวอย่าง:**
-- Desktop: "🎁 All Protion" + "35,000+ โปรโมชั่น"
-- Mobile: "🎁 All Pro" + "35K+ โปร"
+- Desktop: "🎁 IAMROOT AItion" + "35,000+ โปรโมชั่น"
+- Mobile: "🎁 IAMROOT AI" + "35K+ โปร"
 
 ### **2. Category Navigation**
 ✅ Horizontal scroll บนมือถือ
@@ -167,7 +167,7 @@ F12 → Device Toolbar (Ctrl+Shift+M)
 
 ## 🎉 สรุป
 
-ตอนนี้แพลตฟอร์ม All Protion **รองรับทุกอุปกรณ์แล้ว:**
+ตอนนี้แพลตฟอร์ม IAMROOT AItion **รองรับทุกอุปกรณ์แล้ว:**
 
 ✅ **Mobile (375px+)** - iPhone, Android  
 ✅ **Tablet (768px+)** - iPad, Android Tablets  

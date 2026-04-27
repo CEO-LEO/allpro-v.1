@@ -462,7 +462,7 @@ export default function ProductDetailPage() {
             <div className="bg-orange-50 rounded-xl p-4 space-y-2 border-l-4 border-orange-400">
               <div className="flex items-start gap-2">
                 <span className="text-orange-600 font-bold">•</span>
-                <p className="text-sm text-gray-700">ราคาพิเศษสำหรับการจองผ่าน All Pro เท่านั้น</p>
+                <p className="text-sm text-gray-700">ราคาพิเศษสำหรับการจองผ่าน IAMROOT AI เท่านั้น</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-orange-600 font-bold">•</span>

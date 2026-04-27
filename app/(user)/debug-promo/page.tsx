@@ -55,9 +55,9 @@ export default function DebugPromoPage() {
           )}
         </div>
 
-        {/* All Pro - Promotion IDs */}
+        {/* IAMROOT AI - Promotion IDs */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-h3 mb-4">📋 All Promotion IDs</h2>
+          <h2 className="text-h3 mb-4">📋 IAMROOT AImotion IDs</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
             {promotions.map((promo, index) => (
               <div key={promo.id} className="flex items-center justify-between p-2 border border-gray-200 rounded">

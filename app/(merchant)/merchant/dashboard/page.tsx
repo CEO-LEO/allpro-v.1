@@ -32,7 +32,6 @@ import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 // Dynamic Imports for Heavy Components (Charts/Analytics)
 const PredictiveInsights = dynamic(() => import("@/components/PredictiveInsights"), { ssr: false });
-const MarketInsights = dynamic(() => import("@/components/MarketInsights"), { ssr: false });
 const SEOBidManager = dynamic(() => import("@/components/SEOBidManager"), { ssr: false });
 const StockControl = dynamic(() => import("@/components/Merchant/StockControl"), { ssr: false });
 const CustomerInsights = dynamic(() => import("@/components/Merchant/Analytics/CustomerInsights"), { ssr: false });
@@ -604,11 +603,6 @@ export default function MerchantDashboard() {
           </div>
         </div>
 
-        {/* Market Insights Section (Big Data) */}
-        <div className="mb-8">
-          <MarketInsights />
-        </div>
-
         {/* Customer Insights — Demographics Analytics */}
         <div className="mb-8">
           <CustomerInsights />
@@ -764,7 +758,7 @@ export default function MerchantDashboard() {
         {/* Info Banner */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h4 className="text-lg font-bold text-blue-700 mb-2">
-            Unfair Advantage: ทำไมต้อง Pro Hunter?
+            Unfair Advantage: ทำไมต้อง IAMROOT AI?
           </h4>
           <ul className="space-y-2 text-sm text-gray-600">
             <li className="flex items-start gap-2"><CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" /> Data Insights แบบเรียลไทม์ - รู้ว่าลูกค้าต้องการอะไร</li>

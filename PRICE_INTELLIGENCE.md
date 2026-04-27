@@ -238,7 +238,7 @@ Analysis: "ราคาสูงกว่าราคาเฉลี่ย ฿4"
 
 ### 1. Start Dev Server
 ```bash
-cd "c:\all pro\all-promotion"
+cd "c:\all pro\iamroot-ai"
 npm run dev
 ```
 
@@ -368,7 +368,7 @@ Users can now:
 3. **Make informed** purchase decisions
 4. **Trust** the platform's transparency
 
-The "Price Truth" feature transforms "All Pro" from a simple promotion aggregator into a **consumer protection tool** that fights fake discounts and builds long-term trust.
+The "Price Truth" feature transforms "IAMROOT AI" from a simple promotion aggregator into a **consumer protection tool** that fights fake discounts and builds long-term trust.
 
 ---
 

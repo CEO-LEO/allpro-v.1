@@ -6,6 +6,7 @@ import { Home, Gift, Wallet, User, Heart } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useProductStore } from "@/store/useProductStore";
+import { motion } from "framer-motion";
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -66,15 +67,20 @@ export default function BottomNav() {
                   : 'text-gray-600 hover:text-orange-500'
               }`}
             >
-              <Icon 
-                className={`w-6 h-6 ${isActive ? 'scale-110' : ''} ${item.label === 'ที่บันทึก' && isActive ? 'fill-orange-500' : ''}`} 
-              />
+              <motion.div
+                whileTap={{ scale: 0.82 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              >
+                <Icon 
+                  className={`w-6 h-6 transition-transform ${isActive ? 'scale-110' : ''} ${item.label === 'ที่บันทึก' && isActive ? 'fill-orange-500' : ''}`} 
+                />
+              </motion.div>
               <span className="text-xs font-medium">{item.label}</span>
               
-              {/* Badge for Saved items */}
+              {/* Badge for Saved items or rewards */}
               {item.badge && item.badge > 0 && (
                 <span className="absolute top-2 right-[50%] translate-x-3 bg-red-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white">
-                  {item.badge}
+                  {item.badge > 9 ? '9+' : item.badge}
                 </span>
               )}
             </Link>

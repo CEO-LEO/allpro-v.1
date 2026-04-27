@@ -29,7 +29,7 @@ export function getUserReferralCode(): string {
  */
 export function getReferralLink(code: string): string {
   if (typeof window === 'undefined') {
-    return `https://allpro.app?ref=${code}`;
+    return `https://iamrootai.app?ref=${code}`;
   }
   const baseUrl = window.location.origin;
   return `${baseUrl}?ref=${code}`;

@@ -39,8 +39,8 @@ export interface Reward {
 // Rank titles based on level (aligned with useGamification.ts LEVEL_THRESHOLDS)
 export const getRankTitle = (level: number): string => {
   if (level <= 5) return 'Novice Hunter';
-  if (level <= 20) return 'Pro Hunter';
-  return 'Legendary Slayer';
+  if (level <= 20) return 'IAMROOT Hunter';
+  return 'IAMROOT Legend';
 };
 
 // TODO: Replace with API call -> GET /api/user/profile

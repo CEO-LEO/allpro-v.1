@@ -136,7 +136,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       // ── ถ้า Supabase ยังไม่ได้ตั้งค่า → Demo Mode ──
       if (!isSupabaseConfigured) {
         await new Promise((resolve) => setTimeout(resolve, 800));
-        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
+        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ IAMROOT AI');
         handleAutoLogin();
         return;
       }
@@ -160,7 +160,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         const errMsg = raceErr instanceof Error ? raceErr.message : '';
         if (errMsg === 'TIMEOUT') {
           console.warn('⏱️ Supabase signUp timed out — falling back to demo mode');
-          toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
+          toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ IAMROOT AI');
           handleAutoLogin();
           return;
         }
@@ -193,7 +193,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         // ★ ไม่ auto-login ถ้าไม่มี session จริง — ให้ไปล็อกอินหลังยืนยัน
         handleGoToLogin();
       } else {
-        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
+        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ IAMROOT AI');
         handleAutoLogin(realUser);
         if (selectedRole === 'MERCHANT') {
           router.push('/merchant/dashboard');
@@ -202,7 +202,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     } catch (err) {
       console.error('❌ Register error:', err);
       // Fallback: ถ้า Supabase มีปัญหา → auto-login ในโหมด demo เพื่อไม่ให้ลูกค้าติดค้าง
-      toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
+      toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ IAMROOT AI');
       handleAutoLogin();
     } finally {
       setIsLoading(false);
@@ -248,7 +248,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     <UserPlus className="w-10 h-10 mb-2" />
                   </motion.div>
                   <h2 className="text-lg font-bold mb-0.5">สมัครสมาชิก</h2>
-                  <p className="text-white/80 text-xs">สร้างบัญชีเพื่อเริ่มต้นใช้งาน All Pro</p>
+                  <p className="text-white/80 text-xs">สร้างบัญชีเพื่อเริ่มต้นใช้งาน IAMROOT AI</p>
                 </div>
               </div>
 

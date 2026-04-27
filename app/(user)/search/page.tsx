@@ -64,12 +64,35 @@ export default function SearchPage() {
   const query = searchParams.get('q') || '';
 
   const [searchText, setSearchText] = useState(query);
-  const [sortBy, setSortBy] = useState('popular');
-  const [filterBy, setFilterBy] = useState('all');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'popular');
+  const [filterBy, setFilterBy] = useState(searchParams.get('filter') || 'all');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [semResults, setSemResults] = useState<SEMProduct[]>([]);
   const storeProducts = useProductStore((s) => s.products);
+
+  // Sync sort/filter changes to URL
+  const updateURL = useCallback((newSort: string, newFilter: string, newQ: string) => {
+    const params = new URLSearchParams();
+    if (newQ.trim()) params.set('q', newQ.trim());
+    if (category) params.set('category', category);
+    if (newSort !== 'popular') params.set('sort', newSort);
+    if (newFilter !== 'all') params.set('filter', newFilter);
+    router.replace(`/search?${params.toString()}`, { scroll: false });
+  }, [category, router]);
+
+  const handleSortChange = (val: string) => {
+    setSortBy(val);
+    updateURL(val, filterBy, searchText);
+  };
+
+  const handleFilterChange = (val: string) => {
+    setFilterBy(val);
+    updateURL(sortBy, val, searchText);
+  };
+
+  // Count active filters (non-default values)
+  const activeFilterCount = (filterBy !== 'all' ? 1 : 0) + (sortBy !== 'popular' ? 1 : 0);
 
   // Merge static promotions + store products (merchant-created)
   const allPromotions = useMemo(() => {
@@ -246,7 +269,7 @@ export default function SearchPage() {
             <div className="flex items-center gap-2">
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                onChange={(e) => handleSortChange(e.target.value)}
                 className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 {SORT_OPTIONS.map((opt) => (
@@ -258,14 +281,19 @@ export default function SearchPage() {
 
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                  showFilters
+                className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                  showFilters || activeFilterCount > 0
                     ? 'border-orange-500 bg-orange-50 text-orange-600'
                     : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <FunnelIcon className="w-4 h-4" />
                 Filter
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-orange-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -283,7 +311,7 @@ export default function SearchPage() {
                   {FILTER_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
-                      onClick={() => setFilterBy(opt.value)}
+                      onClick={() => handleFilterChange(opt.value)}
                       className={`px-4 py-2 rounded-full text-sm transition-all ${
                         filterBy === opt.value
                           ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md'

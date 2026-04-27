@@ -1,4 +1,4 @@
-# 🚀 All Pro - Production Setup Guide
+# 🚀 IAMROOT AI - Production Setup Guide
 
 ## ขั้นตอนที่ 1: Environment Variables
 
@@ -11,7 +11,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here  # ⚠️ ต้องเพิ่ม
 
 # Site URL (สำคัญสำหรับ OG Tags)
-NEXT_PUBLIC_SITE_URL=https://allpro.co  # เปลี่ยนเป็น domain จริง
+NEXT_PUBLIC_SITE_URL=https://iamrootai.co  # เปลี่ยนเป็น domain จริง
 
 # AI
 NEXT_PUBLIC_GEMINI_API_KEY=AIzaSyC...
@@ -125,10 +125,10 @@ vercel --prod
 
 ```bash
 # Build
-docker build -t allpromo .
+docker build -t iamrootaimo .
 
 # Run
-docker run -p 3000:3000 --env-file .env.local allpromo
+docker run -p 3000:3000 --env-file .env.local iamrootaimo
 ```
 
 ---

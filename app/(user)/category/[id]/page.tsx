@@ -251,7 +251,7 @@ export default function CategoryDetailPage() {
             <Link href="/" className="hover:bg-white/20 p-2 rounded-lg transition-colors">
               <ArrowLeftIcon className="w-6 h-6" />
             </Link>
-            <h1 className="text-xl font-bold flex-1">All Pro</h1>
+            <h1 className="text-xl font-bold flex-1">IAMROOT AI</h1>
             <span className="bg-white/20 text-sm px-3 py-1 rounded-full font-medium">
               {itemCount} รายการ
             </span>

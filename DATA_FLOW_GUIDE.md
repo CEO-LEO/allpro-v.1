@@ -269,7 +269,7 @@ const discount = Math.round(
 ## 📁 File Structure
 
 ```
-all-promotion/
+iamroot-ai/
 ├── store/
 │   └── useProductStore.ts          # Global state (existing)
 ├── app/

@@ -40,7 +40,7 @@ export default function InstallPrompt() {
 
     // Only show if: mobile + not installed + not recently dismissed
     if (!isInstalled && (!dismissed || daysSinceDismissed > 7)) {
-      // Listen for the beforeinstallprompt event
+      // Listen for the beforeinstiamrootaimpt event
       const handleBeforeInstall = (e: Event) => {
         e.preventDefault();
         setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -51,10 +51,10 @@ export default function InstallPrompt() {
         }, 3000);
       };
 
-      window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.addEventListener('beforeinstiamrootaimpt', handleBeforeInstall);
 
       return () => {
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+        window.removeEventListener('beforeinstiamrootaimpt', handleBeforeInstall);
       };
     }
   }, []);
@@ -120,7 +120,7 @@ export default function InstallPrompt() {
                   Get the full experience
                 </h3>
                 <p className="text-white/90 text-sm">
-                  Install All Pro for quick access and offline support
+                  Install IAMROOT AI for quick access and offline support
                 </p>
               </div>
             </div>

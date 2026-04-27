@@ -20,6 +20,7 @@ const ARTICLE_LINKS = [
   { label: 'Tips & Tricks', href: '/community' },
   { label: 'ข่าวโปรโมชั่น', href: '/community' },
   { label: 'สำหรับร้านค้า', href: '/merchant-landing' },
+  { label: '📖 คู่มือการใช้งาน', href: '/guide' },
 ];
 
 const SOCIALS = [
@@ -123,8 +124,8 @@ export default function Footer() {
           <div className="sm:col-span-2 lg:col-span-1">
             {/* Logo */}
             <div className="flex items-center gap-2.5 mb-5">
-              <Image src="/logo-circle.png" alt="All Pro" width={44} height={44} className="w-11 h-11" />
-              <span className="text-xl font-bold tracking-tight">All Pro</span>
+              <Image src="/logo-circle.png" alt="IAMROOT AI" width={44} height={44} className="w-11 h-11" />
+              <span className="text-xl font-bold tracking-tight">IAMROOT AI</span>
             </div>
 
             <div className="space-y-2.5 text-sm text-gray-400 mb-6">
@@ -178,7 +179,7 @@ export default function Footer() {
 
           {/* Column 4: Add to Home Screen */}
           <div>
-            <h3 className="text-base font-bold text-orange-500 mb-3">เข้าใช้งาน All Pro ได้ง่ายๆ</h3>
+            <h3 className="text-base font-bold text-orange-500 mb-3">เข้าใช้งาน IAMROOT AI ได้ง่ายๆ</h3>
             <p className="text-sm text-gray-400 mb-5">
               เพิ่มเว็บไซต์เราลงบนหน้าจอมือถือของคุณ เพื่อการเข้าถึงที่รวดเร็วเสมือนแอปฯ
             </p>
@@ -192,7 +193,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-sm text-gray-500">
-              © 2026 All Pro Co., Ltd. All rights reserved.
+              © 2026 IAMROOT AI Co., Ltd. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <a href="#" className="hover:text-white transition-colors">Terms & Conditions</a>

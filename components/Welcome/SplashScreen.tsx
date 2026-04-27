@@ -43,7 +43,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         transition={{ delay: 0.5, duration: 0.6 }}
         className="text-center"
       >
-        <h1 className="text-5xl font-bold text-white mb-2">All Pro</h1>
+        <h1 className="text-5xl font-bold text-white mb-2">IAMROOT AI</h1>
         <p className="text-xl text-white/90 font-medium">โปรตัวจริง เช็กสต็อกแม่นยำ</p>
       </motion.div>
 
@@ -80,7 +80,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         transition={{ delay: 1.5, duration: 0.5 }}
         className="absolute bottom-8 text-center"
       >
-        <p className="text-sm text-white/70">Powered by All Pro Platform</p>
+        <p className="text-sm text-white/70">Powered by IAMROOT AI Platform</p>
       </motion.div>
     </motion.div>
   );

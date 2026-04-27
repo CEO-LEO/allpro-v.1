@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useProductStore } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
-import { QrCode, Trash2, ArrowRight, Bookmark, Ticket, Clock, Store, Loader2 } from 'lucide-react';
+import { QrCode, Trash2, ArrowRight, Bookmark, Ticket, Clock, Store, Loader2, AlertTriangle, Tag, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getPromotions } from '@/lib/getPromotions';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
@@ -23,6 +23,19 @@ type Tab = 'coupons' | 'saved';
 
 export default function WalletPage() {
   const [activeTab, setActiveTab] = useState<Tab>('saved');
+  const [couponInput, setCouponInput] = useState('');
+  const [couponApplied, setCouponApplied] = useState(false);
+
+  const handleApplyCoupon = () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    if (code.startsWith('IAM-') || code.startsWith('IAMROOT')) {
+      setCouponApplied(true);
+      toast.success(`ใช้โค้ด "${code}" สำเร็จ!`);
+    } else {
+      toast.error('โค้ดไม่ถูกต้องหรือหมดอายุแล้ว');
+    }
+  };
   const { savedProductIds, toggleSave, loadSavedFromSupabase } = useProductStore();
   const { user } = useAuthStore();
   const [allPromos, setAllPromos] = useState<SavedPromo[]>([]);
@@ -193,6 +206,13 @@ export default function WalletPage() {
                   const discountPercent = Math.round(((product.originalPrice - product.promoPrice) / product.originalPrice) * 100);
                   return (
                     <div key={product.id} className="bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3 flex gap-3">
+                      {/* Expiry warning */}
+                      {(() => {
+                        const d = Math.ceil((new Date(product.validUntil).getTime() - Date.now()) / 86400000);
+                        return d >= 0 && d <= 3 ? (
+                          <div className="absolute" style={{display:'none'}} />
+                        ) : null;
+                      })()}
                       <Link href={`/promo/${product.id}`} className="flex-shrink-0">
                         <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-50 relative">
                           <img
@@ -218,6 +238,16 @@ export default function WalletPage() {
                             <h3 className="text-sm font-semibold text-gray-900 line-clamp-1 hover:text-orange-600 transition-colors">{product.title}</h3>
                           </Link>
                         </div>
+                        {/* Expiry badge */}
+                        {(() => {
+                          const d = Math.ceil((new Date(product.validUntil).getTime() - Date.now()) / 86400000);
+                          return d >= 0 && d <= 3 ? (
+                            <div className="flex items-center gap-1 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1.5">
+                              <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                              <span className="text-[10px] font-semibold">หมดอายุใน {d} วัน!</span>
+                            </div>
+                          ) : null;
+                        })()}
                         <div className="flex items-center justify-between mt-1.5">
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-base font-bold text-orange-500">฿{product.promoPrice}</span>
@@ -302,15 +332,59 @@ export default function WalletPage() {
 
         {/* ===== Tab: Coupons ===== */}
         {activeTab === 'coupons' && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-              <Ticket className="w-7 h-7 text-gray-300" />
+          <div className="space-y-6">
+            {/* Manual coupon code input */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Tag className="w-4 h-4 text-orange-500" />
+                <h3 className="font-semibold text-gray-900 text-sm">กรอกโค้ดคูปอง</h3>
+              </div>
+              {couponApplied ? (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <div>
+                    <p className="text-sm font-bold text-green-700">ใช้โค้ดสำเร็จแล้ว!</p>
+                    <p className="text-xs text-green-600">{couponInput.trim().toUpperCase()}</p>
+                  </div>
+                  <button
+                    onClick={() => { setCouponApplied(false); setCouponInput(''); }}
+                    className="ml-auto text-xs text-green-500 hover:text-green-700 underline"
+                  >
+                    ใช้โค้ดอื่น
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                    placeholder="เช่น IAM-XXXX-YYYY"
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-300"
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap"
+                  >
+                    ใช้โค้ด
+                  </button>
+                </div>
+              )}
+              <p className="text-[11px] text-gray-400 mt-2">รับโค้ดได้จากการแลกรางวัล หรือแคมเปญพิเศษจาก IAMROOT AI</p>
             </div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">ยังไม่มีคูปอง</h3>
-            <p className="text-sm text-gray-400 mb-6">แลกคะแนนเพื่อรับคูปองส่วนลดในหน้ารางวัล</p>
-            <Link href="/rewards" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:text-orange-600">
-              ไปหน้ารางวัล <ArrowRight className="w-4 h-4" />
-            </Link>
+
+            {/* Redirect to rewards */}
+            <div className="flex flex-col items-center py-10 text-center">
+              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mb-4">
+                <Ticket className="w-7 h-7 text-orange-300" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 mb-1">แลกคะแนนเพื่อรับคูปอง</h3>
+              <p className="text-sm text-gray-400 mb-6">สะสมคะแนนจากการดูดีลและแลกเป็นคูปองส่วนลด</p>
+              <Link href="/rewards" className="bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold px-6 py-3 rounded-xl text-sm flex items-center gap-2 hover:opacity-90 transition-opacity">
+                <span>ไปหน้ารางวัล</span> <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         )}
       </div>

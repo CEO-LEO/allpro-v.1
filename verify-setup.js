@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * All Pro - Setup Verification Script
+ * IAMROOT AI - Setup Verification Script
  * ตรวจสอบว่าระบบพร้อมใช้งานหรือยัง
  */
 
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔍 All Pro - Setup Verification\n');
+console.log('🔍 IAMROOT AI - Setup Verification\n');
 
 // Colors for terminal
 const colors = {

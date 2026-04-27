@@ -150,7 +150,7 @@ const TUTORIAL_KEY = 'my-app-tutorial-seen'; // Default: 'hasSeenTutorial'
 - 🎁 Gift emoji
 - Deal title
 - Price comparison (original vs sale)
-- "Found on All Pro" footer
+- "Found on IAMROOT AI" footer
 
 #### 2. Badge Card
 **Use Case:** Share achievement unlocks

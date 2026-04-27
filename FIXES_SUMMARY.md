@@ -1,4 +1,4 @@
-# ✅ สรุปการแก้ไขระบบ - All Pro
+# ✅ สรุปการแก้ไขระบบ - IAMROOT AI
 
 **วันที่:** Feb 20, 2026  
 **สถานะ:** แก้ไขเสร็จสมบูรณ์ ✅
@@ -10,7 +10,7 @@
 ### 1. Environment Variables (.env.local)
 ```diff
 + SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-+ NEXT_PUBLIC_SITE_URL=https://allpro.co
++ NEXT_PUBLIC_SITE_URL=https://iamrootai.co
 ```
 
 **ต้องทำเพิ่ม:** ใส่ค่า Service Role Key จริงจาก Supabase Dashboard
@@ -127,7 +127,7 @@ await supabase.from('products').insert({
 เปลี่ยน `public/og-default.jpg` เป็นรูปจริง:
 - ขนาด: 1200 x 630 px
 - Format: JPG หรือ PNG
-- เนื้อหา: Logo + Text "All Pro - โปรโมชั่นเด็ดใกล้คุณ"
+- เนื้อหา: Logo + Text "IAMROOT AI - โปรโมชั่นเด็ดใกล้คุณ"
 
 ---
 

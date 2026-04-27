@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // import { createMiddlewareSupabaseClient } from '@/lib/supabase/middleware';
 
 // ============================================================
-// RBAC Middleware — Pro Hunter (DEMO MODE)
+// RBAC Middleware — IAMROOT AI (DEMO MODE)
 //
 // NOTE: Currently using client-side auth (Zustand) instead of Supabase
 // Middleware is disabled for demo. Auth checks happen via AuthGuard component.

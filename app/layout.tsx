@@ -15,35 +15,35 @@ const kanit = Kanit({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://all-promotions.com'),
-  title: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://iamroot-ai.com'),
+  title: 'IAMROOT AI - ค้นหาโปรโมชั่นที่ดีที่สุด',
   description: 'แพลตฟอร์มค้นหาโปรโมชั่นจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศ พร้อม AI Insights และการวิเคราะห์ตลาดแบบเรียลไทม์',
   keywords: ['โปรโมชั่น', 'ส่วนลด', '7-11', 'Lotus', 'Makro', 'ของแถม', 'ลดราคา', 'คูปอง', 'ดีล'],
-  authors: [{ name: 'All Pro Team' }],
-  creator: 'All Pro',
-  publisher: 'All Pro',
+  authors: [{ name: 'IAMROOT AI Team' }],
+  creator: 'IAMROOT AI',
+  publisher: 'IAMROOT AI',
   openGraph: {
     type: 'website',
     locale: 'th_TH',
-    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://all-promotions.com',
-    siteName: 'All Pro',
-    title: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://iamroot-ai.com',
+    siteName: 'IAMROOT AI',
+    title: 'IAMROOT AI - ค้นหาโปรโมชั่นที่ดีที่สุด',
     description: 'แพลตฟอร์มค้นหาโปรโมชั่นจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศ พร้อม AI Insights',
     images: [
       {
         url: '/og-default.jpg',
         width: 1200,
         height: 630,
-        alt: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
+        alt: 'IAMROOT AI - ค้นหาโปรโมชั่นที่ดีที่สุด',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'All Pro - ค้นหาโปรโมชั่นที่ดีที่สุด',
+    title: 'IAMROOT AI - ค้นหาโปรโมชั่นที่ดีที่สุด',
     description: 'แพลตฟอร์มค้นหาโปรโมชั่นจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศ',
     images: ['/og-default.jpg'],
-    creator: '@allpro',
+    creator: '@iamrootai',
   },
   robots: {
     index: true,
@@ -77,7 +77,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#f97316" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="All Pro" />
+        <meta name="apple-mobile-web-app-title" content="IAMROOT AI" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover" />

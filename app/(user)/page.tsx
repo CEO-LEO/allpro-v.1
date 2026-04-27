@@ -370,7 +370,7 @@ export default function Home() {
 
         {/* Results Header */}
         <motion.div
-          id="all-promotions"
+          id="iamroot-ais"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="mb-8 scroll-mt-24"

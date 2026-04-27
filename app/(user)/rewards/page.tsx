@@ -60,6 +60,7 @@ export default function RewardsPage() {
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [confirmReward, setConfirmReward] = useState<RewardItem | null>(null);
 
   // Saved deals from product store
   const { products, savedProductIds } = useProductStore();
@@ -112,6 +113,14 @@ export default function RewardsPage() {
       return;
     }
 
+    // Show confirmation dialog first
+    setConfirmReward(reward);
+  };
+
+  const handleConfirmRedeem = async () => {
+    const reward = confirmReward;
+    if (!reward) return;
+    setConfirmReward(null);
     setRedeemingId(reward.id);
 
     // Simulate API call
@@ -180,6 +189,50 @@ export default function RewardsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Confirmation Dialog */}
+      <AnimatePresence>
+        {confirmReward && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Gift className="w-8 h-8 text-orange-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">ยืนยันการแลก</h3>
+              <p className="text-sm text-gray-500 mb-4">{confirmReward.name}</p>
+              <div className="bg-orange-50 rounded-2xl px-4 py-3 mb-5">
+                <p className="text-sm text-gray-600">ใช้คะแนน</p>
+                <p className="text-2xl font-bold text-orange-500">{confirmReward.pointsCost.toLocaleString()} pts</p>
+                <p className="text-xs text-gray-400 mt-1">คงเหลือ: {(pointsBalance - confirmReward.pointsCost).toLocaleString()} pts</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmReward(null)}
+                  className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={handleConfirmRedeem}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold hover:opacity-90 transition-opacity"
+                >
+                  ยืนยัน
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Success Modal */}
       <AnimatePresence>
         {redeemedRewards.length > 0 && redeemingId && (

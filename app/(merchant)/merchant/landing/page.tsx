@@ -136,7 +136,7 @@ export default function MerchantLandingPage() {
 
             {/* Sub-headline */}
             <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-              Join <span className="text-yellow-400 font-semibold">All Pro</span> — The only platform that pushes YOUR shop to{' '}
+              Join <span className="text-yellow-400 font-semibold">IAMROOT AI</span> — The only platform that pushes YOUR shop to{' '}
               <span className="text-yellow-400 font-semibold">10,000+ hungry users</span> nearby, exactly when they're searching.
             </p>
 

@@ -18,7 +18,7 @@ interface PointsContextType {
 
 const PointsContext = createContext<PointsContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'allpro_user_points';
+const STORAGE_KEY = 'iamrootai_user_points';
 
 // Generate unique voucher code
 const generateVoucherCode = (): string => {
@@ -161,7 +161,7 @@ export function PointsProvider({ children }: { children: ReactNode }) {
       expiresAt,
       status: 'active',
       code: generateVoucherCode(),
-      qrData: `ALLPRO:${reward.id}:${Date.now()}`
+      qrData: `IAMROOT:${reward.id}:${Date.now()}`
     };
 
     // Create transaction

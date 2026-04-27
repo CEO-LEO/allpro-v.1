@@ -7,10 +7,10 @@ export default function MerchantPublicLayout({ children }: { children: ReactNode
         <header className="mb-8 flex items-center justify-between border-b border-blue-900/50 pb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-body-sm text-white">
-              PH
+              IA
             </div>
             <div>
-              <p className="text-body-sm text-blue-300">Pro Hunter</p>
+              <p className="text-body-sm text-blue-300">IAMROOT AI</p>
               <h1 className="text-h4 text-white">Merchant Partner</h1>
             </div>
           </div>

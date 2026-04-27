@@ -107,7 +107,7 @@ export default function ShareModal({ isOpen, onClose, type, data }: ShareModalPr
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `all-promo-hunter-${Date.now()}.png`;
+    a.download = `iamroot-ai-${Date.now()}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -118,11 +118,11 @@ export default function ShareModal({ isOpen, onClose, type, data }: ShareModalPr
   // Generate share text
   const getShareText = () => {
     if (type === 'deal') {
-      return `เจอดีลเด็ด! ${data.title} ราคาแค่ ${data.price}! มาล่าด้วยกันที่ All Pro`;
+      return `เจอดีลเด็ด! ${data.title} ราคาแค่ ${data.price}! มาล่าด้วยกันที่ IAMROOT AI`;
     } else if (type === 'badge') {
-      return `ปลดล็อค Badge "${data.badgeName}" แล้ว! ${data.badgeEmoji} มาเล่นด้วยกันที่ All Pro`;
+      return `ปลดล็อค Badge "${data.badgeName}" แล้ว! ${data.badgeEmoji} มาเล่นด้วยกันที่ IAMROOT AI`;
     } else {
-      return `เลเวลขึ้น ${data.level}! ตอนนี้เป็น "${data.rankTitle}" แล้ว! มาล่าดีลด้วยกันที่ All Pro`;
+      return `เลเวลขึ้น ${data.level}! ตอนนี้เป็น "${data.rankTitle}" แล้ว! มาล่าดีลด้วยกันที่ IAMROOT AI`;
     }
   };
 
@@ -183,7 +183,7 @@ export default function ShareModal({ isOpen, onClose, type, data }: ShareModalPr
                     <div className="absolute top-8 left-0 right-0">
                       <div className="text-center">
                         <div className="text-3xl font-bold gradient-text-gold">
-                          All Pro
+                          IAMROOT AI
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
                           ล่าโปรให้เจอ แบบเรียลไทม์
@@ -266,7 +266,7 @@ export default function ShareModal({ isOpen, onClose, type, data }: ShareModalPr
                           มาล่าดีลด้วยกัน!
                         </div>
                         <div className="text-xs text-gray-300">
-                          ดาวน์โหลด All Pro App
+                          ดาวน์โหลด IAMROOT AI App
                         </div>
                       </div>
                     </div>

@@ -210,7 +210,7 @@ export default function CategoriesPage() {
             <Link href="/" className="hover:bg-white/20 p-2 rounded-lg transition-colors">
               <ArrowLeftIcon className="w-6 h-6" />
             </Link>
-            <h1 className="text-h3">All Pro</h1>
+            <h1 className="text-h3">IAMROOT AI</h1>
           </div>
         </div>
       </div>

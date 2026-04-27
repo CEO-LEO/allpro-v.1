@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `คุณคือ PromoBot ผู้ช่วย AI ของแพลตฟอร์ม All Pro ซึ่งเป็นแพลตฟอร์มรวมโปรโมชั่นและดีลในประเทศไทย
+const SYSTEM_PROMPT = `คุณคือ PromoBot ผู้ช่วย AI ของแพลตฟอร์ม IAMROOT AI ซึ่งเป็นแพลตฟอร์มรวมโปรโมชั่นและดีลในประเทศไทย
 หน้าที่ของคุณคือ:
 - ช่วยค้นหาโปรโมชั่น ส่วนลด คูปอง และดีลต่างๆ
 - แนะนำโปรโมชั่นจากหมวดหมู่ต่างๆ เช่น อาหาร แฟชั่น ท่องเที่ยว แกดเจ็ต ความงาม

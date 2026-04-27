@@ -113,7 +113,7 @@ Dropdown panel accessible from navbar bell icon.
 │    เมื่อสักครู่                       │
 │    [ดูสินค้าตอนนี้ →]                │
 ├──────────────────────────────────────┤
-│ 🎉 ยินดีต้อนรับสู่ All Pro!       │
+│ 🎉 ยินดีต้อนรับสู่ IAMROOT AI!       │
 │    เริ่มล่าดีลกันเลย                 │
 │    5 นาทีที่แล้ว                     │
 └──────────────────────────────────────┘
@@ -469,7 +469,7 @@ window.dispatchEvent('bellShake')        ← UI animations
 Notification.requestPermission().then(permission => {
   if (permission === 'granted') {
     // Send actual browser notifications
-    new Notification('All Pro', {
+    new Notification('IAMROOT AI', {
       body: '🟢 นมโปรตีน Malee มีสินค้าแล้ว!',
       icon: '/icons/icon-192x192.png',
       badge: '/icons/badge-72x72.png',

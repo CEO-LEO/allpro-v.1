@@ -49,6 +49,7 @@ interface FlashSaleItem {
 
 function TimeDisplay({ endTime }: { endTime: Date }) {
   const [timeLeft, setTimeLeft] = useState('');
+  const [secondsLeft, setSecondsLeft] = useState<number>(9999);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -57,9 +58,11 @@ function TimeDisplay({ endTime }: { endTime: Date }) {
 
       if (distance < 0) {
         setTimeLeft('หมดเวลา');
+        setSecondsLeft(0);
         return;
       }
 
+      setSecondsLeft(Math.floor(distance / 1000));
       const hours = Math.floor(distance / (1000 * 60 * 60));
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
@@ -73,8 +76,10 @@ function TimeDisplay({ endTime }: { endTime: Date }) {
     return () => clearInterval(interval);
   }, [endTime]);
 
+  const isUrgent = secondsLeft < 60 && secondsLeft > 0;
+
   return (
-    <div className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-body-sm">
+    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm text-white transition-colors ${isUrgent ? 'bg-red-700 animate-pulse' : 'bg-red-600'}`}>
       <ClockIcon className="w-4 h-4" />
       <span>{timeLeft}</span>
     </div>
@@ -280,7 +285,7 @@ export default function FlashSalePage() {
               salePrice: promoPrice,
               image: resolveImageUrl(String(d.image || ''), getCategoryFallbackImage(String(d.category || ''))),
               endTime: new Date(validUntil),
-              claimed: Math.floor(Math.random() * 20),
+              claimed: Math.floor(((new Date(validUntil).getTime() - Date.now()) % 47) + 5),
               total: 50,
               location: String(d.location || 'กรุงเทพฯ'),
               category: String(d.category || 'อื่นๆ'),
@@ -491,9 +496,15 @@ export default function FlashSalePage() {
                           initial={{ width: 0 }}
                           animate={{ width: `${(sale.claimed / sale.total) * 100}%` }}
                           transition={{ duration: 1, delay: index * 0.1 }}
-                          className="h-full bg-gradient-to-r from-orange-500 to-red-500"
+                          className={`h-full bg-gradient-to-r ${(sale.total - sale.claimed) <= Math.ceil(sale.total * 0.1) ? 'from-red-500 to-red-600' : 'from-orange-500 to-red-500'}`}
                         />
                       </div>
+                      {/* Low stock warning */}
+                      {(sale.total - sale.claimed) <= Math.ceil(sale.total * 0.1) && (
+                        <p className="text-[10px] font-bold text-red-500 mt-1 animate-pulse">
+                          ⚠️ เหลือเพียง {sale.total - sale.claimed} ชิ้นสุดท้าย!
+                        </p>
+                      )}
                     </div>
 
                     {/* Action Button */}

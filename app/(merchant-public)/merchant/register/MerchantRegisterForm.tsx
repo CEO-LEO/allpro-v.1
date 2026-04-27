@@ -43,7 +43,7 @@ export default function MerchantRegisterForm() {
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-blue-300">Merchant Onboarding</p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">สมัครเป็น Partner กับ Pro Hunter</h2>
+            <h2 className="mt-2 text-2xl font-semibold text-white">สมัครเป็น Partner กับ IAMROOT AI</h2>
             <p className="mt-2 text-sm text-slate-300">
               กรอกข้อมูลธุรกิจเพื่อเปิดใช้งานระบบ Merchant Deal Management และ Hyper-local Search
             </p>

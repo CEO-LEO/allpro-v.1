@@ -116,7 +116,7 @@ export default function Infographic() {
           className="text-center"
         >
           <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
-            🎯 All Pro ในตัวเลข
+            🎯 IAMROOT AI ในตัวเลข
           </h2>
           <p className="text-sm text-gray-500">
             ข้อมูลแพลตฟอร์มล่าสุด

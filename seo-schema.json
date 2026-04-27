@@ -1,19 +1,20 @@
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "Pro Hunter",
-  "url": "https://pro-hunter.vercel.app",
-  "description": "Pro Hunter is a premier platform for deal hunting, flash sales, community discounts, and promotion tracking.",
+  "name": "IAMROOT AI",
+  "url": "https://iamroot-ai.com",
+  "description": "IAMROOT AI คือแพลตฟอร์มค้นหาโปรโมชั่นและดีลที่ดีที่สุดจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศไทย พร้อม AI Insights",
   "keywords": [
-    "Deal Hunting",
-    "Flash Sales",
-    "Community Discounts",
-    "Promotion Tracking",
-    "Pro Hunter"
+    "โปรโมชั่น",
+    "ส่วนลด",
+    "ดีล",
+    "Flash Sale",
+    "คูปอง",
+    "IAMROOT AI"
   ],
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://pro-hunter.vercel.app/search?q={search_term_string}",
+    "target": "https://iamroot-ai.com/search?q={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 }

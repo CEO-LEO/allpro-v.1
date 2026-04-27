@@ -1,4 +1,4 @@
-# 🔥 All Pro - โปรโมชั่นเด็ดใกล้คุณ
+# 🔥 IAMROOT AI - โปรโมชั่นเด็ดใกล้คุณ
 
 **แพลตฟอร์มรวมโปรโมชั่นครบที่สุดในไทย** พร้อม Geolocation, AI Chatbot, และ Admin Dashboard
 
@@ -332,7 +332,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/all-pro/issues)
-- **Email**: support@allpro.com (example)
+- **Email**: support@iamrootai.com (example)
 - **Discord**: [Join our community](#) (example)
 
 ---

@@ -1,4 +1,4 @@
-# 👨‍💻 Developer Guide - All Pro
+# 👨‍💻 Developer Guide - IAMROOT AI
 
 Complete technical reference for developers building and maintaining the platform.
 

@@ -57,9 +57,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const welcomeNotif: Notification = {
         id: 'welcome-1',
         productId: 'welcome',
-        productName: 'All Pro',
+        productName: 'IAMROOT AI',
         branchName: '',
-        message: '🎉 ยินดีต้อนรับสู่ All Pro! เริ่มล่าดีลกันเลย',
+        message: '🎉 ยินดีต้อนรับสู่ IAMROOT AI! เริ่มล่าดีลกันเลย',
         timestamp: new Date(),
         read: false,
         type: 'welcome'

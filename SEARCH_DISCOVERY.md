@@ -217,7 +217,7 @@ const [showFilters, setShowFilters] = useState(false);
 
 **Filtering Pipeline:**
 ```
-All Pros (from getPromotions)
+IAMROOT AIs (from getPromotions)
         ↓
 1. Search Query Filter
    (title, shop_name, description, category)
@@ -323,7 +323,7 @@ const filteredPromotions = useMemo(() => {
    → No results (impossible combination)
 2. Sees empty state with sad shopping bag
 3. Clicks "ล้างตัวกรองทั้งหมด"
-   → All filters reset, sees All Pros
+   → All filters reset, sees IAMROOT AIs
 4. Starts new search with better filters
 ```
 

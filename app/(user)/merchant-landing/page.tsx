@@ -117,7 +117,7 @@ export default function MerchantLandingPage() {
           Ready to Grow Your Business?
         </h2>
         <p className="text-h3 text-gray-300 mb-8 max-w-2xl mx-auto">
-          Join hundreds of successful merchants already using All Pro to reach more customers.
+          Join hundreds of successful merchants already using IAMROOT AI to reach more customers.
         </p>
         <button
           onClick={handleJoinNow}

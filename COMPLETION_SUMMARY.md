@@ -200,4 +200,4 @@ vercel --prod
 
 **🎉 ขอให้ Deploy สำเร็จ!** 🚀
 
-<sub>Generated: 2026-02-20 | Project: All Pro</sub>
+<sub>Generated: 2026-02-20 | Project: IAMROOT AI</sub>

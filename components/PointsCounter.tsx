@@ -17,8 +17,8 @@ export default function PointsCounter() {
 
   // Determine rank title based on level
   const getRankTitle = () => {
-    if (level >= 20) return 'Legendary Slayer';
-    if (level >= 10) return 'Pro Hunter';
+    if (level >= 20) return 'IAMROOT Legend';
+    if (level >= 10) return 'IAMROOT Hunter';
     return 'Novice Hunter';
   };
 

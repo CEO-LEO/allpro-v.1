@@ -44,13 +44,13 @@ export async function POST(request: NextRequest) {
   //   .single();
   // if (!coupon || coupon.expired_at < new Date()) ...
 
-  // Demo: any QR code starting with "ALLPRO" is a valid promo code
+  // Demo: any QR code starting with "IAMROOT" is a valid promo code
   // Others are treated as shop check-in codes
   let xp = 50;
   let coins = 20;
   let message = 'เช็คอินสำเร็จ! คุณได้รับรางวัล';
 
-  if (code.toUpperCase().startsWith('ALLPRO')) {
+  if (code.toUpperCase().startsWith('IAMROOT')) {
     xp = 100;
     coins = 50;
     message = 'คูปองพิเศษ! คุณได้รับรางวัลพิเศษ';

@@ -1,4 +1,4 @@
-# 🔥 All Pro - โปรโมชั่นเด็ดใกล้คุณ
+# 🔥 IAMROOT AI - โปรโมชั่นเด็ดใกล้คุณ
 
 **แพลตฟอร์มรวมโปรโมชั่นครบที่สุดในไทย** พร้อม Geolocation, AI, และ Admin Dashboard
 
@@ -75,7 +75,7 @@ npm install && npm run verify && npm run dev
 ## 📁 Structure
 
 ```
-all-promotion/
+iamroot-ai/
 ├── app/
 │   ├── (user)/          # Feed, Product Detail
 │   ├── admin/           # Upload, Dashboard
@@ -147,7 +147,7 @@ vercel --prod
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...  # Admin features
-NEXT_PUBLIC_SITE_URL=https://allpro.co
+NEXT_PUBLIC_SITE_URL=https://iamrootai.co
 NEXT_PUBLIC_GEMINI_API_KEY=AIza...
 ```
 

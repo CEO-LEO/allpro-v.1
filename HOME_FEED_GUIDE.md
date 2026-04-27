@@ -241,7 +241,7 @@ http://localhost:3000
 ## 📂 File Structure
 
 ```
-all-promotion/
+iamroot-ai/
 ├── app/(user)/
 │   └── page.tsx                          # ✨ หน้า Home (Updated)
 ├── components/

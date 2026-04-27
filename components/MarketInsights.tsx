@@ -113,7 +113,7 @@ export default function MarketInsights() {
             </div>
             <div>
               <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
-                <span className="hidden sm:inline">All Pro AI Intelligence</span>
+                <span className="hidden sm:inline">IAMROOT AI AI Intelligence</span>
                 <span className="sm:hidden">AI Intelligence</span>
               </h2>
               <p className="text-gray-500 text-xs sm:text-sm">
@@ -442,7 +442,7 @@ export default function MarketInsights() {
                     <Brain className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold">All Pro AI Intelligence</h3>
+                    <h3 className="text-2xl font-bold">IAMROOT AI AI Intelligence</h3>
                     <p className="text-white/80 text-sm">Predictive Market Analysis</p>
                   </div>
                 </div>

@@ -2,7 +2,7 @@ import promotionsData from '@/data/promotions.json';
 import { Promotion } from './types';
 
 /**
- * SEO Ranking Engine สำหรับแพลตฟอร์ม All Pro
+ * SEO Ranking Engine สำหรับแพลตฟอร์ม IAMROOT AI
  * 
  * ระบบการจัดอันดับแบบ 3-Tier:
  * - Tier 1 (Sponsored): โปรโมชั่นที่ร้านค้าซื้อ SEO (อันดับ 1-3)

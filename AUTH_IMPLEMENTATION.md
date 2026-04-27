@@ -68,7 +68,7 @@ The Authentication System uses **Zustand** for state management with localStorag
 {
   id: 'user-{timestamp}',
   name: 'Hunter 007',
-  email: 'hunter007@allpro.com',
+  email: 'hunter007@iamrootai.com',
   role: 'USER',
   avatar: 'https://i.pravatar.cc/150?img=12',
   phone: '081-234-5678',

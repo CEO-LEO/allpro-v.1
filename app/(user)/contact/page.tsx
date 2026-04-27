@@ -16,7 +16,7 @@ export default function ContactPage() {
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-base sm:text-xl font-bold text-[#FF5722] hover:text-[#E64A19] transition-colors">
-              ← All Pro
+              ← IAMROOT AI
             </Link>
             <h1 className="text-sm sm:text-lg font-semibold">ติดต่อเรา</h1>
             <div className="w-8 sm:w-20"></div>
@@ -46,8 +46,8 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 mb-1">อีเมล</h3>
-                  <a href="mailto:contact@allpromotion.com" className="text-[#FF5722] hover:underline">
-                    contact@allpromotion.com
+                  <a href="mailto:contact@iamrootaimotion.com" className="text-[#FF5722] hover:underline">
+                    contact@iamrootaimotion.com
                   </a>
                   <p className="text-sm text-gray-600 mt-1">ตอบภายใน 24 ชั่วโมง</p>
                 </div>
@@ -76,8 +76,8 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 mb-1">Line Official</h3>
-                  <a href="https://line.me/ti/p/@allpromotion" className="text-[#FF5722] hover:underline">
-                    @allpromotion
+                  <a href="https://line.me/ti/p/@iamrootaimotion" className="text-[#FF5722] hover:underline">
+                    @iamrootaimotion
                   </a>
                   <p className="text-sm text-gray-600 mt-1">ตอบทันที 24/7</p>
                 </div>
@@ -173,8 +173,8 @@ export default function ContactPage() {
           <div className="space-y-4">
             {[
               {
-                q: 'All Pro คืออะไร?',
-                a: 'All Pro คือแพลตฟอร์มค้นหาโปรโมชั่นที่ใช้ Big Data และ AI เพื่อช่วยให้คุณหาโปรโมชั่นที่ดีที่สุดได้ง่ายขึ้น พร้อมข้อมูลจาก CP ALL Ecosystem'
+                q: 'IAMROOT AI คืออะไร?',
+                a: 'IAMROOT AI คือแพลตฟอร์มค้นหาโปรโมชั่นที่ใช้ Big Data และ AI เพื่อช่วยให้คุณหาโปรโมชั่นที่ดีที่สุดได้ง่ายขึ้น พร้อมข้อมูลจาก CP ALL Ecosystem'
               },
               {
                 q: 'ใช้บริการฟรีหรือเสียค่าใช้จ่าย?',

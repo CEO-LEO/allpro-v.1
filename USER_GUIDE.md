@@ -1,4 +1,4 @@
-# 👤 User Guide - How to Use All Pro
+# 👤 User Guide - How to Use IAMROOT AI
 
 Complete guide for end users - browse deals, save favorites, and hire freelancers via Fastwork.
 
@@ -465,9 +465,9 @@ Visit: **http://localhost:3000** (or your deployed URL)
 - Submit ticket
 
 **Option 2: Contact Us**
-- Email: support@allpro.com (example)
-- LINE: @allpromo (example)
-- Facebook: /allpromotion (example)
+- Email: support@iamrootai.com (example)
+- LINE: @iamrootaimo (example)
+- Facebook: /iamrootaimotion (example)
 
 **Option 3: Community**
 - Join Discord (example)
@@ -478,7 +478,7 @@ Visit: **http://localhost:3000** (or your deployed URL)
 
 ## 🎉 Enjoy Hunting Deals!
 
-**All Pro** - Your personal deal assistant. Browse, save, and hire freelancers to get the best deals in Thailand! 🇹🇭
+**IAMROOT AI** - Your personal deal assistant. Browse, save, and hire freelancers to get the best deals in Thailand! 🇹🇭
 
 ---
 
