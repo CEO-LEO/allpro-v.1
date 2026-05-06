@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Store, Star, Package, MapPin, CheckCircle, ArrowLeft,
-  TrendingUp, Clock, Heart, Share2, MessageCircle, Globe, ExternalLink
+  Bell, Heart, Share2, MessageCircle, Globe, ExternalLink, Tag
 } from 'lucide-react';
 import { useProductStore, type Product } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -14,6 +14,7 @@ import { getSocialLinks } from '@/lib/socialLinks';
 import { getPromotions } from '@/lib/getPromotions';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
+import { fetchShopPublicStats, trackShopView, type ShopPublicStats } from '@/lib/analytics';
 
 interface ShopInfo {
   id: string;
@@ -31,6 +32,34 @@ interface ShopInfo {
   socialWebsite?: string;
 }
 
+// ── Avatar helpers ──────────────────────────────────────────────────────
+const AVATAR_GRADIENTS = [
+  'from-orange-500 to-rose-500',
+  'from-violet-500 to-purple-700',
+  'from-blue-500 to-cyan-600',
+  'from-green-500 to-teal-600',
+  'from-amber-500 to-orange-600',
+  'from-pink-500 to-rose-600',
+  'from-indigo-500 to-blue-700',
+  'from-teal-500 to-green-600',
+];
+function getAvatarGradient(name: string) {
+  const code = (name.charCodeAt(0) || 0) + (name.charCodeAt(1) || 0);
+  return AVATAR_GRADIENTS[code % AVATAR_GRADIENTS.length];
+}
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return n.toString();
+}
+
+type Tab = 'all' | 'top' | 'sale';
+
 export default function PublicShopPage() {
   const params = useParams();
   const shopId = params.shopId as string;
@@ -41,16 +70,83 @@ export default function PublicShopPage() {
   const [error, setError] = useState<string | null>(null);
   const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
+  const [isFollowed, setIsFollowed] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('all');
+  const [shopStats, setShopStats] = useState<ShopPublicStats | null>(null);
 
-  // Derive shop products from local store + API results
+  // ── Follow: persist to localStorage ──────────────────────────────────
+  useEffect(() => {
+    if (!shopId) return;
+    try {
+      const raw = localStorage.getItem('allpro_followed_shops');
+      const list: string[] = raw ? JSON.parse(raw) : [];
+      setIsFollowed(list.includes(shopId));
+    } catch { /* ignore */ }
+  }, [shopId]);
+
+  const toggleFollow = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('allpro_followed_shops');
+      const list: string[] = raw ? JSON.parse(raw) : [];
+      const next = isFollowed
+        ? list.filter(id => id !== shopId)
+        : [...list, shopId];
+      localStorage.setItem('allpro_followed_shops', JSON.stringify(next));
+    } catch { /* ignore */ }
+    setIsFollowed(v => !v);
+  }, [isFollowed, shopId]);
+
+  // ── Share ─────────────────────────────────────────────────────────────
+  const handleShare = useCallback(async () => {
+    const url = window.location.href;
+    const title = shopInfo?.name ?? 'ร้านค้า All Pro';
+    if (navigator.share) {
+      await navigator.share({ title, url }).catch(() => {});
+    } else {
+      await navigator.clipboard.writeText(url).catch(() => {});
+    }
+  }, [shopInfo]);
+
+  // ── Derived products ──────────────────────────────────────────────────
   const shopProducts = useMemo(() => {
     if (!shopInfo) return [];
     const localMatches = products.filter(p => p.shopName === shopInfo.name);
-    // Merge with API products, deduplicate by id
     const localIds = new Set(localMatches.map(p => p.id));
     const apiMatches = apiProducts.filter(p => !localIds.has(p.id));
     return [...localMatches, ...apiMatches];
   }, [products, shopInfo, apiProducts]);
+
+  // ── Tab-filtered products ─────────────────────────────────────────────
+  const displayProducts = useMemo(() => {
+    if (activeTab === 'top')
+      return [...shopProducts].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    if (activeTab === 'sale')
+      return [...shopProducts]
+        .filter(p => p.discount > 0)
+        .sort((a, b) => b.discount - a.discount);
+    return shopProducts;
+  }, [shopProducts, activeTab]);
+
+  // ── Track shop page view (1 user / 1 shop / 1 ครั้ง) ──────────────────────────
+  useEffect(() => {
+    if (shopId) trackShopView(decodeURIComponent(shopId as string));
+  }, [shopId]);
+
+  // ── Fetch real Views + Revenue from Supabase after products are loaded ──
+  useEffect(() => {
+    if (isLoading || shopProducts.length === 0) return;
+    const ids = shopProducts.map(p => p.id);
+    fetchShopPublicStats(ids).then(stats => {
+      // Only apply if we actually got real data (totalViews > 0 means table exists)
+      setShopStats(stats);
+    });
+  }, [isLoading, shopProducts]);
+
+  // ── Fallback views from product likes (used while stats load or no DB) ────
+  const fallbackViews = useMemo(
+    () => shopProducts.reduce((s, p) => s + (p.likes || 0), 0),
+    [shopProducts]
+  );
 
   useEffect(() => {
     const fetchShop = async () => {
@@ -256,51 +352,47 @@ export default function PublicShopPage() {
     if (shopId) fetchShop();
   }, [shopId, products, authUser, savedMerchantProfile]);
 
+  // ── Loading skeleton ──────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-          <div className="max-w-5xl mx-auto px-4 py-3">
-            <div className="h-6 bg-gray-200 rounded w-24 animate-pulse" />
+      <div className="min-h-screen bg-gray-50">
+        {/* Hero shimmer */}
+        <div className="h-52 bg-gradient-to-br from-blue-600 via-indigo-700 to-violet-800 animate-pulse" />
+        <div className="max-w-2xl mx-auto px-4">
+          {/* Stats card shimmer */}
+          <div className="bg-white rounded-2xl shadow-lg -mt-6 p-4 grid grid-cols-3 gap-4 animate-pulse mb-5 relative z-10">
+            {[1, 2, 3].map(i => <div key={i} className="h-14 bg-gray-100 rounded-xl" />)}
           </div>
-        </header>
-        <div className="max-w-5xl mx-auto px-4 py-8 animate-pulse space-y-6">
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 bg-gray-200 rounded-2xl" />
-            <div className="flex-1 space-y-3">
-              <div className="h-7 bg-gray-200 rounded w-48" />
-              <div className="h-4 bg-gray-200 rounded w-32" />
-              <div className="h-4 bg-gray-200 rounded w-64" />
-            </div>
+          {/* Buttons shimmer */}
+          <div className="grid grid-cols-3 gap-3 mb-4 animate-pulse">
+            {[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-100 rounded-2xl" />)}
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 rounded-xl" />)}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map(i => <div key={i} className="h-64 bg-gray-100 rounded-2xl" />)}
+          {/* Products shimmer */}
+          <div className="grid grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-52 bg-gray-100 rounded-2xl animate-pulse" />)}
           </div>
         </div>
       </div>
     );
   }
 
+  // ── Error ─────────────────────────────────────────────────────────────
   if (error || !shopInfo) {
     return (
-      <div className="min-h-screen bg-white">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-          <div className="max-w-5xl mx-auto px-4 py-3">
-            <Link href="/" className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors flex items-center gap-1.5">
-              <ArrowLeft className="w-4 h-4" /> กลับหน้าหลัก
-            </Link>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-40 px-4 py-3">
+          <Link href="/" className="flex items-center gap-1.5 text-blue-600 font-semibold text-sm">
+            <ArrowLeft className="w-4 h-4" /> กลับหน้าหลัก
+          </Link>
         </header>
-        <div className="py-20 text-center px-4">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="flex-1 flex flex-col items-center justify-center py-20 px-4 text-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <Store className="w-10 h-10 text-gray-400" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">{error || 'ไม่พบร้านค้า'}</h2>
           <p className="text-gray-500 mb-6">ร้านค้านี้อาจถูกลบออกหรือยังไม่มีข้อมูล</p>
-          <Link href="/" className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors inline-block">
+          <Link href="/"
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors">
             กลับหน้าหลัก
           </Link>
         </div>
@@ -308,199 +400,257 @@ export default function PublicShopPage() {
     );
   }
 
+  // ── Computed display values ────────────────────────────────────────────
+  const isOwnShop = authUser?.shopName === shopInfo.name;
+  const socialLinks = getSocialLinks({
+    line: shopInfo.socialLine || (isOwnShop ? authUser?.shopSocialLine : undefined),
+    facebook: shopInfo.socialFacebook || (isOwnShop ? authUser?.shopSocialFacebook : undefined),
+    instagram: shopInfo.socialInstagram || (isOwnShop ? authUser?.shopSocialInstagram : undefined),
+    website: shopInfo.socialWebsite || (isOwnShop ? authUser?.shopSocialWebsite : undefined),
+  });
+  const chatLink = shopInfo.socialLine
+    ? (shopInfo.socialLine.startsWith('http')
+        ? shopInfo.socialLine
+        : `https://line.me/ti/p/~${shopInfo.socialLine}`)
+    : null;
+  const avatarGradient = getAvatarGradient(shopInfo.name);
+  const initials = getInitials(shopInfo.name);
+
   return (
-    <div className="min-h-screen bg-white pb-20">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors flex items-center gap-1.5">
-            <ArrowLeft className="w-4 h-4" /> กลับ
+    <div className="min-h-screen bg-gray-50 pb-24">
+
+      {/* ─────────────────── HERO BANNER ─────────────────────────────── */}
+      <div className="relative bg-gradient-to-br from-blue-600 via-indigo-700 to-violet-800 pb-16">
+        {/* Top nav */}
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <Link href="/"
+            className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors">
+            <ArrowLeft className="w-5 h-5 text-white" />
           </Link>
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <Share2 className="w-5 h-5 text-gray-500" />
+          <button onClick={handleShare}
+            className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors">
+            <Share2 className="w-5 h-5 text-white" />
           </button>
         </div>
-      </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
-        {/* ═══ Shop Profile Card ═══ */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-6 sm:p-8 border border-blue-100 mb-8"
-        >
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-            {/* Logo */}
-            <div className={`w-24 h-24 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-md ${shopInfo.logo ? '' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
-              {shopInfo.logo ? (
-                <img src={shopInfo.logo} alt={shopInfo.name} className="w-full h-full object-cover" />
-              ) : (
-                <Store className="w-12 h-12 text-white" />
+        {/* Shop identity */}
+        <div className="flex flex-col items-center px-4 pt-3 pb-2">
+          {/* Avatar */}
+          <div className={`w-20 h-20 rounded-full border-4 border-white/40 shadow-xl overflow-hidden bg-gradient-to-br ${avatarGradient} flex items-center justify-center mb-3`}>
+            {shopInfo.logo
+              ? <img src={shopInfo.logo} alt={shopInfo.name} className="w-full h-full object-cover" />
+              : <span className="text-white text-2xl font-bold">{initials}</span>}
+          </div>
+
+          {/* Name + verified badge */}
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-white text-xl font-bold">{shopInfo.name}</h1>
+            {shopInfo.verified && <CheckCircle className="w-4 h-4 text-blue-200" />}
+          </div>
+
+          {/* Merchant badge */}
+          <span className="bg-white/20 backdrop-blur-sm text-white/90 text-xs font-medium px-3 py-0.5 rounded-full flex items-center gap-1.5 mb-2">
+            <Store className="w-3 h-3" /> Merchant
+          </span>
+
+          {/* Meta row */}
+          <div className="flex items-center gap-3 text-white/70 text-xs">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />{shopInfo.location}
+            </span>
+            <span>•</span>
+            <span>สมาชิกตั้งแต่ {shopInfo.memberSince}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─────────────────── CONTENT ─────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 space-y-4">
+
+        {/* STATS CARD — overlaps hero */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 grid grid-cols-3 divide-x divide-gray-100 -mt-6 relative z-10">
+          {/* PRODUCTS */}
+          <div className="p-4 text-center">
+            <p className="text-lg font-bold text-blue-600">
+              {formatCount(shopInfo.totalProducts || shopProducts.length)}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">PRODUCTS</p>
+          </div>
+          {/* VIEWS — real unique first-views from promotion_views table */}
+          <div className="p-4 text-center">
+            <p className="text-lg font-bold text-violet-600">
+              {formatCount(
+                shopStats !== null && (shopStats.totalViews > 0 || shopProducts.length > 0)
+                  ? shopStats.totalViews
+                  : fallbackViews
               )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 text-center sm:text-left">
-              <div className="flex items-center gap-2 justify-center sm:justify-start mb-1">
-                <h1 className="text-2xl font-bold text-gray-900">{shopInfo.name}</h1>
-                {shopInfo.verified && (
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
-                )}
-              </div>
-              <p className="text-gray-500 text-sm mb-3">{shopInfo.description}</p>
-              <div className="flex items-center gap-4 text-sm text-gray-500 justify-center sm:justify-start flex-wrap">
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> {shopInfo.location}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" /> สมาชิกตั้งแต่ {shopInfo.memberSince}
-                </span>
-              </div>
-            </div>
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">VIEWS</p>
           </div>
-
-          {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-3 mt-6">
-            <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <Star className="w-4 h-4 text-amber-500" />
-                <span className="text-lg font-bold text-gray-900">{shopInfo.rating}</span>
-              </div>
-              <p className="text-xs text-gray-500">เรตติ้ง</p>
-            </div>
-            <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <Package className="w-4 h-4 text-blue-500" />
-                <span className="text-lg font-bold text-gray-900">{shopInfo.totalProducts}</span>
-              </div>
-              <p className="text-xs text-gray-500">โปรโมชั่น</p>
-            </div>
-            <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <TrendingUp className="w-4 h-4 text-green-500" />
-                <span className="text-lg font-bold text-gray-900">
-                  {shopProducts.reduce((sum, p) => sum + (p.likes || 0), 0)}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500">ถูกใจ</p>
-            </div>
+          {/* REVENUE — real sum of promo_price from promotion_claims */}
+          <div className="p-4 text-center">
+            <p className="text-lg font-bold text-green-600">
+              {shopStats !== null && shopStats.totalRevenue > 0
+                ? `฿${formatCount(shopStats.totalRevenue)}`
+                : '฿0'
+              }
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">REVENUE</p>
           </div>
+        </div>
 
-          {/* Social Links */}
-          {(() => {
-            // ดึงข้อมูล social จาก shopInfo (DB) หรือจาก auth store ถ้าเป็นร้านของตัวเอง
-            const isOwnShop = authUser?.shopName === shopInfo.name;
-            const socialLinks = getSocialLinks({
-              line: shopInfo.socialLine || (isOwnShop ? authUser?.shopSocialLine : undefined),
-              facebook: shopInfo.socialFacebook || (isOwnShop ? authUser?.shopSocialFacebook : undefined),
-              instagram: shopInfo.socialInstagram || (isOwnShop ? authUser?.shopSocialInstagram : undefined),
-              website: shopInfo.socialWebsite || (isOwnShop ? authUser?.shopSocialWebsite : undefined),
-            });
-            if (socialLinks.length === 0) return null;
-            return (
-              <div className="flex flex-wrap justify-center gap-2 mt-6">
-                {socialLinks.map((link) => (
-                  <a
-                    key={link.key}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white ${link.hoverColor} hover:shadow-md transition-all duration-200 group`}
-                  >
-                    <div className={`w-7 h-7 rounded-lg ${link.bgColor} flex items-center justify-center flex-shrink-0`}>
-                      {link.icon === 'line' && <MessageCircle className="w-3.5 h-3.5 text-white" />}
-                      {link.icon === 'facebook' && <span className="text-white text-xs font-bold">f</span>}
-                      {link.icon === 'instagram' && <span className="text-white text-xs font-bold">ig</span>}
-                      {link.icon === 'website' && <Globe className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <span className={`text-sm font-medium ${link.color}`}>{link.label}</span>
-                    <ExternalLink className="w-3 h-3 text-gray-300 group-hover:text-gray-500 transition-colors" />
-                  </a>
-                ))}
-              </div>
-            );
-          })()}
-        </motion.div>
+        {/* ACTION BUTTONS */}
+        <div className="grid grid-cols-3 gap-3">
+          <motion.button whileTap={{ scale: 0.95 }} onClick={toggleFollow}
+            className={`flex flex-col items-center gap-1 py-3 rounded-2xl font-semibold text-sm transition-all ${
+              isFollowed
+                ? 'bg-green-50 text-green-600 border-2 border-green-200'
+                : 'bg-orange-500 text-white shadow-md shadow-orange-200'
+            }`}>
+            <Bell className="w-5 h-5" />
+            {isFollowed ? 'ติดตามแล้ว' : 'ติดตาม'}
+          </motion.button>
 
-        {/* ═══ Shop Products ═══ */}
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Package className="w-5 h-5 text-blue-600" />
-            โปรโมชั่นจากร้านนี้
-            <span className="text-sm font-normal text-gray-500">({shopProducts.length} รายการ)</span>
-          </h2>
-
-          {shopProducts.length === 0 ? (
-            <div className="py-16 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-700 mb-2">ยังไม่มีโปรโมชั่น</h3>
-              <p className="text-sm text-gray-500">ร้านค้านี้ยังไม่ได้ลงโปรโมชั่น</p>
-            </div>
+          {chatLink ? (
+            <a href={chatLink} target="_blank" rel="noopener noreferrer"
+              className="flex flex-col items-center gap-1 py-3 rounded-2xl font-semibold text-sm bg-white border-2 border-gray-200 text-gray-700 hover:border-green-400 hover:text-green-600 transition-all">
+              <MessageCircle className="w-5 h-5" />แชท
+            </a>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {shopProducts.map((product, idx) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                >
-                  <Link href={`/promo/${product.id}`}>
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all group">
-                      {/* Image */}
-                      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-                        <img
-                          src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
-                          alt={product.title}
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                          onError={(e) => {
-                            const fallback = getCategoryFallbackImage(product.category);
-                            if (e.currentTarget.src !== fallback) {
-                              e.currentTarget.src = fallback;
-                            }
-                          }}
-                        />
-                        {product.discount > 0 && (
-                          <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full z-10">
-                            -{product.discount}%
-                          </span>
-                        )}
-                      </div>
+            <button disabled
+              className="flex flex-col items-center gap-1 py-3 rounded-2xl font-semibold text-sm bg-white border-2 border-gray-200 text-gray-400 cursor-not-allowed">
+              <MessageCircle className="w-5 h-5" />แชท
+            </button>
+          )}
 
-                      {/* Info */}
-                      <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-orange-600 transition-colors">
-                          {product.title}
-                        </h3>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg font-bold text-orange-600">
-                            ฿{product.promoPrice.toLocaleString()}
-                          </span>
-                          {product.originalPrice > product.promoPrice && (
-                            <span className="text-sm text-gray-400 line-through">
-                              ฿{product.originalPrice.toLocaleString()}
+          <button onClick={handleShare}
+            className="flex flex-col items-center gap-1 py-3 rounded-2xl font-semibold text-sm bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all">
+            <Share2 className="w-5 h-5" />แชร์
+          </button>
+        </div>
+
+        {/* DESCRIPTION */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <p className="text-sm text-gray-600 leading-relaxed">{shopInfo.description}</p>
+        </div>
+
+        {/* SOCIAL LINKS */}
+        {socialLinks.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">ช่องทางติดต่อ</h3>
+            <div className="flex flex-wrap gap-2">
+              {socialLinks.map(link => (
+                <a key={link.key} href={link.url} target="_blank" rel="noopener noreferrer"
+                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-gray-200 bg-gray-50 ${link.hoverColor} hover:shadow-sm transition-all text-sm`}>
+                  <div className={`w-6 h-6 rounded-lg ${link.bgColor} flex items-center justify-center flex-shrink-0`}>
+                    {link.icon === 'line' && <MessageCircle className="w-3 h-3 text-white" />}
+                    {link.icon === 'facebook' && <span className="text-white text-xs font-bold">f</span>}
+                    {link.icon === 'instagram' && <span className="text-white text-xs font-bold">ig</span>}
+                    {link.icon === 'website' && <Globe className="w-3 h-3 text-white" />}
+                  </div>
+                  <span className={`font-medium ${link.color}`}>{link.label}</span>
+                  <ExternalLink className="w-3 h-3 text-gray-400" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* PRODUCTS: TABS + GRID */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          {/* Tab bar */}
+          <div className="flex border-b border-gray-100">
+            {([
+              { key: 'all' as Tab,  label: 'ทั้งหมด', Icon: Package },
+              { key: 'top' as Tab,  label: 'แนะนำ',   Icon: Star    },
+              { key: 'sale' as Tab, label: 'ลดราคา',  Icon: Tag     },
+            ]).map(({ key, label, Icon }) => (
+              <button key={key} onClick={() => setActiveTab(key)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3.5 text-sm font-semibold transition-colors relative ${
+                  activeTab === key ? 'text-orange-500' : 'text-gray-500 hover:text-gray-700'
+                }`}>
+                <Icon className="w-4 h-4" />{label}
+                {activeTab === key && (
+                  <motion.div layoutId="shop-tab-line"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Product grid */}
+          <div className="p-4">
+            {displayProducts.length === 0 ? (
+              <div className="py-12 text-center">
+                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Package className="w-7 h-7 text-gray-400" />
+                </div>
+                <p className="text-sm font-semibold text-gray-600 mb-1">ยังไม่มีโปรโมชั่น</p>
+                <p className="text-xs text-gray-400">
+                  {activeTab === 'sale' ? 'ไม่มีสินค้าลดราคาในขณะนี้' : 'ร้านค้านี้ยังไม่ได้ลงโปรโมชั่น'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {displayProducts.map((product, idx) => (
+                  <motion.div key={product.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04 }}>
+                    <Link href={`/promo/${product.id}`}>
+                      <div className="rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white hover:shadow-md hover:-translate-y-0.5 transition-all group">
+                        {/* Product image */}
+                        <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+                          <img
+                            src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
+                            alt={product.title}
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            onError={(e) => {
+                              const fb = getCategoryFallbackImage(product.category);
+                              if (e.currentTarget.src !== fb) e.currentTarget.src = fb;
+                            }}
+                          />
+                          {product.discount > 0 && (
+                            <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                              -{product.discount}%
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> {product.rating}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Heart className="w-3.5 h-3.5" /> {product.likes}
-                          </span>
+                        {/* Product info */}
+                        <div className="p-3">
+                          <p className="text-xs font-semibold text-gray-800 line-clamp-2 mb-1.5 group-hover:text-orange-600 transition-colors">
+                            {product.title}
+                          </p>
+                          <div className="flex items-end gap-1.5 mb-1.5">
+                            <span className="text-sm font-bold text-orange-600">
+                              ฿{product.promoPrice.toLocaleString()}
+                            </span>
+                            {product.originalPrice > product.promoPrice && (
+                              <span className="text-xs text-gray-400 line-through">
+                                ฿{product.originalPrice.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-0.5 text-xs text-amber-500">
+                              <Star className="w-3 h-3 fill-amber-400" />
+                              {product.rating > 0 ? product.rating : '—'}
+                            </span>
+                            <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                              <Heart className="w-3 h-3" />{product.likes}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          )}
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );

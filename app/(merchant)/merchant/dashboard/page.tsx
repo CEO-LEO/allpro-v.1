@@ -108,6 +108,8 @@ export default function MerchantDashboard() {
     totalUsed: number;
     conversionRate: number;
     totalAmountSaved: number;
+    totalRevenue: number;
+    shopPageViews: number;
   } | null>(null);
 
   const [analyticsData, setAnalyticsData] = useState<MerchantDashboardStats | null>(null);
@@ -136,6 +138,8 @@ export default function MerchantDashboard() {
             totalUsed: analytics.totalUsed,
             conversionRate: analytics.conversionRate,
             totalAmountSaved: analytics.totalAmountSaved,
+            totalRevenue: analytics.totalRevenue,
+            shopPageViews: analytics.shopPageViews,
           });
 
           // Convert analytics activity to dashboard format
@@ -192,6 +196,8 @@ export default function MerchantDashboard() {
   const totalUsed = dashboardStats?.totalUsed ?? 0;
   const conversionRate = dashboardStats?.conversionRate ?? 0;
   const totalAmountSaved = dashboardStats?.totalAmountSaved ?? 0;
+  const totalRevenue = dashboardStats?.totalRevenue ?? 0;
+  const shopPageViews = dashboardStats?.shopPageViews ?? 0;
   const avgDiscount = myProducts.length > 0
     ? Math.round(
         myProducts.reduce((sum, p) => {
@@ -399,10 +405,13 @@ export default function MerchantDashboard() {
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-600 text-sm font-medium">ยอดเข้าชม</p>
+                  <p className="text-blue-600 text-sm font-medium">ยอดเข้าชมสินค้า</p>
                   <p className="text-3xl font-bold text-blue-900 mt-1">
                     {totalViews.toLocaleString()}
                   </p>
+                  {shopPageViews > 0 && (
+                    <p className="text-xs text-blue-500 mt-0.5">หน้าร้าน: {shopPageViews.toLocaleString()} ครั้ง</p>
+                  )}
                 </div>
                 <EyeIcon className="w-10 h-10 text-blue-300" />
               </div>
@@ -441,10 +450,13 @@ export default function MerchantDashboard() {
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-600 text-sm font-medium">ลดเฉลี่ย</p>
+                  <p className="text-orange-600 text-sm font-medium">รายได้รวม</p>
                   <p className="text-3xl font-bold text-orange-900 mt-1">
-                    {avgDiscount}%
+                    ฿{totalRevenue.toLocaleString()}
                   </p>
+                  {totalAmountSaved > 0 && (
+                    <p className="text-xs text-orange-500 mt-0.5">ลูกค้าประหยัด ฿{totalAmountSaved.toLocaleString()}</p>
+                  )}
                 </div>
                 <ArrowTrendingUpIcon className="w-10 h-10 text-orange-300" />
               </div>

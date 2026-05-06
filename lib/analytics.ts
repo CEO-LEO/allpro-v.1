@@ -130,6 +130,10 @@ export interface MerchantDashboardStats {
   totalUsed: number;
   conversionRate: number;  // claims / views * 100
   totalAmountSaved: number;
+  /** SUM(promo_price) จาก promotion_claims — ตรงกับ Revenue ที่แสดงฝั่งลูกค้า */
+  totalRevenue: number;
+  /** จำนวนครั้งที่มีคนเข้าชมหน้าร้านโดยตรง (shop_views table) */
+  shopPageViews: number;
   recentActivity: ActivityItem[];
   productStats: ProductStat[];
   dailyStats: DailyStat[];
@@ -192,6 +196,8 @@ export async function fetchMerchantAnalytics(
         totalUsed: 0,
         conversionRate: 0,
         totalAmountSaved: 0,
+        totalRevenue: 0,
+        shopPageViews: 0,
         recentActivity: [],
         productStats: [],
         dailyStats: [],
@@ -219,7 +225,22 @@ export async function fetchMerchantAnalytics(
     const totalClaims = claims?.length || 0;
     const totalUsed = claims?.filter((c) => c.status === 'used').length || 0;
     const totalAmountSaved = claims?.reduce((sum, c) => sum + (c.amount_saved || 0), 0) || 0;
+    // Revenue = SUM(promo_price) — ตรงกับที่หน้าร้านฝั่งลูกค้าแสดง
+    const totalRevenue = claims?.reduce((sum, c) => sum + (Number(c.promo_price) || 0), 0) || 0;
     const conversionRate = totalViews > 0 ? Math.round((totalClaims / totalViews) * 10000) / 100 : 0;
+
+    // Shop Page Views — นับจาก shop_views table (กรณีตารางยังไม่มีจะ return 0 เงียบๆ)
+    let shopPageViews = 0;
+    try {
+      const { count: svCount } = await supabase
+        .from('shop_views')
+        .select('*', { count: 'exact', head: true })
+        .or(`shop_id.eq.${merchantId},shop_id.eq.${shopName}`)
+        .gte('viewed_at', sinceDate);
+      shopPageViews = svCount || 0;
+    } catch {
+      // shop_views table ยังไม่ได้สร้าง — ข้ามไปได้เลย
+    }
 
     // สถิติรายสินค้า
     const productStats: ProductStat[] = products.map((p) => {
@@ -298,6 +319,8 @@ export async function fetchMerchantAnalytics(
       totalUsed,
       conversionRate,
       totalAmountSaved,
+      totalRevenue,
+      shopPageViews,
       recentActivity: recentActivity.sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       ),
@@ -308,5 +331,145 @@ export async function fetchMerchantAnalytics(
   } catch (err) {
     console.error('Failed to fetch merchant analytics:', err);
     return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// Public Shop Profile Stats
+// ─ ใช้สำหรับ buyer-facing shop profile page
+// ─ นับ Views จาก promotion_views (deduplicated per user)
+// ─ นับ Revenue จาก promotion_claims (sum promo_price)
+// ═══════════════════════════════════════════════════════
+
+const UUID_RE_STATS = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface ShopPublicStats {
+  totalViews: number;
+  totalRevenue: number;
+}
+
+/**
+ * ดึงสถิติสาธารณะของร้านค้า (Views + Revenue) สำหรับหน้าโปรไฟล์ร้านฝั่งลูกค้า
+ *
+ * @param productIds  รายการ UUID ของสินค้าในร้าน
+ *
+ * Views  = จำนวนแถวใน promotion_views ที่ product_id อยู่ในร้าน
+ *          (ระบบ trackPromotionView บันทึกแค่ครั้งแรกต่อ 1 user ต่อ 1 สินค้าอยู่แล้ว)
+ *
+ * Revenue = SUM(promo_price) จาก promotion_claims ของสินค้าในร้าน
+ */
+// ═══════════════════════════════════════════════════════
+// Shop Page View Tracking
+// ─ บันทึกการเข้าชมหน้าร้านค้า (ไม่ใช่แค่สินค้า)
+// ─ dedup: 1 user / 1 shop เท่านั้น (localStorage + DB)
+// ═══════════════════════════════════════════════════════
+
+/**
+ * บันทึกว่า user เข้าชมหน้าร้านนี้ครั้งแรก
+ *
+ * Logic dedup:
+ *  1. ถ้า shopId อยู่ใน localStorage แล้ว → ข้ามเลย (เร็วสุด)
+ *  2. ถ้า user ล็อกอิน → เช็ค shop_views table ว่าเคยบันทึกหรือยัง
+ *  3. Insert row ใหม่ + บันทึก localStorage
+ *
+ * ถ้า shop_views table ยังไม่มีในฐานข้อมูล ฟังก์ชันนี้จะ fail เงียบๆ
+ * (ต้องรัน add-shop-views.sql ก่อน)
+ */
+export async function trackShopView(
+  shopId: string,
+  source: string = 'shop_profile'
+): Promise<void> {
+  // SSR guard — localStorage ใช้ได้เฉพาะฝั่ง browser
+  if (typeof window === 'undefined') return;
+  if (!isSupabaseConfigured || !shopId) return;
+
+  // ── ขั้น 1: เช็ค localStorage ก่อน (ไม่ต้อง network call) ─────────────
+  const LS_KEY = 'allpro_viewed_shops';
+  let viewed: string[] = [];
+  try {
+    viewed = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+  } catch {
+    viewed = [];
+  }
+  if (viewed.includes(shopId)) return;
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // ── ขั้น 2: logged-in user เช็ค DB ว่าเคยบันทึกแล้วหรือยัง ──────────
+    if (user) {
+      const { data: existing } = await supabase
+        .from('shop_views')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('shop_id', shopId)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        // มีใน DB แล้ว → cache ใน localStorage เพื่อ skip network ครั้งต่อไป
+        localStorage.setItem(LS_KEY, JSON.stringify([...viewed, shopId]));
+        return;
+      }
+    }
+
+    // ── ขั้น 3: Insert row ใหม่ ────────────────────────────────────────────
+    const { error } = await supabase.from('shop_views').insert({
+      shop_id: shopId,
+      user_id: user?.id || null,
+      viewed_at: new Date().toISOString(),
+      source,
+    });
+
+    if (error) {
+      // ถ้า table ไม่มี (42P01) → แจ้ง dev แต่ไม่ throw
+      if (error.code !== '42P01') console.warn('[ShopView] insert error:', error.message);
+      return;
+    }
+
+    // บันทึก localStorage หลัง insert สำเร็จ
+    localStorage.setItem(LS_KEY, JSON.stringify([...viewed, shopId]));
+  } catch (err) {
+    console.warn('[ShopView] trackShopView failed:', err);
+  }
+}
+
+export async function fetchShopPublicStats(
+  productIds: string[]
+): Promise<ShopPublicStats> {
+  // กรองเฉพาะ UUID ที่ถูกต้อง (local/static product id ไม่ใช่ UUID จะ skip)
+  const validIds = productIds.filter(id => UUID_RE_STATS.test(id));
+
+  if (!isSupabaseConfigured || validIds.length === 0) {
+    return { totalViews: 0, totalRevenue: 0 };
+  }
+
+  try {
+    // ── Views: นับแถวทั้งหมด (1 แถว = 1 user เห็น 1 ครั้งแรก) ──────────
+    const { count: viewCount, error: viewErr } = await supabase
+      .from('promotion_views')
+      .select('*', { count: 'exact', head: true })
+      .in('product_id', validIds);
+
+    if (viewErr) console.warn('[ShopStats] views query:', viewErr.message);
+
+    // ── Revenue: รวม promo_price จากการกดรับโปรทั้งหมด ─────────────────
+    const { data: claims, error: claimErr } = await supabase
+      .from('promotion_claims')
+      .select('promo_price')
+      .in('product_id', validIds);
+
+    if (claimErr) console.warn('[ShopStats] claims query:', claimErr.message);
+
+    const totalRevenue = claims?.reduce(
+      (sum, c) => sum + (Number(c.promo_price) || 0), 0
+    ) ?? 0;
+
+    return {
+      totalViews: viewCount ?? 0,
+      totalRevenue,
+    };
+  } catch (err) {
+    console.error('[ShopStats] fetchShopPublicStats failed:', err);
+    return { totalViews: 0, totalRevenue: 0 };
   }
 }
