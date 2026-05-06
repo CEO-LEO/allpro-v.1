@@ -72,6 +72,10 @@ UPDATE public.shop_views
 -- ถ้า DB มี round 1 data ที่ผู้ใช้คนเดียว view ร้านเดิมหลายครั้ง
 -- CREATE UNIQUE INDEX CONCURRENTLY จะ fail ทันที (duplicate key)
 -- ต้องเก็บ row ที่ viewed_at ล่าสุดไว้ ลบที่เหลือทิ้ง
+--
+-- ⚠️  ตรวจขนาด table ก่อนรัน: SELECT count(*) FROM public.shop_views;
+-- ⚠️  ถ้า > 100,000 rows: พิจารณารัน batch delete แยกนอก transaction
+--     เพราะ CTE delete ใน transaction ถือ ExclusiveLock นานบน large table
 -- ───────────────────────────────────────────────────────────
 
 -- Dedup logged-in: เก็บ 1 row ต่อ (user_id, shop_id) — row ที่ viewed_at ล่าสุด
@@ -234,6 +238,32 @@ COMMIT;
 -- ║  = ไม่ block INSERT/SELECT ขณะ build — safe บน production table ║
 -- ╚═══════════════════════════════════════════════════════════════════╝
 
+-- INVALID index cleanup: CONCURRENTLY failure ทิ้ง index สถานะ INVALID ไว้
+-- IF NOT EXISTS จะข้าม INVALID index โดยไม่สร้างใหม่ — INVALID index ไม่ enforce uniqueness
+-- script นี้ไม่มีผลแตกต่างถ้าไม่มี INVALID index (0 rows คืนมา — safe to run always)
+DO $$ DECLARE
+  idx_name text;
+BEGIN
+  FOR idx_name IN
+    SELECT pi.indexname
+    FROM pg_indexes pi
+    JOIN pg_class pc ON pc.relname = pi.indexname
+    JOIN pg_index pix ON pix.indexrelid = pc.oid
+    WHERE pi.tablename  = 'shop_views'
+      AND pi.schemaname = 'public'
+      AND pi.indexname IN (
+        'uq_shop_views_user_shop',
+        'uq_shop_views_session_shop',
+        'idx_shop_views_shop_id',
+        'idx_shop_views_viewed_at'
+      )
+      AND NOT pix.indisvalid
+  LOOP
+    EXECUTE format('DROP INDEX CONCURRENTLY IF EXISTS public.%I', idx_name);
+    RAISE NOTICE 'Dropped INVALID index: %', idx_name;
+  END LOOP;
+END $$;
+
 -- merchant dashboard query: shop_id + ช่วงเวลา
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_shop_views_shop_id
   ON public.shop_views(shop_id, viewed_at DESC);
@@ -256,6 +286,22 @@ CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_shop_views_session_shop
 -- (ทุก duplicate ที่เข้ามาหลังจากนี้จะถูก reject ด้วย index)
 GRANT INSERT ON public.shop_views TO anon;
 GRANT INSERT ON public.shop_views TO authenticated;
+
+-- ╔══════════════════════════════════════════════════════════════╗
+-- ║  EMERGENCY RESTORE                                          ║
+-- ║  รันถ้า Section 2 fail ก่อน GRANT ด้านบน และ INSERT ยัง blocked ║
+-- ╚══════════════════════════════════════════════════════════════╝
+--
+-- GRANT INSERT ON public.shop_views TO anon;
+-- GRANT INSERT, SELECT ON public.shop_views TO authenticated;
+--
+-- จากนั้น: ตรวจสอบ INVALID indexes ด้วย query ด้านล่าง
+--   SELECT indexname, indisvalid
+--   FROM pg_indexes pi
+--   JOIN pg_class pc ON pc.relname = pi.indexname
+--   JOIN pg_index pix ON pix.indexrelid = pc.oid
+--   WHERE pi.tablename = 'shop_views' AND NOT pix.indisvalid;
+-- ถ้ามี INVALID: DO block ต้น Section 2 จะ drop ให้ แล้วรัน Section 2 ใหม่
 
 
 -- ╔═══════════════════════════════════════════════════════════════════╗
