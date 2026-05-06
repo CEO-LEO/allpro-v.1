@@ -29,6 +29,10 @@ create table if not exists public.shop_views (
   )
 );
 
+-- ── Migration guard: เพิ่ม session_id หากยังไม่มี (กรณีรัน round 1 ไปแล้ว) ──
+alter table public.shop_views
+  add column if not exists session_id text;
+
 -- ───────────────────────────────────────────────────────────
 -- Indexes
 -- ───────────────────────────────────────────────────────────
