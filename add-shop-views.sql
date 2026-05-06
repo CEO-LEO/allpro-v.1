@@ -73,6 +73,12 @@ create index if not exists idx_merchant_profiles_user_shop
 
 alter table public.shop_views enable row level security;
 
+-- Migration guard: drop ก่อน recreate เพื่อให้รันซ้ำได้ (idempotent)
+drop policy if exists "Anyone can insert shop views"      on public.shop_views;
+drop policy if exists "Merchants can read own shop views" on public.shop_views;
+drop policy if exists "No direct updates to shop views"   on public.shop_views;
+drop policy if exists "No direct deletes to shop views"   on public.shop_views;
+
 -- INSERT: อนุญาต anonymous + logged-in insert ได้
 -- spam mitigation:
 --   logged-in  → uq_shop_views_user_shop ป้องกัน DB level
