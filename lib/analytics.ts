@@ -421,8 +421,14 @@ export async function trackShopView(
     });
 
     if (error) {
-      // ถ้า table ไม่มี (42P01) → แจ้ง dev แต่ไม่ throw
-      if (error.code !== '42P01') console.warn('[ShopView] insert error:', error.message);
+      if (error.code === '23505') {
+        // Unique violation = race condition — row ถูก insert ไปแล้วโดย request อื่น
+        // ถือว่า view บันทึกสำเร็จ → cache ใน localStorage เพื่อ skip network ครั้งต่อไป
+        localStorage.setItem(LS_KEY, JSON.stringify([...viewed, shopId]));
+      } else if (error.code !== '42P01') {
+        // 42P01 = table not found (ยังไม่ได้รัน add-shop-views.sql) → ข้ามเงียบๆ
+        console.warn('[ShopView] insert error:', error.message);
+      }
       return;
     }
 
