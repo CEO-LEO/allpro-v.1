@@ -245,13 +245,14 @@ DO $$ DECLARE
   idx_name text;
 BEGIN
   FOR idx_name IN
-    SELECT pi.indexname
-    FROM pg_indexes pi
-    JOIN pg_class pc ON pc.relname = pi.indexname
+    SELECT pc.relname
+    FROM pg_class pc
     JOIN pg_index pix ON pix.indexrelid = pc.oid
-    WHERE pi.tablename  = 'shop_views'
-      AND pi.schemaname = 'public'
-      AND pi.indexname IN (
+    JOIN pg_class pt  ON pt.oid = pix.indrelid
+    JOIN pg_namespace ns ON ns.oid = pt.relnamespace
+    WHERE pt.relname  = 'shop_views'
+      AND ns.nspname  = 'public'
+      AND pc.relname IN (
         'uq_shop_views_user_shop',
         'uq_shop_views_session_shop',
         'idx_shop_views_shop_id',
@@ -259,7 +260,9 @@ BEGIN
       )
       AND NOT pix.indisvalid
   LOOP
-    EXECUTE format('DROP INDEX CONCURRENTLY IF EXISTS public.%I', idx_name);
+    -- ไม่ใช้ CONCURRENTLY — DO block รันใน implicit transaction
+    -- INVALID index ไม่ถูก queries ใช้งานอยู่แล้ว lock สั้น ๆ รับได้
+    EXECUTE format('DROP INDEX IF EXISTS public.%I', idx_name);
     RAISE NOTICE 'Dropped INVALID index: %', idx_name;
   END LOOP;
 END $$;
