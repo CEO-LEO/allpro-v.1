@@ -119,25 +119,20 @@ export default function MerchantLandingPage() {
               className="inline-flex items-center gap-2 bg-amber-100 border border-yellow-500/30 rounded-full px-6 py-2 mb-8"
             >
               <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span className="text-amber-600 font-medium">Join 1,200+ PRO Merchants</span>
+              <span className="text-amber-600 font-medium">เข้าร่วมกับร้านค้า PRO กว่า 1,200 ร้าน</span>
             </motion.div>
 
             {/* Main Headline */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-yellow-200 bg-clip-text text-transparent leading-tight">
-              Don't Just Wait for Customers.
+              อย่าแค่รอลูกค้ามาหา
               <br />
-              <span className="text-yellow-400">Hunt Them.</span>
+              <span className="text-yellow-400">ออกล่าหาพวกเขา</span>
             </h1>
-
-            {/* Thai Translation */}
-            <p className="text-xl md:text-2xl text-blue-500 mb-4 font-light">
-              อย่ารอให้ลูกค้าเดินผ่าน ล่าพวกเขาด้วย AI
-            </p>
 
             {/* Sub-headline */}
             <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-              Join <span className="text-yellow-400 font-semibold">IAMROOT AI</span> — The only platform that pushes YOUR shop to{' '}
-              <span className="text-yellow-400 font-semibold">10,000+ hungry users</span> nearby, exactly when they're searching.
+              เข้าร่วม <span className="text-yellow-400 font-semibold">IAMROOT AI</span> — แพลตฟอร์มเดียวที่ดันร้านของคุณไปหา{' '}
+              <span className="text-yellow-400 font-semibold">ผู้ใช้กว่า 10,000+ คน</span> ในบริเวณใกล้เคียง ในเวลาที่พวกเขากำลังค้นหาอยู่พอดี
             </p>
 
             {/* CTA Buttons */}
@@ -148,7 +143,7 @@ export default function MerchantLandingPage() {
                 onClick={() => window.location.href = '/merchant/dashboard'}
                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold text-lg shadow-lg shadow-blue-500/50 hover:shadow-blue-500/70 transition-all flex items-center gap-2"
               >
-                Start for Free
+                เริ่มใช้งานฟรี
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
 
@@ -159,7 +154,7 @@ export default function MerchantLandingPage() {
                 className="px-8 py-4 bg-white border-2 border-yellow-500/50 text-amber-600 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all flex items-center gap-2"
               >
                 <Crown className="w-5 h-5" />
-                See PRO Benefits
+                ดูสิทธิประโยชน์ PRO
               </motion.button>
             </div>
 
@@ -172,15 +167,15 @@ export default function MerchantLandingPage() {
             >
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-green-400" />
-                <span>Verified Payments</span>
+                <span>ระบบชำระเงินปลอดภัย</span>
               </div>
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-400" />
-                <span>1,200+ Active Merchants</span>
+                <span>ร้านค้ากว่า 1,200+ ร้าน</span>
               </div>
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-yellow-400" />
-                <span>4.9/5 Rating</span>
+                <span>คะแนน 4.9/5</span>
               </div>
             </motion.div>
           </motion.div>
@@ -199,10 +194,10 @@ export default function MerchantLandingPage() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeInUp} className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              The Old Way <span className="text-red-400">Doesn't Work Anymore</span>
+              วิธีเดิมๆ <span className="text-red-400">ไม่ได้ผลอีกต่อไปแล้ว</span>
             </h2>
             <p className="text-xl text-gray-600">
-              การตลาดแบบเก่า ๆ ไม่ได้ผลอีกต่อไปแล้ว
+              ถึงเวลาเปลี่ยนแนวทางการตลาดของร้านคุณ
             </p>
           </motion.div>
 
@@ -216,11 +211,11 @@ export default function MerchantLandingPage() {
 
               <ul className="space-y-4">
                 {[
-                  'Posting on Facebook? Nobody sees it.',
-                  'Handing out flyers? They throw it away.',
-                  'Customers walk right past your shop.',
-                  'Competitors steal your lunch crowd.',
-                  "You're invisible when people search."
+                  'โพสต์บน Facebook? ไม่มีใครเห็น',
+                  'แจกใบปลิว? ลูกค้าทิ้งทันที',
+                  'ลูกค้าเดินผ่านร้านไปเฉยๆ ไม่แวะ',
+                  'คู่แข่งแย่งลูกค้าช่วงพีคไปหมด',
+                  'ร้านคุณหายไปจากผลการค้นหา',
                 ].map((problem, i) => (
                   <li key={i} className="flex items-start gap-3 text-gray-600">
                     <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
@@ -239,11 +234,11 @@ export default function MerchantLandingPage() {
 
               <ul className="space-y-4">
                 {[
-                  'Our AI Chatbot recommends YOUR shop first.',
-                  'Users see you exactly when they ask "What to eat?"',
-                  '10,000+ active users search every day.',
-                  'Golden PRO badge makes you stand out.',
-                  'You appear in "Near Me" suggestions automatically.'
+                  'AI แชทบอทแนะนำร้านของคุณเป็นอันดับแรก',
+                  'ลูกค้าเจอร้านคุณทันทีที่ถามว่า "จะกินอะไรดี?"',
+                  'ผู้ใช้งานกว่า 10,000+ คนค้นหาโปรทุกวัน',
+                  'ตราสัญลักษณ์ PRO สีทองทำให้ร้านโดดเด่น',
+                  'ร้านคุณปรากฏใน "ใกล้ฉัน" โดยอัตโนมัติ',
                 ].map((solution, i) => (
                   <li key={i} className="flex items-start gap-3 text-gray-600">
                     <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
@@ -263,8 +258,8 @@ export default function MerchantLandingPage() {
                   <MessageSquare className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h4 className="text-gray-900 font-semibold">AI Promo Hunter</h4>
-                  <p className="text-blue-500 text-sm">Online • Helping 234 users now</p>
+                  <h4 className="text-gray-900 font-semibold">AI พรอโม ฮันเตอร์</h4>
+                  <p className="text-blue-500 text-sm">ออนไลน์ • กำลังช่วย 234 คน</p>
                 </div>
               </div>
 
@@ -295,7 +290,7 @@ export default function MerchantLandingPage() {
             </div>
 
             <p className="text-center text-yellow-400 mt-6 font-semibold">
-              ⬆️ Your shop appears FIRST when users search!
+              ⬆️ ร้านของคุณปรากฏก่อนใคร ทุกครั้งที่มีการค้นหา!
             </p>
           </motion.div>
         </div>
@@ -309,10 +304,10 @@ export default function MerchantLandingPage() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeInUp} className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Simple, Transparent Pricing
+              ราคาชัดเจน ไม่มีซ่อนเร้น
             </h2>
             <p className="text-xl text-gray-600 mb-8">
-              เลือกแผนที่เหมาะกับธุรกิจคุณ
+              เลือกแผนที่เหมาะกับธุรกิจของคุณ
             </p>
 
             {/* Billing Toggle */}
@@ -325,7 +320,7 @@ export default function MerchantLandingPage() {
                     : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
-                Monthly
+                รายเดือน
               </button>
               <button
                 onClick={() => setBillingCycle('yearly')}
@@ -335,9 +330,9 @@ export default function MerchantLandingPage() {
                     : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
-                Yearly
+                รายปี
                 <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  Save 17%
+                  ประหยัด 17%
                 </span>
               </button>
             </div>
@@ -349,10 +344,10 @@ export default function MerchantLandingPage() {
               {...fadeInUp}
               className="bg-white border border-gray-200 rounded-2xl p-8 relative"
             >
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Hunter Free</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Hunter ฟรี</h3>
               <div className="flex items-baseline gap-2 mb-6">
                 <span className="text-5xl font-bold text-gray-900">฿0</span>
-                <span className="text-gray-500">/month</span>
+                <span className="text-gray-500">/เดือน</span>
               </div>
 
               <p className="text-gray-500 mb-8">
@@ -362,23 +357,23 @@ export default function MerchantLandingPage() {
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-600">Basic Listing</span>
+                  <span className="text-gray-600">ลงทะเบียนร้านค้าพื้นฐาน</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-500">Manual Stock Update</span>
+                  <span className="text-gray-500">อัปเดตสต็อกด้วยตัวเอง</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-500">No AI Boost</span>
+                  <span className="text-gray-500">ไม่มีการบูสต์จาก AI</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-500">Ranked Last in Search</span>
+                  <span className="text-gray-500">ติดอันดับท้ายในผลการค้นหา</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-500">No Analytics</span>
+                  <span className="text-gray-500">ไม่มีข้อมูลสถิติ</span>
                 </li>
               </ul>
 
@@ -386,7 +381,7 @@ export default function MerchantLandingPage() {
                 onClick={() => window.location.href = '/merchant/dashboard'}
                 className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all"
               >
-                Start Free
+                เริ่มใช้งานฟรี
               </button>
             </motion.div>
 
@@ -398,7 +393,7 @@ export default function MerchantLandingPage() {
               {/* Popular Badge */}
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-slate-900 px-6 py-1 rounded-full font-bold text-sm flex items-center gap-2">
                 <Star className="w-4 h-4" />
-                MOST POPULAR
+                ยอดนิยม
               </div>
 
               <h3 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
@@ -410,53 +405,53 @@ export default function MerchantLandingPage() {
                 <span className="text-5xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
                   ฿{billingCycle === 'monthly' ? '599' : '499'}
                 </span>
-                <span className="text-gray-500">/month</span>
+                <span className="text-gray-500">/เดือน</span>
               </div>
 
               {billingCycle === 'yearly' && (
                 <p className="text-green-400 text-sm mb-4">
-                  💰 Save ฿1,200/year (฿5,990 billed yearly)
+                  💰 ประหยัด ฿1,200/ปี (฿5,990 เรียกเก็บรายปี)
                 </p>
               )}
 
               <p className="text-gray-600 mb-8 font-semibold">
-                🚀 Get 3.2x more views & 280% more sales
+                🚀 ยอดเข้าชมเพิ่ม 3.2 เท่า และยอดขายเพิ่มขึ้น 280%
               </p>
 
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <Zap className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-gray-800 font-semibold">AI Priority Recommendation</span>
-                    <p className="text-gray-500 text-sm">Rank #1 in search results</p>
+                    <span className="text-gray-800 font-semibold">AI บูสต์อันดับให้ก่อนใคร</span>
+                    <p className="text-gray-500 text-sm">ติดอันดับ 1 ในผลการค้นหา</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
                   <MessageSquare className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-gray-800 font-semibold">Auto-Reply Chatbot</span>
-                    <p className="text-gray-500 text-sm">Answer 24/7 automatically</p>
+                    <span className="text-gray-800 font-semibold">แชทบอทตอบอัตโนมัติ</span>
+                    <p className="text-gray-500 text-sm">ตอบคำถามลูกค้า 24/7 โดยอัตโนมัติ</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
                   <BarChart3 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-gray-800 font-semibold">Advanced Analytics</span>
-                    <p className="text-gray-500 text-sm">Track views, clicks, conversions</p>
+                    <span className="text-gray-800 font-semibold">วิเคราะห์ข้อมูลเชิงลึก</span>
+                    <p className="text-gray-500 text-sm">ติดตามยอดเข้าชม คลิก และ Conversion</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
                   <Crown className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-gray-800 font-semibold">Golden PRO Badge</span>
-                    <p className="text-gray-500 text-sm">Stand out with verified badge</p>
+                    <span className="text-gray-800 font-semibold">ตราสัญลักษณ์ PRO สีทอง</span>
+                    <p className="text-gray-500 text-sm">โดดเด่นด้วยตราร้านที่ผ่านการยืนยัน</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
                   <Target className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-gray-800 font-semibold">Priority Support</span>
-                    <p className="text-gray-500 text-sm">Get help within 1 hour</p>
+                    <span className="text-gray-800 font-semibold">บริการช่วยเหลือด่วน</span>
+                    <p className="text-gray-500 text-sm">รับการช่วยเหลือภายใน 1 ชั่วโมง</p>
                   </div>
                 </li>
               </ul>
@@ -468,11 +463,11 @@ export default function MerchantLandingPage() {
                 className="w-full py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-slate-900 rounded-lg font-bold text-lg shadow-lg shadow-yellow-500/50 hover:shadow-yellow-500/70 transition-all flex items-center justify-center gap-2"
               >
                 <Crown className="w-5 h-5" />
-                Upgrade to PRO Now
+                อัปเกรดเป็น PRO เลย
               </motion.button>
 
               <p className="text-center text-gray-500 text-sm mt-4">
-                30-day money-back guarantee
+                รับประกันคืนเงิน 30 วัน
               </p>
             </motion.div>
           </div>
@@ -485,25 +480,25 @@ export default function MerchantLandingPage() {
 
             <div className="grid md:grid-cols-3 gap-6 text-center">
               <div>
-                <p className="text-gray-500 text-sm mb-2">Cost</p>
+                <p className="text-gray-500 text-sm mb-2">ค่าใช้จ่าย</p>
                 <p className="text-3xl font-bold text-gray-900">฿599</p>
-                <p className="text-gray-500 text-sm">per month</p>
+                <p className="text-gray-500 text-sm">ต่อเดือน</p>
               </div>
               <div>
-                <p className="text-gray-500 text-sm mb-2">Extra Revenue</p>
+                <p className="text-gray-500 text-sm mb-2">รายได้เพิ่มเติม</p>
                 <p className="text-3xl font-bold text-green-400">฿31,000</p>
-                <p className="text-gray-500 text-sm">per month</p>
+                <p className="text-gray-500 text-sm">ต่อเดือน</p>
               </div>
               <div>
                 <p className="text-gray-500 text-sm mb-2">ROI</p>
                 <p className="text-3xl font-bold text-yellow-400">5,075%</p>
-                <p className="text-gray-500 text-sm">51x return!</p>
+                <p className="text-gray-500 text-sm">คุ้มค่า 51 เท่า!</p>
               </div>
             </div>
 
             <p className="text-center text-gray-600 mt-6">
               <TrendingUp className="w-5 h-5 inline text-green-400 mr-2" />
-              Pays for itself in <span className="text-yellow-400 font-bold">0.6 days</span>
+              คุ้มทุนภายใน <span className="text-yellow-400 font-bold">0.6 วัน</span>
             </p>
           </motion.div>
         </div>
@@ -517,7 +512,7 @@ export default function MerchantLandingPage() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeInUp} className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              What PRO Merchants Say
+              เสียงจากร้านค้า PRO
             </h2>
             <p className="text-xl text-gray-600">
               พวกเขาเปลี่ยนจากฟรีเป็น PRO แล้วไม่เสียใจเลย
@@ -610,11 +605,11 @@ export default function MerchantLandingPage() {
             className="max-w-4xl mx-auto text-center"
           >
             <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-              Ready to <span className="text-yellow-400">Hunt</span> Your Customers?
+              พร้อมที่จะ<span className="text-yellow-400">ล่า</span>หาลูกค้าแล้วหรือยัง?
             </h2>
 
             <p className="text-xl text-gray-600 mb-10">
-              Join 1,200+ merchants who upgraded to PRO and never looked back.
+              ร้านค้ากว่า 1,200+ แห่งที่อัปเกรดเป็น PRO แล้วไม่เคยเสียใจ
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -625,12 +620,12 @@ export default function MerchantLandingPage() {
                 className="px-10 py-5 bg-gradient-to-r from-yellow-500 to-yellow-600 text-slate-900 rounded-lg font-bold text-xl shadow-lg shadow-yellow-500/50 hover:shadow-yellow-500/70 transition-all flex items-center justify-center gap-2"
               >
                 <Crown className="w-6 h-6" />
-                Start 7-Day FREE Trial
+                เริ่มทดลองใช้ฟรี 7 วัน
               </motion.button>
             </div>
 
             <p className="text-gray-500 mt-6 text-sm">
-              No credit card required • Cancel anytime • 30-day money-back guarantee
+              ไม่ต้องใช้บัตรเครดิต • ยกเลิกได้ทุกเมื่อ • รับประกันคืนเงิน 30 วัน
             </p>
           </motion.div>
         </div>
