@@ -67,6 +67,34 @@ UPDATE public.shop_views
   WHERE user_id IS NULL AND session_id IS NULL;
 
 -- ───────────────────────────────────────────────────────────
+-- Pre-dedup: ล้าง duplicate rows ก่อน CREATE UNIQUE INDEX
+--
+-- ถ้า DB มี round 1 data ที่ผู้ใช้คนเดียว view ร้านเดิมหลายครั้ง
+-- CREATE UNIQUE INDEX CONCURRENTLY จะ fail ทันที (duplicate key)
+-- ต้องเก็บ row ที่ viewed_at ล่าสุดไว้ ลบที่เหลือทิ้ง
+-- ───────────────────────────────────────────────────────────
+
+-- Dedup logged-in: เก็บ 1 row ต่อ (user_id, shop_id) — row ที่ viewed_at ล่าสุด
+DELETE FROM public.shop_views
+  WHERE id NOT IN (
+    SELECT DISTINCT ON (user_id, shop_id) id
+    FROM public.shop_views
+    WHERE user_id IS NOT NULL
+    ORDER BY user_id, shop_id, viewed_at DESC
+  )
+  AND user_id IS NOT NULL;
+
+-- Dedup anonymous: เก็บ 1 row ต่อ (session_id, shop_id) — row ที่ viewed_at ล่าสุด
+DELETE FROM public.shop_views
+  WHERE id NOT IN (
+    SELECT DISTINCT ON (session_id, shop_id) id
+    FROM public.shop_views
+    WHERE user_id IS NULL AND session_id IS NOT NULL
+    ORDER BY session_id, shop_id, viewed_at DESC
+  )
+  AND user_id IS NULL AND session_id IS NOT NULL;
+
+-- ───────────────────────────────────────────────────────────
 -- Migration guards: ADD CONSTRAINT (NOT VALID)
 --
 -- NOT VALID = เพิ่ม constraint โดยไม่ validate existing rows ทันที
@@ -221,19 +249,18 @@ CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_shop_views_session_shop
 
 -- ╔═══════════════════════════════════════════════════════════════════╗
 -- ║  SECTION 3: Supporting index บน merchant_profiles               ║
--- ║  (DO block เพื่อ skip gracefully ถ้า table ยังไม่มี)            ║
--- ║  NOTE: ใช้ regular CREATE INDEX (CONCURRENTLY ใน DO block ไม่ได้)║
+-- ║  !! รันแยกต่างหากในช่วง low-traffic !!                          ║
+-- ║  CONCURRENTLY ไม่รองรับใน DO block — ต้องรันเป็น standalone      ║
+-- ║  ถ้า merchant_profiles ยังไม่มี: รัน AFTER merchant_profiles migration ║
 -- ╚═══════════════════════════════════════════════════════════════════╝
 
 -- [PERF] SELECT policy ใช้ subquery EXISTS บน merchant_profiles
 -- index นี้ทำให้ Postgres ไม่ต้อง seq scan ทุกครั้งที่ merchant query shop_views
-DO $$ BEGIN
-  CREATE INDEX IF NOT EXISTS idx_merchant_profiles_user_shop
-    ON public.merchant_profiles(user_id, shop_name);
-EXCEPTION
-  WHEN undefined_table THEN
-    RAISE WARNING '[PERF DEGRADED] merchant_profiles not found — idx_merchant_profiles_user_shop skipped. Run AFTER merchant_profiles migration.';
-END $$;
+--
+-- รันผ่าน Supabase SQL Editor โดยตรง (ไม่ใช่ใน transaction):
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_merchant_profiles_user_shop
+  ON public.merchant_profiles(user_id, shop_name);
+-- ถ้า merchant_profiles ยังไม่มี statement นี้จะ error — รัน AFTER merchant_profiles migration
 
 
 -- ╔═══════════════════════════════════════════════════════════════════╗
@@ -248,6 +275,15 @@ END $$;
 -- ALTER TABLE public.shop_views VALIDATE CONSTRAINT chk_session_id_format;
 -- ALTER TABLE public.shop_views VALIDATE CONSTRAINT chk_shop_id_length;
 -- ALTER TABLE public.shop_views VALIDATE CONSTRAINT chk_viewed_at_not_future;
+
+-- ── Monitoring: ตรวจสอบ constraints ที่ยังเป็น NOT VALID ────────────
+-- รัน query นี้หลัง deploy เพื่อยืนยันว่า Section 4 ถูก run แล้ว
+-- ถ้าคืนผลลัพธ์ = ยังมี constraint ที่ยังไม่ได้ validate (ต้องรัน Section 4)
+--
+-- SELECT conname, convalidated
+--   FROM pg_constraint
+--   WHERE conrelid = 'public.shop_views'::regclass
+--     AND NOT convalidated;
 
 
 -- ─────────────────────────────────────────────────────────────────────
