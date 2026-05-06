@@ -4,7 +4,16 @@
 -- Dedup strategy:
 --   logged-in  : UNIQUE partial index (user_id, shop_id)
 --   anonymous  : UNIQUE partial index (session_id, shop_id) + localStorage
+--
+-- ⚠️  Paste ทั้ง block นี้พร้อมกันใน Supabase SQL Editor
+--     BEGIN/COMMIT ต้องอยู่ใน session เดียวกัน — รันทีละบรรทัดไม่ได้
 -- ═══════════════════════════════════════════════════════════
+
+BEGIN;
+
+-- ───────────────────────────────────────────────────────────
+-- Table
+-- ───────────────────────────────────────────────────────────
 
 create table if not exists public.shop_views (
   id          uuid primary key default gen_random_uuid(),
@@ -38,10 +47,15 @@ create table if not exists public.shop_views (
   )
 );
 
--- Migration guard: สำหรับ DB ที่รัน round 1 ไปแล้วก่อนที่จะมี session_id
+-- ───────────────────────────────────────────────────────────
+-- Migration guards: columns + backfill + constraints
+-- (สำหรับ DB ที่รัน round 1 ไปแล้วก่อนที่จะมี session_id)
+-- ───────────────────────────────────────────────────────────
+
+-- Migration guard: เพิ่ม session_id ถ้ายังไม่มี
 -- (กรณีรัน migration นี้ครั้งแรก CREATE TABLE จะสร้าง column นี้อยู่แล้ว — เป็น no-op)
-alter table public.shop_views
-  add column if not exists session_id text;
+ALTER TABLE public.shop_views
+  ADD COLUMN IF NOT EXISTS session_id text;
 
 -- Pre-migration cleanup: backfill session_id สำหรับ legacy anonymous rows จาก round 1
 -- (safe — placeholder UUID เพื่อให้ผ่าน chk_shop_views_identity ที่จะ add ด้านล่าง)
@@ -49,8 +63,9 @@ UPDATE public.shop_views
   SET session_id = gen_random_uuid()::text
   WHERE user_id IS NULL AND session_id IS NULL;
 
--- Migration guard: เพิ่ม constraints สำหรับ DB ที่มีอยู่แล้ว
--- EXCEPTION WHEN others: กรณี existing rows ละเมิด constraint → RAISE WARNING แทน silent fail
+-- Migration guards: ADD CONSTRAINT แบบ idempotent
+-- ใช้ RAISE EXCEPTION เพื่อให้ migration fail อย่าง explicit
+-- (ดีกว่าปล่อย DB อยู่ในสถานะที่ constraint หายไปโดยไม่รู้ตัว)
 DO $$ BEGIN
   ALTER TABLE public.shop_views
     ADD CONSTRAINT chk_shop_views_identity
@@ -58,7 +73,7 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN NULL;
   WHEN others THEN
-    RAISE WARNING 'chk_shop_views_identity: could not add constraint. Error: %', SQLERRM;
+    RAISE EXCEPTION 'chk_shop_views_identity: failed to add. Clean data first. Error: %', SQLERRM;
 END $$;
 
 DO $$ BEGIN
@@ -71,7 +86,7 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN NULL;
   WHEN others THEN
-    RAISE WARNING 'chk_session_id_format: could not add constraint. Error: %', SQLERRM;
+    RAISE EXCEPTION 'chk_session_id_format: failed to add. Error: %', SQLERRM;
 END $$;
 
 DO $$ BEGIN
@@ -80,7 +95,7 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN NULL;
   WHEN others THEN
-    RAISE WARNING 'chk_shop_id_length: could not add constraint. Error: %', SQLERRM;
+    RAISE EXCEPTION 'chk_shop_id_length: failed to add. Error: %', SQLERRM;
 END $$;
 
 DO $$ BEGIN
@@ -90,7 +105,7 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN NULL;
   WHEN others THEN
-    RAISE WARNING 'chk_viewed_at_not_future: could not add constraint. Error: %', SQLERRM;
+    RAISE EXCEPTION 'chk_viewed_at_not_future: failed to add. Error: %', SQLERRM;
 END $$;
 
 -- ───────────────────────────────────────────────────────────
@@ -101,7 +116,7 @@ END $$;
 create index if not exists idx_shop_views_shop_id
   on public.shop_views(shop_id, viewed_at desc);
 
--- [FIX: Performance] standalone viewed_at index สำหรับ pg_cron retention DELETE
+-- standalone viewed_at index สำหรับ pg_cron retention DELETE
 -- "WHERE viewed_at < now() - interval '90 days'" จะใช้ index นี้แทนที่จะ full scan
 create index if not exists idx_shop_views_viewed_at
   on public.shop_views(viewed_at);
@@ -111,9 +126,7 @@ create unique index if not exists uq_shop_views_user_shop
   on public.shop_views(user_id, shop_id)
   where user_id is not null;
 
--- [FIX: Security] anonymous dedup ระดับ DB:
--- ป้องกัน anonymous spam เมื่อ localStorage ถูก bypass
--- session_id คือ UUID ที่ trackShopView() generate ครั้งแรกและเก็บใน localStorage
+-- anonymous dedup ระดับ DB: ป้องกัน anonymous spam เมื่อ localStorage ถูก bypass
 create unique index if not exists uq_shop_views_session_shop
   on public.shop_views(session_id, shop_id)
   where user_id is null and session_id is not null;
@@ -122,16 +135,21 @@ create unique index if not exists uq_shop_views_session_shop
 -- Supporting index บน merchant_profiles
 -- ───────────────────────────────────────────────────────────
 
--- [FIX: Performance] SELECT policy ใช้ subquery EXISTS บน merchant_profiles
--- index นี้ทำให้ Postgres ไม่ต้อง seq scan ทุกครั้งที่ merchant query shop_views
-create index if not exists idx_merchant_profiles_user_shop
-  on public.merchant_profiles(user_id, shop_name);
+-- SELECT policy ใช้ subquery EXISTS บน merchant_profiles
+-- DO block ป้องกัน fail ถ้ารัน migration นี้ก่อน merchant_profiles migration
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_merchant_profiles_user_shop
+    ON public.merchant_profiles(user_id, shop_name);
+EXCEPTION
+  WHEN undefined_table THEN
+    RAISE NOTICE 'merchant_profiles not found — index skipped. Run after merchant_profiles migration.';
+END $$;
 
 -- ───────────────────────────────────────────────────────────
 -- Row Level Security
 -- ───────────────────────────────────────────────────────────
 
-alter table public.shop_views enable row level security;
+ALTER TABLE public.shop_views ENABLE ROW LEVEL SECURITY;
 
 -- Migration guard: drop ก่อน recreate เพื่อให้รันซ้ำได้ (idempotent)
 drop policy if exists "Anyone can insert shop views"      on public.shop_views;
@@ -166,9 +184,7 @@ create policy "Merchants can read own shop views"
     )
   );
 
--- [FIX: Functional Integrity] explicit deny UPDATE/DELETE (defense in depth)
--- Supabase block โดย default เมื่อ RLS เปิด แต่ประกาศชัดเจน
--- เพื่อป้องกันกรณี service account หรือ role ใหม่ที่อาจ bypass ในอนาคต
+-- Explicit deny UPDATE/DELETE (defense in depth)
 -- ⚠️  DELETE ผ่านได้เฉพาะ postgres/service_role (BYPASSRLS) เท่านั้น
 -- ⚠️  pg_cron cleanup ต้องรันใน postgres role — ห้ามใช้ anon/authenticated key
 -- ⚠️  Supabase Dashboard SQL Editor ใช้ postgres role โดยตรง — ทดสอบ manual delete ได้
@@ -184,6 +200,10 @@ create policy "No direct deletes to shop views"
 -- Grants
 -- ───────────────────────────────────────────────────────────
 
+-- REVOKE ALL ก่อน เพื่อล้าง stale permissions จาก test/ก่อนหน้า
+-- (GRANT เพิ่ม permission เข้าไป ไม่ใช่แทนที่ — ต้อง REVOKE ก่อนเสมอ)
+REVOKE ALL ON public.shop_views FROM anon, authenticated;
+
 -- anon: INSERT เท่านั้น (anonymous visitors track views ได้ แต่ SELECT ไม่ได้)
 GRANT INSERT ON public.shop_views TO anon;
 
@@ -191,8 +211,10 @@ GRANT INSERT ON public.shop_views TO anon;
 -- ไม่ grant UPDATE/DELETE — สอดคล้องกับ explicit deny policies ด้านบน
 GRANT INSERT, SELECT ON public.shop_views TO authenticated;
 
+COMMIT;
+
 -- ─────────────────────────────────────────────────────────────────────
--- Data Retention  (!! ต้องรันผ่าน Supabase Edge Function หรือ pg_cron !!)
+-- Data Retention  (!! ต้องรันแยกต่างหาก ผ่าน Supabase Edge Function หรือ pg_cron !!)
 -- ─────────────────────────────────────────────────────────────────────
 --
 -- ลบข้อมูลที่เก่ากว่า 90 วันเพื่อไม่ให้ table โตไม่หยุด
