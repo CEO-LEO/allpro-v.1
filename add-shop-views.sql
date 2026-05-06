@@ -8,9 +8,12 @@
 
 create table if not exists public.shop_views (
   id          uuid primary key default gen_random_uuid(),
-  shop_id     text not null,
+  shop_id     text not null
+                CONSTRAINT chk_shop_id_length CHECK (char_length(shop_id) BETWEEN 1 AND 255),
   user_id     uuid references auth.users(id) on delete set null,
-  viewed_at   timestamptz not null default now(),
+  -- +5 min tolerance สำหรับ clock skew ระหว่าง client กับ server
+  viewed_at   timestamptz not null default now()
+                CONSTRAINT chk_viewed_at_not_future CHECK (viewed_at <= now() + interval '5 minutes'),
 
   -- [anonymous dedup] persistent browser fingerprint (crypto.randomUUID stored in localStorage)
   -- Option A (เข้มงวด): client ต้อง generate UUID ก่อน insert เสมอ
@@ -40,13 +43,22 @@ create table if not exists public.shop_views (
 alter table public.shop_views
   add column if not exists session_id text;
 
+-- Pre-migration cleanup: backfill session_id สำหรับ legacy anonymous rows จาก round 1
+-- (safe — placeholder UUID เพื่อให้ผ่าน chk_shop_views_identity ที่จะ add ด้านล่าง)
+UPDATE public.shop_views
+  SET session_id = gen_random_uuid()::text
+  WHERE user_id IS NULL AND session_id IS NULL;
+
 -- Migration guard: เพิ่ม constraints สำหรับ DB ที่มีอยู่แล้ว
--- (DO block ป้องกัน error กรณี constraint ถูกสร้างไปแล้ว — idempotent)
+-- EXCEPTION WHEN others: กรณี existing rows ละเมิด constraint → RAISE WARNING แทน silent fail
 DO $$ BEGIN
   ALTER TABLE public.shop_views
     ADD CONSTRAINT chk_shop_views_identity
     CHECK (user_id IS NOT NULL OR session_id IS NOT NULL);
-EXCEPTION WHEN duplicate_object THEN NULL;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN others THEN
+    RAISE WARNING 'chk_shop_views_identity: could not add constraint. Error: %', SQLERRM;
 END $$;
 
 DO $$ BEGIN
@@ -56,7 +68,29 @@ DO $$ BEGIN
       session_id IS NULL
       OR session_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     );
-EXCEPTION WHEN duplicate_object THEN NULL;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN others THEN
+    RAISE WARNING 'chk_session_id_format: could not add constraint. Error: %', SQLERRM;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.shop_views
+    ADD CONSTRAINT chk_shop_id_length CHECK (char_length(shop_id) BETWEEN 1 AND 255);
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN others THEN
+    RAISE WARNING 'chk_shop_id_length: could not add constraint. Error: %', SQLERRM;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.shop_views
+    ADD CONSTRAINT chk_viewed_at_not_future
+    CHECK (viewed_at <= now() + interval '5 minutes');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN others THEN
+    RAISE WARNING 'chk_viewed_at_not_future: could not add constraint. Error: %', SQLERRM;
 END $$;
 
 -- ───────────────────────────────────────────────────────────
@@ -145,6 +179,17 @@ create policy "No direct updates to shop views"
 create policy "No direct deletes to shop views"
   on public.shop_views for delete
   using (false);
+
+-- ───────────────────────────────────────────────────────────
+-- Grants
+-- ───────────────────────────────────────────────────────────
+
+-- anon: INSERT เท่านั้น (anonymous visitors track views ได้ แต่ SELECT ไม่ได้)
+GRANT INSERT ON public.shop_views TO anon;
+
+-- authenticated: INSERT + SELECT (merchant จะ SELECT ผ่าน RLS policy)
+-- ไม่ grant UPDATE/DELETE — สอดคล้องกับ explicit deny policies ด้านบน
+GRANT INSERT, SELECT ON public.shop_views TO authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- Data Retention  (!! ต้องรันผ่าน Supabase Edge Function หรือ pg_cron !!)
