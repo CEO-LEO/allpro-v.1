@@ -75,24 +75,32 @@ UPDATE public.shop_views
 -- ───────────────────────────────────────────────────────────
 
 -- Dedup logged-in: เก็บ 1 row ต่อ (user_id, shop_id) — row ที่ viewed_at ล่าสุด
+-- ใช้ CTE + ROW_NUMBER แทน NOT IN เพื่อหลีกเลี่ยง OOM บน large table
+-- และหลีกเลี่ยง NULL edge-case ของ NOT IN
+WITH ranked AS (
+  SELECT id,
+         ROW_NUMBER() OVER (
+           PARTITION BY user_id, shop_id
+           ORDER BY viewed_at DESC
+         ) AS rn
+  FROM public.shop_views
+  WHERE user_id IS NOT NULL
+)
 DELETE FROM public.shop_views
-  WHERE id NOT IN (
-    SELECT DISTINCT ON (user_id, shop_id) id
-    FROM public.shop_views
-    WHERE user_id IS NOT NULL
-    ORDER BY user_id, shop_id, viewed_at DESC
-  )
-  AND user_id IS NOT NULL;
+  WHERE id IN (SELECT id FROM ranked WHERE rn > 1);
 
 -- Dedup anonymous: เก็บ 1 row ต่อ (session_id, shop_id) — row ที่ viewed_at ล่าสุด
+WITH ranked AS (
+  SELECT id,
+         ROW_NUMBER() OVER (
+           PARTITION BY session_id, shop_id
+           ORDER BY viewed_at DESC
+         ) AS rn
+  FROM public.shop_views
+  WHERE user_id IS NULL AND session_id IS NOT NULL
+)
 DELETE FROM public.shop_views
-  WHERE id NOT IN (
-    SELECT DISTINCT ON (session_id, shop_id) id
-    FROM public.shop_views
-    WHERE user_id IS NULL AND session_id IS NOT NULL
-    ORDER BY session_id, shop_id, viewed_at DESC
-  )
-  AND user_id IS NULL AND session_id IS NOT NULL;
+  WHERE id IN (SELECT id FROM ranked WHERE rn > 1);
 
 -- ───────────────────────────────────────────────────────────
 -- Migration guards: ADD CONSTRAINT (NOT VALID)
@@ -209,15 +217,13 @@ CREATE POLICY "No direct deletes to shop views"
 -- ───────────────────────────────────────────────────────────
 
 -- REVOKE ALL ก่อน เพื่อล้าง stale permissions จาก test/ก่อนหน้า
--- (GRANT เพิ่ม permission เข้าไป ไม่ใช่แทนที่ — ต้อง REVOKE ก่อนเสมอ)
 REVOKE ALL ON public.shop_views FROM anon, authenticated;
 
--- anon: INSERT เท่านั้น (anonymous visitors track views ได้ แต่ SELECT ไม่ได้)
-GRANT INSERT ON public.shop_views TO anon;
-
--- authenticated: INSERT + SELECT (merchant จะ SELECT ผ่าน RLS policy)
--- ไม่ grant UPDATE/DELETE — สอดคล้องกับ explicit deny policies ด้านบน
-GRANT INSERT, SELECT ON public.shop_views TO authenticated;
+-- [Race window mitigation] ยังไม่ grant INSERT ในขั้นตอนนี้
+-- INSERT จะเปิดหลัง Section 2 สร้าง UNIQUE indexes เสร็จแล้วเท่านั้น
+-- เพื่อป้องกัน duplicate rows เข้ามาในช่วง COMMIT → index build
+-- authenticated ได้ SELECT ก่อน เพื่อให้ merchant dashboard ยังใช้งานได้ระหว่าง deploy
+GRANT SELECT ON public.shop_views TO authenticated;
 
 COMMIT;
 
@@ -246,6 +252,11 @@ CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_shop_views_session_shop
   ON public.shop_views(session_id, shop_id)
   WHERE user_id IS NULL AND session_id IS NOT NULL;
 
+-- Restore INSERT หลัง UNIQUE indexes build เสร็จ — ปิด race window
+-- (ทุก duplicate ที่เข้ามาหลังจากนี้จะถูก reject ด้วย index)
+GRANT INSERT ON public.shop_views TO anon;
+GRANT INSERT ON public.shop_views TO authenticated;
+
 
 -- ╔═══════════════════════════════════════════════════════════════════╗
 -- ║  SECTION 3: Supporting index บน merchant_profiles               ║
@@ -257,7 +268,8 @@ CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_shop_views_session_shop
 -- [PERF] SELECT policy ใช้ subquery EXISTS บน merchant_profiles
 -- index นี้ทำให้ Postgres ไม่ต้อง seq scan ทุกครั้งที่ merchant query shop_views
 --
--- รันผ่าน Supabase SQL Editor โดยตรง (ไม่ใช่ใน transaction):
+-- ⚠️  Section นี้เป็น standalone — error จากที่นี่ไม่กระทบ Section 1-2 ที่ COMMIT แล้ว
+-- ⚠️  ถ้า error "relation does not exist" → ข้ามได้ แล้วรัน section นี้หลัง merchant_profiles migration
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_merchant_profiles_user_shop
   ON public.merchant_profiles(user_id, shop_name);
 -- ถ้า merchant_profiles ยังไม่มี statement นี้จะ error — รัน AFTER merchant_profiles migration
