@@ -1,13 +1,20 @@
 ﻿-- ═══════════════════════════════════════════════════════════
--- shop_views table
+-- shop_views table — migration script (production-safe)
 -- บันทึกการเข้าชมหน้าโปรไฟล์ร้านค้า (ระดับร้าน ไม่ใช่สินค้า)
+--
 -- Dedup strategy:
 --   logged-in  : UNIQUE partial index (user_id, shop_id)
 --   anonymous  : UNIQUE partial index (session_id, shop_id) + localStorage
 --
--- ⚠️  Paste ทั้ง block นี้พร้อมกันใน Supabase SQL Editor
---     BEGIN/COMMIT ต้องอยู่ใน session เดียวกัน — รันทีละบรรทัดไม่ได้
+-- ⚠️  รันทั้งไฟล์ใน Supabase SQL Editor (paste ทั้งหมดพร้อมกัน)
+-- ⚠️  Section ต่างๆ ต้องรันตามลำดับ — ดูหัวข้อแต่ละ section
 -- ═══════════════════════════════════════════════════════════
+
+
+-- ╔═══════════════════════════════════════════════════════════╗
+-- ║  SECTION 1: Table + Constraints + RLS + Grants           ║
+-- ║  (transaction เพื่อ atomic — partial migration ไม่เกิด)  ║
+-- ╚═══════════════════════════════════════════════════════════╝
 
 BEGIN;
 
@@ -15,28 +22,26 @@ BEGIN;
 -- Table
 -- ───────────────────────────────────────────────────────────
 
-create table if not exists public.shop_views (
-  id          uuid primary key default gen_random_uuid(),
-  shop_id     text not null
+CREATE TABLE IF NOT EXISTS public.shop_views (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  shop_id     text NOT NULL
                 CONSTRAINT chk_shop_id_length CHECK (char_length(shop_id) BETWEEN 1 AND 255),
-  user_id     uuid references auth.users(id) on delete set null,
+  user_id     uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   -- +5 min tolerance สำหรับ clock skew ระหว่าง client กับ server
-  viewed_at   timestamptz not null default now()
+  viewed_at   timestamptz NOT NULL DEFAULT now()
                 CONSTRAINT chk_viewed_at_not_future CHECK (viewed_at <= now() + interval '5 minutes'),
 
   -- [anonymous dedup] persistent browser fingerprint (crypto.randomUUID stored in localStorage)
   -- Option A (เข้มงวด): client ต้อง generate UUID ก่อน insert เสมอ
   -- browser ที่ไม่รองรับ crypto.randomUUID → trackShopView() จะ skip insert ทั้งหมด
-  -- (insert แบบไม่มี dedup เลยแย่กว่าไม่ track)
   session_id  text
     CONSTRAINT chk_session_id_format CHECK (
       session_id IS NULL
       OR session_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     ),
 
-  -- CHECK constraint ป้องกัน analytics grouping ผิดพลาด
-  source      text not null default 'shop_profile'
-                check (source in ('shop_profile', 'search', 'homepage', 'recommendation', 'direct')),
+  source      text NOT NULL DEFAULT 'shop_profile'
+                CHECK (source IN ('shop_profile', 'search', 'homepage', 'recommendation', 'direct')),
 
   -- NOTE: ไม่มี FK บน shop_id เจตนา
   -- shop_id คือค่าจาก URL ซึ่งอาจเป็น shop_name (text) หรือ user UUID
@@ -48,12 +53,10 @@ create table if not exists public.shop_views (
 );
 
 -- ───────────────────────────────────────────────────────────
--- Migration guards: columns + backfill + constraints
+-- Migration guards: column + backfill
 -- (สำหรับ DB ที่รัน round 1 ไปแล้วก่อนที่จะมี session_id)
 -- ───────────────────────────────────────────────────────────
 
--- Migration guard: เพิ่ม session_id ถ้ายังไม่มี
--- (กรณีรัน migration นี้ครั้งแรก CREATE TABLE จะสร้าง column นี้อยู่แล้ว — เป็น no-op)
 ALTER TABLE public.shop_views
   ADD COLUMN IF NOT EXISTS session_id text;
 
@@ -63,17 +66,26 @@ UPDATE public.shop_views
   SET session_id = gen_random_uuid()::text
   WHERE user_id IS NULL AND session_id IS NULL;
 
--- Migration guards: ADD CONSTRAINT แบบ idempotent
--- ใช้ RAISE EXCEPTION เพื่อให้ migration fail อย่าง explicit
--- (ดีกว่าปล่อย DB อยู่ในสถานะที่ constraint หายไปโดยไม่รู้ตัว)
+-- ───────────────────────────────────────────────────────────
+-- Migration guards: ADD CONSTRAINT (NOT VALID)
+--
+-- NOT VALID = เพิ่ม constraint โดยไม่ validate existing rows ทันที
+--   → ไม่มี full table scan → ไม่ lock INSERT ระหว่าง migration
+--   → new rows จะถูก validate ทันที (constraint มีผลแล้ว)
+--   → existing rows จะ validate ได้ใน Section 4 (low-traffic)
+--
+-- RAISE EXCEPTION ทำให้ transaction rollback ทันทีถ้า add ไม่สำเร็จ
+-- ───────────────────────────────────────────────────────────
+
 DO $$ BEGIN
   ALTER TABLE public.shop_views
     ADD CONSTRAINT chk_shop_views_identity
-    CHECK (user_id IS NOT NULL OR session_id IS NOT NULL);
+    CHECK (user_id IS NOT NULL OR session_id IS NOT NULL)
+    NOT VALID;
 EXCEPTION
   WHEN duplicate_object THEN NULL;
   WHEN others THEN
-    RAISE EXCEPTION 'chk_shop_views_identity: failed to add. Clean data first. Error: %', SQLERRM;
+    RAISE EXCEPTION 'chk_shop_views_identity: failed. Error: %', SQLERRM;
 END $$;
 
 DO $$ BEGIN
@@ -82,67 +94,34 @@ DO $$ BEGIN
     CHECK (
       session_id IS NULL
       OR session_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    );
+    )
+    NOT VALID;
 EXCEPTION
   WHEN duplicate_object THEN NULL;
   WHEN others THEN
-    RAISE EXCEPTION 'chk_session_id_format: failed to add. Error: %', SQLERRM;
+    RAISE EXCEPTION 'chk_session_id_format: failed. Error: %', SQLERRM;
 END $$;
 
 DO $$ BEGIN
   ALTER TABLE public.shop_views
-    ADD CONSTRAINT chk_shop_id_length CHECK (char_length(shop_id) BETWEEN 1 AND 255);
+    ADD CONSTRAINT chk_shop_id_length
+    CHECK (char_length(shop_id) BETWEEN 1 AND 255)
+    NOT VALID;
 EXCEPTION
   WHEN duplicate_object THEN NULL;
   WHEN others THEN
-    RAISE EXCEPTION 'chk_shop_id_length: failed to add. Error: %', SQLERRM;
+    RAISE EXCEPTION 'chk_shop_id_length: failed. Error: %', SQLERRM;
 END $$;
 
 DO $$ BEGIN
   ALTER TABLE public.shop_views
     ADD CONSTRAINT chk_viewed_at_not_future
-    CHECK (viewed_at <= now() + interval '5 minutes');
+    CHECK (viewed_at <= now() + interval '5 minutes')
+    NOT VALID;
 EXCEPTION
   WHEN duplicate_object THEN NULL;
   WHEN others THEN
-    RAISE EXCEPTION 'chk_viewed_at_not_future: failed to add. Error: %', SQLERRM;
-END $$;
-
--- ───────────────────────────────────────────────────────────
--- Indexes
--- ───────────────────────────────────────────────────────────
-
--- merchant dashboard query: shop_id + ช่วงเวลา
-create index if not exists idx_shop_views_shop_id
-  on public.shop_views(shop_id, viewed_at desc);
-
--- standalone viewed_at index สำหรับ pg_cron retention DELETE
--- "WHERE viewed_at < now() - interval '90 days'" จะใช้ index นี้แทนที่จะ full scan
-create index if not exists idx_shop_views_viewed_at
-  on public.shop_views(viewed_at);
-
--- logged-in dedup: 1 user = 1 view ต่อ 1 ร้าน
-create unique index if not exists uq_shop_views_user_shop
-  on public.shop_views(user_id, shop_id)
-  where user_id is not null;
-
--- anonymous dedup ระดับ DB: ป้องกัน anonymous spam เมื่อ localStorage ถูก bypass
-create unique index if not exists uq_shop_views_session_shop
-  on public.shop_views(session_id, shop_id)
-  where user_id is null and session_id is not null;
-
--- ───────────────────────────────────────────────────────────
--- Supporting index บน merchant_profiles
--- ───────────────────────────────────────────────────────────
-
--- SELECT policy ใช้ subquery EXISTS บน merchant_profiles
--- DO block ป้องกัน fail ถ้ารัน migration นี้ก่อน merchant_profiles migration
-DO $$ BEGIN
-  CREATE INDEX IF NOT EXISTS idx_merchant_profiles_user_shop
-    ON public.merchant_profiles(user_id, shop_name);
-EXCEPTION
-  WHEN undefined_table THEN
-    RAISE NOTICE 'merchant_profiles not found — index skipped. Run after merchant_profiles migration.';
+    RAISE EXCEPTION 'chk_viewed_at_not_future: failed. Error: %', SQLERRM;
 END $$;
 
 -- ───────────────────────────────────────────────────────────
@@ -151,35 +130,36 @@ END $$;
 
 ALTER TABLE public.shop_views ENABLE ROW LEVEL SECURITY;
 
--- Migration guard: drop ก่อน recreate เพื่อให้รันซ้ำได้ (idempotent)
-drop policy if exists "Anyone can insert shop views"      on public.shop_views;
-drop policy if exists "Merchants can read own shop views" on public.shop_views;
-drop policy if exists "No direct updates to shop views"   on public.shop_views;
-drop policy if exists "No direct deletes to shop views"   on public.shop_views;
+DROP POLICY IF EXISTS "Anyone can insert shop views"      ON public.shop_views;
+DROP POLICY IF EXISTS "Merchants can read own shop views" ON public.shop_views;
+DROP POLICY IF EXISTS "No direct updates to shop views"   ON public.shop_views;
+DROP POLICY IF EXISTS "No direct deletes to shop views"   ON public.shop_views;
 
 -- INSERT: อนุญาต anonymous + logged-in insert ได้
 -- spam mitigation:
---   logged-in  → uq_shop_views_user_shop ป้องกัน DB level
---   anonymous  → uq_shop_views_session_shop ป้องกัน DB level (session_id ต้องส่งมาด้วย)
-create policy "Anyone can insert shop views"
-  on public.shop_views for insert
-  with check (true);
+--   logged-in  → uq_shop_views_user_shop ป้องกัน DB level (1 user/shop)
+--   anonymous  → uq_shop_views_session_shop ป้องกัน DB level (1 session/shop)
+-- NOTE: authenticated user ที่รู้ shop_id ยังสามารถสร้าง account ใหม่แล้ว insert ซ้ำได้
+--   (analytics data — รับ limitation นี้ได้ แก้ได้เพิ่มเติมด้วย anomaly detection ระดับ app)
+CREATE POLICY "Anyone can insert shop views"
+  ON public.shop_views FOR INSERT
+  WITH CHECK (true);
 
 -- SELECT: เฉพาะ merchant เจ้าของร้านดู analytics ได้
 -- shop_id ใน shop_views อาจเป็น:
 --   1. shop_name  → mp.shop_name = shop_views.shop_id
 --   2. user UUID  → auth.uid()::text = shop_views.shop_id
-create policy "Merchants can read own shop views"
-  on public.shop_views for select
-  using (
-    auth.uid() is not null
-    and exists (
-      select 1
-      from public.merchant_profiles mp
-      where mp.user_id = auth.uid()
-        and (
-          mp.shop_name       = shop_views.shop_id
-          or auth.uid()::text = shop_views.shop_id
+CREATE POLICY "Merchants can read own shop views"
+  ON public.shop_views FOR SELECT
+  USING (
+    auth.uid() IS NOT NULL
+    AND EXISTS (
+      SELECT 1
+      FROM public.merchant_profiles mp
+      WHERE mp.user_id = auth.uid()
+        AND (
+          mp.shop_name        = shop_views.shop_id
+          OR auth.uid()::text = shop_views.shop_id
         )
     )
   );
@@ -188,13 +168,13 @@ create policy "Merchants can read own shop views"
 -- ⚠️  DELETE ผ่านได้เฉพาะ postgres/service_role (BYPASSRLS) เท่านั้น
 -- ⚠️  pg_cron cleanup ต้องรันใน postgres role — ห้ามใช้ anon/authenticated key
 -- ⚠️  Supabase Dashboard SQL Editor ใช้ postgres role โดยตรง — ทดสอบ manual delete ได้
-create policy "No direct updates to shop views"
-  on public.shop_views for update
-  using (false);
+CREATE POLICY "No direct updates to shop views"
+  ON public.shop_views FOR UPDATE
+  USING (false);
 
-create policy "No direct deletes to shop views"
-  on public.shop_views for delete
-  using (false);
+CREATE POLICY "No direct deletes to shop views"
+  ON public.shop_views FOR DELETE
+  USING (false);
 
 -- ───────────────────────────────────────────────────────────
 -- Grants
@@ -213,21 +193,78 @@ GRANT INSERT, SELECT ON public.shop_views TO authenticated;
 
 COMMIT;
 
+
+-- ╔═══════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 2: Indexes (ต้องรันนอก transaction)                    ║
+-- ║  CONCURRENTLY ไม่รองรับใน transaction block                      ║
+-- ║  = ไม่ block INSERT/SELECT ขณะ build — safe บน production table ║
+-- ╚═══════════════════════════════════════════════════════════════════╝
+
+-- merchant dashboard query: shop_id + ช่วงเวลา
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_shop_views_shop_id
+  ON public.shop_views(shop_id, viewed_at DESC);
+
+-- pg_cron retention DELETE: WHERE viewed_at < now() - interval '90 days'
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_shop_views_viewed_at
+  ON public.shop_views(viewed_at);
+
+-- logged-in dedup: 1 user = 1 view ต่อ 1 ร้าน
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_shop_views_user_shop
+  ON public.shop_views(user_id, shop_id)
+  WHERE user_id IS NOT NULL;
+
+-- anonymous dedup ระดับ DB: ป้องกัน spam เมื่อ localStorage ถูก bypass
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_shop_views_session_shop
+  ON public.shop_views(session_id, shop_id)
+  WHERE user_id IS NULL AND session_id IS NOT NULL;
+
+
+-- ╔═══════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 3: Supporting index บน merchant_profiles               ║
+-- ║  (DO block เพื่อ skip gracefully ถ้า table ยังไม่มี)            ║
+-- ║  NOTE: ใช้ regular CREATE INDEX (CONCURRENTLY ใน DO block ไม่ได้)║
+-- ╚═══════════════════════════════════════════════════════════════════╝
+
+-- [PERF] SELECT policy ใช้ subquery EXISTS บน merchant_profiles
+-- index นี้ทำให้ Postgres ไม่ต้อง seq scan ทุกครั้งที่ merchant query shop_views
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_merchant_profiles_user_shop
+    ON public.merchant_profiles(user_id, shop_name);
+EXCEPTION
+  WHEN undefined_table THEN
+    RAISE WARNING '[PERF DEGRADED] merchant_profiles not found — idx_merchant_profiles_user_shop skipped. Run AFTER merchant_profiles migration.';
+END $$;
+
+
+-- ╔═══════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 4: VALIDATE CONSTRAINTS                                ║
+-- ║  !! รันแยกต่างหากในช่วง low-traffic หลัง deploy เสร็จแล้ว !!   ║
+-- ║  validates existing rows ทีละ batch — ไม่ block INSERT          ║
+-- ╚═══════════════════════════════════════════════════════════════════╝
+
+-- uncomment และรันแยกต่างหากหลัง Section 1-3 สำเร็จแล้ว:
+--
+-- ALTER TABLE public.shop_views VALIDATE CONSTRAINT chk_shop_views_identity;
+-- ALTER TABLE public.shop_views VALIDATE CONSTRAINT chk_session_id_format;
+-- ALTER TABLE public.shop_views VALIDATE CONSTRAINT chk_shop_id_length;
+-- ALTER TABLE public.shop_views VALIDATE CONSTRAINT chk_viewed_at_not_future;
+
+
 -- ─────────────────────────────────────────────────────────────────────
--- Data Retention  (!! ต้องรันแยกต่างหาก ผ่าน Supabase Edge Function หรือ pg_cron !!)
+-- Data Retention  (!! ตั้งค่าผ่าน Supabase Dashboard → Database → pg_cron !!)
 -- ─────────────────────────────────────────────────────────────────────
 --
 -- ลบข้อมูลที่เก่ากว่า 90 วันเพื่อไม่ให้ table โตไม่หยุด
 -- idx_shop_views_viewed_at รองรับ query นี้โดยตรง (ไม่ full scan):
 --
---   delete from public.shop_views
---   where viewed_at < now() - interval '90 days';
+--   DELETE FROM public.shop_views
+--   WHERE viewed_at < now() - interval '90 days';
 --
 -- ตั้งค่า pg_cron (เปิด extension ใน Dashboard → Database → Extensions ก่อน):
 --
---   select cron.schedule(
+--   SELECT cron.schedule(
 --     'cleanup-old-shop-views',
 --     '0 3 * * *',
---     $$delete from public.shop_views
---       where viewed_at < now() - interval '90 days';$$
+--     $$DELETE FROM public.shop_views
+--       WHERE viewed_at < now() - interval '90 days';$$
 --   );
