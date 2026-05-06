@@ -375,6 +375,28 @@ export interface ShopPublicStats {
  * ถ้า shop_views table ยังไม่มีในฐานข้อมูล ฟังก์ชันนี้จะ fail เงียบๆ
  * (ต้องรัน add-shop-views.sql ก่อน)
  */
+/**
+ * Get or create a persistent anonymous session ID for this browser.
+ * ใช้เป็น fingerprint สำหรับ dedup anonymous views ระดับ DB
+ * (stored in localStorage key 'allpro_anon_session')
+ */
+function getAnonSessionId(): string | null {
+  const KEY = 'allpro_anon_session';
+  try {
+    const existing = localStorage.getItem(KEY);
+    if (existing) return existing;
+    // crypto.randomUUID() available in all modern browsers (Chromium 92+, Firefox 95+, Safari 15.4+)
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      const id = crypto.randomUUID();
+      localStorage.setItem(KEY, id);
+      return id;
+    }
+  } catch {
+    // Private browsing mode may block localStorage — fail gracefully
+  }
+  return null;
+}
+
 export async function trackShopView(
   shopId: string,
   source: string = 'shop_profile'
@@ -392,6 +414,9 @@ export async function trackShopView(
     viewed = [];
   }
   if (viewed.includes(shopId)) return;
+
+  // anonymous session ID สำหรับ DB-level dedup ของ anonymous users
+  const sessionId = getAnonSessionId();
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -416,6 +441,7 @@ export async function trackShopView(
     const { error } = await supabase.from('shop_views').insert({
       shop_id: shopId,
       user_id: user?.id || null,
+      session_id: user ? null : sessionId,  // logged-in ไม่ต้องใช้ session_id
       viewed_at: new Date().toISOString(),
       source,
     });
