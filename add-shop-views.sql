@@ -13,8 +13,14 @@ create table if not exists public.shop_views (
   viewed_at   timestamptz not null default now(),
 
   -- [anonymous dedup] persistent browser fingerprint (crypto.randomUUID stored in localStorage)
-  -- null สำหรับ fallback กรณี browser เก่าไม่รองรับ crypto.randomUUID
-  session_id  text,
+  -- Option A (เข้มงวด): client ต้อง generate UUID ก่อน insert เสมอ
+  -- browser ที่ไม่รองรับ crypto.randomUUID → trackShopView() จะ skip insert ทั้งหมด
+  -- (insert แบบไม่มี dedup เลยแย่กว่าไม่ track)
+  session_id  text
+    CONSTRAINT chk_session_id_format CHECK (
+      session_id IS NULL
+      OR session_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    ),
 
   -- CHECK constraint ป้องกัน analytics grouping ผิดพลาด
   source      text not null default 'shop_profile'
@@ -29,9 +35,29 @@ create table if not exists public.shop_views (
   )
 );
 
--- ── Migration guard: เพิ่ม session_id หากยังไม่มี (กรณีรัน round 1 ไปแล้ว) ──
+-- Migration guard: สำหรับ DB ที่รัน round 1 ไปแล้วก่อนที่จะมี session_id
+-- (กรณีรัน migration นี้ครั้งแรก CREATE TABLE จะสร้าง column นี้อยู่แล้ว — เป็น no-op)
 alter table public.shop_views
   add column if not exists session_id text;
+
+-- Migration guard: เพิ่ม constraints สำหรับ DB ที่มีอยู่แล้ว
+-- (DO block ป้องกัน error กรณี constraint ถูกสร้างไปแล้ว — idempotent)
+DO $$ BEGIN
+  ALTER TABLE public.shop_views
+    ADD CONSTRAINT chk_shop_views_identity
+    CHECK (user_id IS NOT NULL OR session_id IS NOT NULL);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.shop_views
+    ADD CONSTRAINT chk_session_id_format
+    CHECK (
+      session_id IS NULL
+      OR session_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ───────────────────────────────────────────────────────────
 -- Indexes
@@ -109,7 +135,9 @@ create policy "Merchants can read own shop views"
 -- [FIX: Functional Integrity] explicit deny UPDATE/DELETE (defense in depth)
 -- Supabase block โดย default เมื่อ RLS เปิด แต่ประกาศชัดเจน
 -- เพื่อป้องกันกรณี service account หรือ role ใหม่ที่อาจ bypass ในอนาคต
--- การลบข้อมูลจริงต้องทำผ่าน service_role ใน pg_cron เท่านั้น
+-- ⚠️  DELETE ผ่านได้เฉพาะ postgres/service_role (BYPASSRLS) เท่านั้น
+-- ⚠️  pg_cron cleanup ต้องรันใน postgres role — ห้ามใช้ anon/authenticated key
+-- ⚠️  Supabase Dashboard SQL Editor ใช้ postgres role โดยตรง — ทดสอบ manual delete ได้
 create policy "No direct updates to shop views"
   on public.shop_views for update
   using (false);

@@ -438,6 +438,10 @@ export async function trackShopView(
     }
 
     // ── ขั้น 3: Insert row ใหม่ ────────────────────────────────────────────
+    // Option A: anonymous ที่ไม่มี session_id (browser เก่า) → skip insert ทั้งหมด
+    // ดีกว่า insert แบบไม่มี dedup ซึ่งจะทำให้ anonymous spam ผ่าน constraint ไม่ได้
+    if (!user && !sessionId) return;
+
     const { error } = await supabase.from('shop_views').insert({
       shop_id: shopId,
       user_id: user?.id || null,
