@@ -131,7 +131,7 @@ export default function MerchantLandingPage() {
 
             {/* Sub-headline */}
             <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-              เข้าร่วม <span className="text-yellow-400 font-semibold">IAMROOT AI</span> — แพลตฟอร์มเดียวที่ดันร้านของคุณไปหา{' '}
+              เข้าร่วม <span className="text-yellow-400 font-semibold">All Pro</span> — แพลตฟอร์มเดียวที่ดันร้านของคุณไปหา{' '}
               <span className="text-yellow-400 font-semibold">ผู้ใช้กว่า 10,000+ คน</span> ในบริเวณใกล้เคียง ในเวลาที่พวกเขากำลังค้นหาอยู่พอดี
             </p>
 

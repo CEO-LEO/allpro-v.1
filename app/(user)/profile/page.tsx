@@ -121,16 +121,16 @@ export default function ProfilePage() {
 
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
               <MenuItem icon={Store} title="ตั้งค่าร้านค้า" href="/merchant/settings" />
-              <MenuItem icon={Settings} title="การตั้งค่า" />
-              <MenuItem icon={HelpCircle} title="ช่วยเหลือ" />
+              <MenuItem icon={Settings} title="การตั้งค่า" href="/merchant/settings" />
+              <MenuItem icon={HelpCircle} title="ช่วยเหลือ" href="/contact" />
             </div>
           </>
         ) : (
           // USER MENU
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-            <MenuItem icon={Bell} title="การแจ้งเตือน" badge="2" />
-            <MenuItem icon={Settings} title="ตั้งค่าบัญชี" />
-            <MenuItem icon={HelpCircle} title="ช่วยเหลือ" />
+            <MenuItem icon={Bell} title="การแจ้งเตือน" badge="2" href="/notifications" />
+            <MenuItem icon={Settings} title="ตั้งค่าบัญชี" href="/profile/edit" />
+            <MenuItem icon={HelpCircle} title="ช่วยเหลือ" href="/contact" />
           </div>
         )}
         

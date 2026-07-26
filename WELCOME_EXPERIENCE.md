@@ -18,7 +18,7 @@ Full Screen - Red Gradient Background
         │  (rotate) │     from 0 to 1
         └───────────┘
         
-      IAMROOT AI
+      All Pro
    โปรตัวจริง เช็กสต็อกแม่นยำ
    
         ● ● ●  ← Pulsing dots
@@ -450,7 +450,7 @@ animate: 0px
 
 2. Splash Animation (0-2.5s)
    → Logo scales + rotates
-   → "IAMROOT AI" text fades in
+   → "All Pro" text fades in
    → Loading dots pulse
    → Screen fades out
 
@@ -484,7 +484,7 @@ animate: 0px
 
 2. Splash Animation (0-2.5s)
    → Logo scales + rotates
-   → "IAMROOT AI" text fades in
+   → "All Pro" text fades in
    → Loading dots pulse
    → Screen fades out
 

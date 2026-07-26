@@ -4,6 +4,42 @@ import { supabase, isSupabaseConfigured } from './supabase';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Grabs the browser's location ONLY if permission was already granted
+ * elsewhere in the app (e.g. the /map page) — never triggers a new
+ * permission prompt just for analytics tracking. Returns null silently
+ * on any unsupported browser / denied / prompt-not-yet-answered state.
+ */
+async function getOpportunisticLocation(): Promise<{ lat: number; lng: number } | null> {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) return null;
+  try {
+    if (!navigator.permissions?.query) return null;
+    const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+    if (status.state !== 'granted') return null;
+
+    return await new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { timeout: 2000, maximumAge: 5 * 60 * 1000 }
+      );
+    });
+  } catch {
+    return null;
+  }
+}
+
+// Haversine distance in km
+function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+/**
  * บันทึกการดูโปรโมชั่น (Promotion View)
  * แต่ละบัญชีนับได้แค่ 1 ครั้งต่อ 1 สินค้า (deduplicated)
  */
@@ -33,11 +69,16 @@ export async function trackPromotionView(
       if (existing && existing.length > 0) return;
     }
 
+    // Opportunistic only — never prompts for permission just for this
+    const loc = await getOpportunisticLocation();
+
     const { error } = await supabase.from('promotion_views').insert({
       user_id: user?.id || null,
       product_id: productId,
       merchant_id: merchantId || null,
       source,
+      lat: loc?.lat ?? null,
+      lng: loc?.lng ?? null,
     });
 
     if (error) console.error('View insert error:', error.message);
@@ -163,11 +204,22 @@ export interface DailyStat {
   date: string;
   views: number;
   claims: number;
+  revenue: number;
 }
 
 export interface DemographicData {
   sources: { source: string; count: number }[];
-  hourlyDistribution: { hour: number; count: number }[];
+  /** Real per-hour breakdown of both views and claims (promotion_views/claims timestamps) */
+  hourlyDistribution: { hour: number; views: number; claims: number }[];
+  /** Real gender breakdown of viewers/claimers, joined from profiles.gender — empty if no data yet */
+  genderBreakdown: { gender: string; count: number }[];
+  /**
+   * Real distance-from-your-nearest-branch buckets, computed only from views
+   * that happened to have opportunistic geolocation attached (see
+   * getOpportunisticLocation in this file) — NOT precise mall names, since
+   * no such data exists; "unknown" covers views with no location captured.
+   */
+  locationBuckets: { label: string; count: number }[];
 }
 
 /**
@@ -201,7 +253,7 @@ export async function fetchMerchantAnalytics(
         recentActivity: [],
         productStats: [],
         dailyStats: [],
-        demographicData: { sources: [], hourlyDistribution: [] },
+        demographicData: { sources: [], hourlyDistribution: [], genderBreakdown: [], locationBuckets: [] },
       };
     }
 
@@ -287,9 +339,10 @@ export async function fetchMerchantAnalytics(
       const dateStr = date.toISOString().split('T')[0];
 
       const dayViews = views?.filter((v) => v.viewed_at?.startsWith(dateStr)).length || 0;
-      const dayClaims = claims?.filter((c) => c.claimed_at?.startsWith(dateStr)).length || 0;
+      const dayClaimRows = claims?.filter((c) => c.claimed_at?.startsWith(dateStr)) || [];
+      const dayRevenue = dayClaimRows.reduce((sum, c) => sum + (Number(c.promo_price) || 0), 0);
 
-      dailyStats.push({ date: dateStr, views: dayViews, claims: dayClaims });
+      dailyStats.push({ date: dateStr, views: dayViews, claims: dayClaimRows.length, revenue: dayRevenue });
     }
 
     // แหล่งที่มา
@@ -301,17 +354,83 @@ export async function fetchMerchantAnalytics(
 
     const sources = Object.entries(sourceCounts).map(([source, count]) => ({ source, count }));
 
-    // Hourly distribution
-    const hourCounts: Record<number, number> = {};
+    // Hourly distribution — real views AND real claims, both by hour-of-day
+    const hourViewCounts: Record<number, number> = {};
     views?.forEach((v) => {
       const hour = new Date(v.viewed_at).getHours();
-      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      hourViewCounts[hour] = (hourViewCounts[hour] || 0) + 1;
     });
-
+    const hourClaimCounts: Record<number, number> = {};
+    claims?.forEach((c) => {
+      const hour = new Date(c.claimed_at).getHours();
+      hourClaimCounts[hour] = (hourClaimCounts[hour] || 0) + 1;
+    });
     const hourlyDistribution = Array.from({ length: 24 }, (_, h) => ({
       hour: h,
-      count: hourCounts[h] || 0,
+      views: hourViewCounts[h] || 0,
+      claims: hourClaimCounts[h] || 0,
     }));
+
+    // Gender breakdown — real join: unique viewer/claimer user_ids → profiles.gender
+    let genderBreakdown: { gender: string; count: number }[] = [];
+    try {
+      const uniqueUserIds = Array.from(new Set([
+        ...(views || []).map((v) => v.user_id).filter(Boolean),
+        ...(claims || []).map((c) => c.user_id).filter(Boolean),
+      ]));
+      if (uniqueUserIds.length > 0) {
+        const { data: genderRows } = await supabase
+          .from('profiles')
+          .select('gender')
+          .in('id', uniqueUserIds);
+        const genderCounts: Record<string, number> = {};
+        (genderRows || []).forEach((r) => {
+          const g = (r.gender || 'unknown').toLowerCase().trim() || 'unknown';
+          genderCounts[g] = (genderCounts[g] || 0) + 1;
+        });
+        genderBreakdown = Object.entries(genderCounts).map(([gender, count]) => ({ gender, count }));
+      }
+    } catch (e) {
+      console.warn('[Analytics] gender breakdown failed:', e);
+    }
+
+    // Location buckets — real distance-from-nearest-branch, only for views
+    // that happened to have opportunistic geolocation attached. No fake
+    // mall names — just honest distance bands.
+    let locationBuckets: { label: string; count: number }[] = [];
+    try {
+      const { data: branches } = await supabase
+        .from('merchant_branches')
+        .select('lat, lng')
+        .eq('user_id', merchantId)
+        .not('lat', 'is', null)
+        .not('lng', 'is', null);
+
+      const viewsWithLoc = (views || []).filter((v) => v.lat != null && v.lng != null);
+      const buckets = { 'ภายใน 1 กม.': 0, '1-3 กม.': 0, '3-5 กม.': 0, 'เกิน 5 กม.': 0, 'ไม่ทราบตำแหน่ง': (views?.length || 0) - viewsWithLoc.length };
+
+      if (branches && branches.length > 0 && viewsWithLoc.length > 0) {
+        for (const v of viewsWithLoc) {
+          const nearest = Math.min(
+            ...branches.map((b) => distanceKm({ lat: v.lat, lng: v.lng }, { lat: b.lat, lng: b.lng }))
+          );
+          if (nearest <= 1) buckets['ภายใน 1 กม.']++;
+          else if (nearest <= 3) buckets['1-3 กม.']++;
+          else if (nearest <= 5) buckets['3-5 กม.']++;
+          else buckets['เกิน 5 กม.']++;
+        }
+      } else {
+        // No branch location on file — everything with a captured location
+        // still counts as "unknown distance" since there's nothing to compare against
+        buckets['ไม่ทราบตำแหน่ง'] = views?.length || 0;
+      }
+
+      locationBuckets = Object.entries(buckets)
+        .filter(([, count]) => count > 0)
+        .map(([label, count]) => ({ label, count }));
+    } catch (e) {
+      console.warn('[Analytics] location buckets failed:', e);
+    }
 
     return {
       totalViews,
@@ -326,7 +445,7 @@ export async function fetchMerchantAnalytics(
       ),
       productStats,
       dailyStats,
-      demographicData: { sources, hourlyDistribution },
+      demographicData: { sources, hourlyDistribution, genderBreakdown, locationBuckets },
     };
   } catch (err) {
     console.error('Failed to fetch merchant analytics:', err);

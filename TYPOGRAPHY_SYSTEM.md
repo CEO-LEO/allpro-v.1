@@ -1,7 +1,7 @@
-# Typography System - IAMROOT AI
+# Typography System - All Pro
 
 ## Overview
-This document defines the typography system used across the IAMROOT AI application. The system ensures consistency, readability, and professional appearance across all pages and components.
+This document defines the typography system used across the All Pro application. The system ensures consistency, readability, and professional appearance across all pages and components.
 
 ## Typography Scale
 
@@ -11,7 +11,7 @@ Use for large, attention-grabbing text on landing pages and hero sections.
 ```tsx
 // Large Display
 <h1 className="text-display-lg">  // 2.5rem - 4rem, weight: 800
-  Welcome to IAMROOT AI
+  Welcome to All Pro
 </h1>
 
 // Medium Display
@@ -235,7 +235,7 @@ font-black     // 800-900 - Display text, special emphasis
 <nav>
   <Link href="/">
     <span className="text-h3">        {/* Logo/Brand */}
-      IAMROOT AI
+      All Pro
     </span>
   </Link>
   <Link href="/categories">

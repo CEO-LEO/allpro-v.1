@@ -13,13 +13,7 @@ import {
   Send,
   Loader2
 } from 'lucide-react';
-import { 
-  type Review, 
-  type ProductReviews, 
-  getProductReviews, 
-  canUserReview,
-  markReviewHelpful 
-} from '@/lib/reviewData';
+import { type Review, canUserReview } from '@/lib/reviewData';
 import toast from 'react-hot-toast';
 import { addPoints } from '@/lib/pointsUtils';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -245,7 +239,6 @@ function WriteReviewModal({
 
 // ─── Main Reviews Component ───────────────────────────────────────────────
 export default function Reviews({ productId }: ReviewsProps) {
-  const [reviewData, setReviewData] = useState<ProductReviews | null>(null);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -254,19 +247,16 @@ export default function Reviews({ productId }: ReviewsProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuthStore();
 
-  // Load reviews from mock data
+  // Restore which reviews this browser already marked helpful
   useEffect(() => {
-    const data = getProductReviews(productId);
-    setReviewData(data);
-
     const marked = new Set<string>();
-    data?.reviews.forEach(review => {
+    dbReviews.forEach(review => {
       if (localStorage.getItem(`helpful_${review.id}`)) {
         marked.add(review.id);
       }
     });
     setHelpfulReviews(marked);
-  }, [productId]);
+  }, [dbReviews]);
 
   // Load reviews from Supabase
   useEffect(() => {
@@ -315,21 +305,18 @@ export default function Reviews({ productId }: ReviewsProps) {
     })();
   }, [productId, user]);
 
-  const allReviews = [...dbReviews, ...(reviewData?.reviews || [])];
+  const allReviews = dbReviews;
 
   const handleMarkHelpful = async (reviewId: string) => {
     const alreadyVoted = helpfulReviews.has(reviewId);
+    const currentReview = dbReviews.find(r => r.id === reviewId);
 
-    // Check if this is a Supabase DB review
-    const isDbReview = dbReviews.some(r => r.id === reviewId);
+    if (currentReview && isSupabaseConfigured) {
+      const newCount = alreadyVoted
+        ? Math.max(0, currentReview.helpful - 1)
+        : currentReview.helpful + 1;
 
-    if (isDbReview && isSupabaseConfigured) {
       try {
-        const currentReview = dbReviews.find(r => r.id === reviewId)!;
-        const newCount = alreadyVoted
-          ? Math.max(0, currentReview.helpful - 1)
-          : currentReview.helpful + 1;
-
         const { error } = await supabase
           .from('reviews')
           .update({ helpful_count: newCount })
@@ -338,17 +325,12 @@ export default function Reviews({ productId }: ReviewsProps) {
         if (error) {
           console.error('[Reviews] helpful update error:', error);
         }
-        // Update local state
         setDbReviews(prev => prev.map(r =>
           r.id === reviewId ? { ...r, helpful: newCount } : r
         ));
       } catch (e) {
         console.error('[Reviews] handleMarkHelpful error:', e);
       }
-    } else {
-      // Mock data review — use existing local function
-      markReviewHelpful(reviewId, productId);
-      setReviewData(getProductReviews(productId));
     }
 
     if (alreadyVoted) {
@@ -452,7 +434,7 @@ export default function Reviews({ productId }: ReviewsProps) {
       }
 
       // ── 3. สำเร็จ → ให้ points + ปิด modal ──
-      addPoints(10, 'เขียนรีวิวครั้งแรก', '✍️');
+      await addPoints(10, 'เขียนรีวิวครั้งแรก', '✍️');
       toast.success('ส่งรีวิวสำเร็จ! +10 Points', { icon: '✍️', duration: 4000 });
       setShowWriteReview(false);
     } catch (e) {

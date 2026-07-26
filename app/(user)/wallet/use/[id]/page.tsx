@@ -21,11 +21,11 @@ export default function UseCouponPage() {
   const [product, setProduct] = useState<CouponProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 นาที
-  const [refCode] = useState(() => `IAM-${decodedId.slice(0, 4).toUpperCase()}-${Date.now().toString(36).toUpperCase().slice(-4)}`);
+  const [refCode] = useState(() => `PRO-${decodedId.slice(0, 4).toUpperCase()}-${Date.now().toString(36).toUpperCase().slice(-4)}`);
   const [copied, setCopied] = useState(false);
   const [isUsed, setIsUsed] = useState(false);
 
-  const qrValue = `IAMROOT:${decodedId}:${Date.now()}`;
+  const qrValue = `ALLPRO:${decodedId}:${Date.now()}`;
 
   // Find product from multiple sources
   useEffect(() => {
@@ -121,7 +121,7 @@ export default function UseCouponPage() {
             <CheckCircle className="w-12 h-12 text-green-400" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">ใช้คูปองสำเร็จ!</h2>
-          <p className="text-white/60 mb-8">ขอบคุณที่ใช้บริการ IAMROOT AI</p>
+          <p className="text-white/60 mb-8">ขอบคุณที่ใช้บริการ All Pro</p>
           <button onClick={() => router.push('/')} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3.5 rounded-xl transition-colors">
             กลับหน้าหลัก
           </button>

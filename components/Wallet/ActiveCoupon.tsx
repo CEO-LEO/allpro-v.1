@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Shield, AlertCircle, CheckCircle, X, Lock } from 'lucide-react';
+import { Clock, Shield, AlertCircle, CheckCircle, X, Lock, KeyRound } from 'lucide-react';
 import QRCode from 'react-qr-code';
-import { markVoucherAsUsed } from '@/lib/pointsUtils';
+import { redeemVoucherByPin } from '@/lib/pointsUtils';
 import toast from 'react-hot-toast';
 
 interface ActiveCouponProps {
@@ -14,6 +14,7 @@ interface ActiveCouponProps {
   voucherValue: string;
   brand: string;
   qrData: string;
+  redeemPin: string;
   onClose: () => void;
   onExpire: () => void;
 }
@@ -28,6 +29,7 @@ export default function ActiveCoupon({
   voucherValue,
   brand,
   qrData,
+  redeemPin,
   onClose,
   onExpire
 }: ActiveCouponProps) {
@@ -36,6 +38,7 @@ export default function ActiveCoupon({
   const [isExpired, setIsExpired] = useState(false);
   const [showStaffPin, setShowStaffPin] = useState(false);
   const [pin, setPin] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   const [startTime] = useState(() => {
     // Check if there's an existing timer
     const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}${voucherId}`);
@@ -111,18 +114,19 @@ export default function ActiveCoupon({
     });
   };
 
-  const handleStaffMarkUsed = () => {
-    if (pin === '1234') {
-      const success = markVoucherAsUsed(voucherId);
-      if (success) {
-        localStorage.removeItem(`${STORAGE_KEY_PREFIX}${voucherId}`);
-        toast.success('ทำเครื่องหมายใช้งานแล้ว (Staff)');
-        setTimeout(() => {
-          onClose();
-        }, 1000);
-      }
+  const handleStaffMarkUsed = async () => {
+    setIsVerifying(true);
+    const result = await redeemVoucherByPin(voucherCode, pin);
+    setIsVerifying(false);
+
+    if (result.success) {
+      localStorage.removeItem(`${STORAGE_KEY_PREFIX}${voucherId}`);
+      toast.success(result.message || 'ทำเครื่องหมายใช้งานแล้ว (Staff)');
+      setTimeout(() => {
+        onClose();
+      }, 1000);
     } else {
-      toast.error('รหัส PIN ไม่ถูกต้อง');
+      toast.error(result.message || 'รหัส PIN ไม่ถูกต้อง');
       setPin('');
     }
   };
@@ -309,6 +313,20 @@ export default function ActiveCoupon({
                 </p>
               </div>
             </div>
+
+            {!isExpired && (
+              <div className="text-center mt-4">
+                <p className="text-xs text-gray-500 mb-1.5 flex items-center justify-center gap-1">
+                  <KeyRound className="w-3.5 h-3.5" />
+                  แจ้งรหัสนี้ให้พนักงานเพื่อยืนยันการใช้งาน
+                </p>
+                <div className="inline-flex bg-amber-50 border-2 border-amber-300 rounded-xl px-5 py-2">
+                  <p className="text-2xl font-mono font-black text-amber-700 tracking-[0.3em]">
+                    {redeemPin}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
@@ -347,24 +365,22 @@ export default function ActiveCoupon({
                 <div className="flex gap-2">
                   <button
                     onClick={handleStaffMarkUsed}
-                    disabled={pin.length !== 4}
+                    disabled={pin.length !== 4 || isVerifying}
                     className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-3 rounded-xl transition-all disabled:cursor-not-allowed"
                   >
-                    ✓ Confirm
+                    {isVerifying ? 'กำลังตรวจสอบ...' : '✓ Confirm'}
                   </button>
                   <button
                     onClick={() => {
                       setShowStaffPin(false);
                       setPin('');
                     }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all"
+                    disabled={isVerifying}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50"
                   >
                     Cancel
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 text-center">
-                  Demo PIN: 1234
-                </p>
               </div>
             )}
           </div>

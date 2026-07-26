@@ -1,50 +1,28 @@
 'use client';
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Clock, TrendingUp } from 'lucide-react';
+import { Clock, TrendingUp, BarChart3 } from 'lucide-react';
 
-// Generate realistic 24-hour data with peaks at lunch (12:00) and evening (18:00)
-const generateHourlyData = () => {
-  const data = [];
-  for (let hour = 0; hour < 24; hour++) {
-    // Base traffic
-    let viewsBase = 300;
-    let savesBase = 150;
+interface HourlyPoint {
+  hour: number;
+  views: number;
+  claims: number;
+}
 
-    // Lunch hour peak (11:00 - 13:00)
-    if (hour >= 11 && hour <= 13) {
-      viewsBase += 400 + Math.random() * 200;
-      savesBase += 180 + Math.random() * 100;
-    }
-    // Evening peak (17:00 - 20:00)
-    else if (hour >= 17 && hour <= 20) {
-      viewsBase += 600 + Math.random() * 300;
-      savesBase += 250 + Math.random() * 150;
-    }
-    // Night drop (00:00 - 06:00)
-    else if (hour >= 0 && hour <= 6) {
-      viewsBase = 100 + Math.random() * 80;
-      savesBase = 40 + Math.random() * 30;
-    }
-    // Normal hours
-    else {
-      viewsBase += Math.random() * 150;
-      savesBase += Math.random() * 80;
-    }
+interface EngagementChartProps {
+  /** Real per-hour views/claims from fetchMerchantAnalytics — no synthetic data */
+  hourlyData: HourlyPoint[];
+}
 
-    data.push({
-      time: `${hour.toString().padStart(2, '0')}:00`,
-      views: Math.round(viewsBase),
-      saves: Math.round(savesBase),
-      hour
-    });
-  }
-  return data;
-};
-
-const data = generateHourlyData();
+interface ChartPoint {
+  time: string;
+  views: number;
+  saves: number;
+  hour: number;
+}
 
 // Custom tooltip
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -68,22 +46,54 @@ const CustomTooltip = ({ active, payload }: any) => {
             </span>
           </div>
         </div>
-        <div className="mt-2 pt-2 border-t border-gray-200">
-          <p className="text-xs text-gray-500">
-            Conversion: {((payload[1].value / payload[0].value) * 100).toFixed(1)}%
-          </p>
-        </div>
+        {payload[0].value > 0 && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
+              Conversion: {((payload[1].value / payload[0].value) * 100).toFixed(1)}%
+            </p>
+          </div>
+        )}
       </div>
     );
   }
   return null;
 };
 
-// Find peak hours
-const peakViewsHour = data.reduce((max, item) => item.views > max.views ? item : max, data[0]);
-const peakSavesHour = data.reduce((max, item) => item.saves > max.saves ? item : max, data[0]);
+export default function EngagementChart({ hourlyData }: EngagementChartProps) {
+  const data: ChartPoint[] = hourlyData.map((h) => ({
+    time: `${h.hour.toString().padStart(2, '0')}:00`,
+    views: h.views,
+    saves: h.claims,
+    hour: h.hour,
+  }));
 
-export default function EngagementChart() {
+  const totalViews = data.reduce((sum, item) => sum + item.views, 0);
+
+  if (totalViews === 0) {
+    return (
+      <div className="bg-white rounded-xl border-2 border-gray-200 p-6 shadow-sm">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">24-Hour Engagement Performance</h3>
+            <p className="text-sm text-gray-500">Real activity tracking across all promotions</p>
+          </div>
+        </div>
+        <div className="py-16 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <BarChart3 className="w-8 h-8 text-gray-400" />
+          </div>
+          <p className="text-gray-500 font-medium">ยังไม่มีข้อมูลการเข้าชมในช่วง 30 วันล่าสุด</p>
+          <p className="text-sm text-gray-400 mt-1">กราฟจะแสดงเมื่อมีลูกค้าเข้าชมโปรโมชั่นของคุณ</p>
+        </div>
+      </div>
+    );
+  }
+
+  const peakViewsHour = data.reduce((max, item) => (item.views > max.views ? item : max), data[0]);
+  const peakSavesHour = data.reduce((max, item) => (item.saves > max.saves ? item : max), data[0]);
+  const avgViews = totalViews / data.length;
+  const totalSaves = data.reduce((sum, item) => sum + item.saves, 0);
+
   return (
     <div className="bg-white rounded-xl border-2 border-gray-200 p-6 shadow-sm">
       {/* Header */}
@@ -93,10 +103,10 @@ export default function EngagementChart() {
             24-Hour Engagement Performance
           </h3>
           <p className="text-sm text-gray-500">
-            Real-time activity tracking across all promotions
+            ข้อมูลจริงจาก 30 วันล่าสุด (promotion_views/promotion_claims)
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
           <span className="text-xs font-semibold">Live Data</span>
@@ -116,7 +126,7 @@ export default function EngagementChart() {
             {peakViewsHour.time}
           </p>
           <p className="text-xs text-blue-700">
-            {peakViewsHour.views.toLocaleString()} impressions - Perfect time to boost stock
+            {peakViewsHour.views.toLocaleString()} views ในช่วง 30 วันล่าสุด
           </p>
         </div>
 
@@ -131,7 +141,7 @@ export default function EngagementChart() {
             {peakSavesHour.time}
           </p>
           <p className="text-xs text-orange-700">
-            {peakSavesHour.saves.toLocaleString()} saves - High purchase intent detected
+            {peakSavesHour.saves.toLocaleString()} saves ในช่วง 30 วันล่าสุด
           </p>
         </div>
       </div>
@@ -154,20 +164,19 @@ export default function EngagementChart() {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-            <XAxis 
-              dataKey="time" 
+            <XAxis
+              dataKey="time"
               stroke="#6B7280"
               fontSize={12}
               tickLine={false}
             />
-            <YAxis 
+            <YAxis
               stroke="#6B7280"
               fontSize={12}
               tickLine={false}
-              tickFormatter={(value) => `${(value / 1000).toFixed(1)}k`}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend 
+            <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="circle"
             />
@@ -199,19 +208,19 @@ export default function EngagementChart() {
           <div className="text-center">
             <p className="text-xs text-gray-500 mb-1">Average Hourly Views</p>
             <p className="text-xl font-bold text-gray-900">
-              {Math.round(data.reduce((sum, item) => sum + item.views, 0) / data.length).toLocaleString()}
+              {Math.round(avgViews).toLocaleString()}
             </p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-500 mb-1">Average Conversion Rate</p>
             <p className="text-xl font-bold text-green-600">
-              {((data.reduce((sum, item) => sum + item.saves, 0) / data.reduce((sum, item) => sum + item.views, 0)) * 100).toFixed(1)}%
+              {totalViews > 0 ? ((totalSaves / totalViews) * 100).toFixed(1) : '0.0'}%
             </p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-500 mb-1">Peak Hour Multiplier</p>
             <p className="text-xl font-bold text-purple-600">
-              {(peakViewsHour.views / (data.reduce((sum, item) => sum + item.views, 0) / data.length)).toFixed(1)}x
+              {avgViews > 0 ? (peakViewsHour.views / avgViews).toFixed(1) : '0.0'}x
             </p>
           </div>
         </div>

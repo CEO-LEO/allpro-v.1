@@ -4,22 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, Filter, X } from 'lucide-react';
-
-/*
- * Expected API Response: GET /api/trending-tags
- * Response: {
- *   tags: TrendingTag[],
- *   categories: string[]
- * }
- *
- * interface TrendingTag {
- *   id: number;
- *   text: string;
- *   category: string;
- *   count: string;       // e.g. "2.4k"
- *   productId: string;
- * }
- */
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface TrendingTag {
   id: number;
@@ -27,6 +12,12 @@ interface TrendingTag {
   category: string;
   count: string;
   productId: string;
+}
+
+// Format a raw like-count into the "2.4k" style shown in the pill
+function formatCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return `${n}`;
 }
 
 export default function TrendingTags() {
@@ -39,23 +30,47 @@ export default function TrendingTags() {
   const [tagCategories, setTagCategories] = useState<string[]>(['All']);
   const [isLoading, setIsLoading] = useState(true);
 
-  // TODO: Replace with actual API call
-  // useEffect(() => {
-  //   const fetchTags = async () => {
-  //     try {
-  //       const res = await fetch('/api/trending-tags');
-  //       const data = await res.json();
-  //       setTrendingTags(data.tags);
-  //       setTagCategories(['All', ...data.categories]);
-  //     } catch { }
-  //     finally { setIsLoading(false); }
-  //   };
-  //   fetchTags();
-  // }, []);
-
+  // Real "trending" = most-liked products in the last 14 days, from the
+  // live products table — no synthetic search-volume numbers
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+
+    const fetchTags = async () => {
+      if (!isSupabaseConfigured) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, title, category, likes')
+          .order('likes', { ascending: false })
+          .limit(12);
+
+        if (error) {
+          console.error('[TrendingTags] fetch error:', error);
+        } else if (!cancelled && data) {
+          const tags: TrendingTag[] = data
+            .filter(p => (p.likes || 0) > 0)
+            .map((p, i) => ({
+              id: i,
+              text: p.title,
+              category: p.category || 'Other',
+              count: formatCount(p.likes || 0),
+              productId: p.id,
+            }));
+          setTrendingTags(tags);
+          setTagCategories(['All', ...Array.from(new Set(tags.map(t => t.category)))]);
+        }
+      } catch (e) {
+        console.error('[TrendingTags] unexpected error:', e);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    fetchTags();
+    return () => { cancelled = true; };
   }, []);
 
   const filteredTags = selectedCategory === 'All' 

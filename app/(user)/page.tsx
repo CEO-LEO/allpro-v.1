@@ -7,7 +7,7 @@ import { ArrowRight, Store, Search, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getPromotions } from '@/lib/getPromotions';
+import { refreshPromotions } from '@/lib/getPromotions';
 import { Promotion } from '@/lib/types';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import TrendingTags from '@/components/TrendingTags';
@@ -84,51 +84,11 @@ export default function Home() {
     async function fetchPromotions() {
       setIsLoading(true);
       try {
-        // Load static promotions
-        const staticData = getPromotions();
-
-        // Fetch from server-side API (avoids client-side Supabase issues)
-        try {
-          const res = await fetch('/api/debug-products');
-          const json = await res.json();
-          const dbProducts = json.data;
-
-          console.log('[Home] API fetch result:', { count: dbProducts?.length, data: dbProducts });
-
-          if (dbProducts && dbProducts.length > 0) {
-            const dbPromos: Promotion[] = dbProducts.map((p: Record<string, unknown>) => ({
-              id: String(p.id || ''),
-              shop_name: String(p.shopName || p.shop_name || 'ร้านค้า'),
-              title: String(p.title || ''),
-              description: String(p.description || ''),
-              price: Number(p.promoPrice || p.price || 0),
-              discount_rate: Number(p.discount || p.discount_rate || 0),
-              category: String(p.category || 'Other'),
-              is_verified: Boolean(p.verified || p.is_verified),
-              is_sponsored: Boolean(p.is_sponsored),
-              location: String(p.location || p.distance || 'ทุกสาขา'),
-              search_volume: 0,
-              image: String(p.image || '') || getCategoryFallbackImage(p.category as string),
-              valid_until: String(p.validUntil || p.valid_until || new Date(Date.now() + 7 * 86400000).toISOString()),
-              views: Number(p.likes || p.views || 0),
-              saves: 0,
-              tags: Array.isArray(p.tags) ? p.tags as string[] : [],
-            }));
-            // Merge: DB products first, then static (deduped)
-            const dbIds = new Set(dbPromos.map(p => p.id));
-            const merged = [...dbPromos, ...staticData.filter(p => !dbIds.has(p.id))];
-            console.log('[Home] ✅ Setting promotions:', merged.length, 'items');
-            setPromotions(merged);
-            setIsLoading(false);
-            return;
-          } else {
-            console.warn('[Home] ⚠️ No DB products, falling back to static');
-          }
-        } catch (apiErr) {
-          console.error('[Home] API fetch failed:', apiErr);
+        const dbPromos = await refreshPromotions();
+        setPromotions(dbPromos);
+        if (dbPromos.length === 0) {
+          console.warn('[Home] ⚠️ No DB products returned');
         }
-
-        setPromotions(staticData);
       } catch (err) {
         console.error('Failed to fetch promotions:', err);
       } finally {
@@ -143,7 +103,7 @@ export default function Home() {
   // NOT merged into the home feed to avoid duplicates.
   // Sort boosted promotions to the top, then by creation date
   const allPromotions = useMemo(() => {
-    // promotions already contains DB + static data (fetched via /api/debug-products)
+    // promotions already contains DB data refreshed via /api/products
     return [...promotions].sort((a, b) => {
       if (a.is_boosted && !b.is_boosted) return -1;
       if (!a.is_boosted && b.is_boosted) return 1;
@@ -370,7 +330,7 @@ export default function Home() {
 
         {/* Results Header */}
         <motion.div
-          id="iamroot-ais"
+          id="all-promotions"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="mb-8 scroll-mt-24"

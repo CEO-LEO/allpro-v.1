@@ -22,7 +22,7 @@ import {
   Crown,
   X
 } from 'lucide-react';
-import { 
+import {
   type AdCampaign
 } from '@/lib/adsData';
 import toast from 'react-hot-toast';
@@ -31,6 +31,50 @@ import Image from 'next/image';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
+interface CampaignRow {
+  id: string;
+  merchant_name: string | null;
+  product_id: string | null;
+  product_name: string | null;
+  product_image: string | null;
+  product_price: number | null;
+  product_discount: number | null;
+  goal: 'visibility' | 'traffic';
+  daily_budget: number;
+  total_budget: number;
+  duration: number;
+  status: 'active' | 'paused' | 'completed';
+  start_date: string;
+  end_date: string | null;
+  impressions: number;
+  clicks: number;
+  spent: number;
+}
+
+function rowToCampaign(r: CampaignRow, merchantId: string): AdCampaign {
+  return {
+    id: r.id,
+    merchantId,
+    merchantName: r.merchant_name || '',
+    productId: r.product_id || '',
+    productName: r.product_name || '',
+    productImage: r.product_image || '',
+    productPrice: r.product_price || 0,
+    productDiscount: r.product_discount || 0,
+    goal: r.goal,
+    dailyBudget: r.daily_budget,
+    totalBudget: r.total_budget,
+    duration: r.duration,
+    status: r.status,
+    impressions: r.impressions,
+    clicks: r.clicks,
+    spent: r.spent,
+    startDate: new Date(r.start_date),
+    endDate: r.end_date ? new Date(r.end_date) : new Date(),
+  };
+}
 
 export default function AdsManagerPage() {
   const { user } = useAuthStore();
@@ -65,7 +109,6 @@ export default function AdsManagerPage() {
   const [duration, setDuration] = useState(7);
 
   const merchantId = user?.id || 'guest';
-  const storageKey = `merchant_${merchantId}_campaigns`;
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -73,21 +116,19 @@ export default function AdsManagerPage() {
         setIsPageLoading(true);
         setError(null);
 
-        // TODO: Replace with real API call
-        // const res = await fetch('/api/merchant/campaigns');
-        // if (!res.ok) throw new Error('Failed to fetch campaigns');
-        // const data: AdCampaign[] = await res.json();
-        // setCampaigns(data);
-
-        // Demo Mode: load from localStorage until API is connected
-        if (typeof window !== 'undefined') {
-          const stored = localStorage.getItem(storageKey);
-          if (stored) {
-            setCampaigns(JSON.parse(stored));
-          } else {
-            setCampaigns([]);
-          }
+        if (!isSupabaseConfigured || !user?.id) {
+          setCampaigns([]);
+          return;
         }
+
+        const { data, error: fetchErr } = await supabase
+          .from('merchant_ad_campaigns')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (fetchErr) throw new Error(fetchErr.message);
+        setCampaigns((data || []).map((r) => rowToCampaign(r as CampaignRow, merchantId)));
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
         setError(message);
@@ -97,7 +138,7 @@ export default function AdsManagerPage() {
     };
 
     fetchCampaigns();
-  }, [merchantId, storageKey]);
+  }, [merchantId, user?.id]);
 
   // Calculate stats from actual campaigns
   useEffect(() => {
@@ -116,7 +157,7 @@ export default function AdsManagerPage() {
     });
   }, [campaigns]);
 
-  const handleCreateCampaign = () => {
+  const handleCreateCampaign = async () => {
     if (!user) {
         toast.error('Please login first');
         return;
@@ -148,18 +189,33 @@ export default function AdsManagerPage() {
       spent: 0
     };
 
-    const updatedCampaigns = [...campaigns, newCampaignData];
-    setCampaigns(updatedCampaigns);
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('merchant_ad_campaigns').insert({
+        id: newCampaignData.id,
+        user_id: user.id,
+        merchant_name: newCampaignData.merchantName,
+        product_id: newCampaignData.productId,
+        product_name: newCampaignData.productName,
+        product_image: newCampaignData.productImage,
+        product_price: newCampaignData.productPrice,
+        product_discount: newCampaignData.productDiscount,
+        goal: newCampaignData.goal,
+        daily_budget: newCampaignData.dailyBudget,
+        total_budget: newCampaignData.totalBudget,
+        duration: newCampaignData.duration,
+        status: newCampaignData.status,
+        start_date: newCampaignData.startDate.toISOString(),
+        end_date: newCampaignData.endDate.toISOString(),
+      });
 
-    // TODO: Replace with real API call
-    // await fetch('/api/merchant/campaigns', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(newCampaignData),
-    // });
+      if (error) {
+        console.error('[Ads] create campaign error:', error);
+        toast.error('สร้างแคมเปญไม่สำเร็จ กรุณาลองใหม่');
+        return;
+      }
+    }
 
-    // Demo Mode: persist to localStorage
-    localStorage.setItem(storageKey, JSON.stringify(updatedCampaigns));
+    setCampaigns(prev => [newCampaignData, ...prev]);
 
     confetti({
       particleCount: 100,
@@ -168,7 +224,7 @@ export default function AdsManagerPage() {
     });
 
     toast.success('🚀 Campaign Launched Successfully!', { duration: 4000 });
-    
+
     setShowCreateWizard(false);
     setWizardStep(1);
   };

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // import { createMiddlewareSupabaseClient } from '@/lib/supabase/middleware';
 
 // ============================================================
-// RBAC Middleware — IAMROOT AI (DEMO MODE)
+// RBAC Middleware — All Pro (DEMO MODE)
 //
 // NOTE: Currently using client-side auth (Zustand) instead of Supabase
 // Middleware is disabled for demo. Auth checks happen via AuthGuard component.
@@ -13,6 +13,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 //     checks happen in route handlers via RLS)
 //  3. Public routes → passthrough
 // ============================================================
+
+/** Routes that should be redirected out of demo mode */
+const DEMO_PREFIXES = ['/simple-demo', '/i18n-demo', '/gamification-demo', '/onboarding-demo', '/quiz'];
 
 /** Routes that require the user to be a merchant */
 const MERCHANT_ROUTES = ['/merchant'];
@@ -46,6 +49,10 @@ export async function proxy(request: NextRequest) {
     STATIC_EXTENSIONS.test(pathname)
   ) {
     return NextResponse.next();
+  }
+
+  if (DEMO_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   // ── DEMO MODE: BYPASS ALL AUTH CHECKS ──

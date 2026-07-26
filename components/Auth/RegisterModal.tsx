@@ -133,11 +133,10 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     setIsLoading(true);
 
     try {
-      // ── ถ้า Supabase ยังไม่ได้ตั้งค่า → Demo Mode ──
       if (!isSupabaseConfigured) {
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ IAMROOT AI');
-        handleAutoLogin();
+        const errorMessage = 'ระบบยืนยันตัวตนยังไม่พร้อมใช้งานในตอนนี้ กรุณาติดต่อผู้ดูแล';
+        setError(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
@@ -156,12 +155,11 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
           timeoutPromise,
         ]);
       } catch (raceErr: unknown) {
-        // Timeout or network error → fallback to demo auto-login
         const errMsg = raceErr instanceof Error ? raceErr.message : '';
         if (errMsg === 'TIMEOUT') {
-          console.warn('⏱️ Supabase signUp timed out — falling back to demo mode');
-          toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ IAMROOT AI');
-          handleAutoLogin();
+          const timeoutMessage = 'การสมัครไม่สำเร็จเนื่องจากเซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่';
+          setError(timeoutMessage);
+          toast.error(timeoutMessage);
           return;
         }
         throw raceErr; // re-throw other errors to outer catch
@@ -193,7 +191,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         // ★ ไม่ auto-login ถ้าไม่มี session จริง — ให้ไปล็อกอินหลังยืนยัน
         handleGoToLogin();
       } else {
-        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ IAMROOT AI');
+        toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ All Pro');
         handleAutoLogin(realUser);
         if (selectedRole === 'MERCHANT') {
           router.push('/merchant/dashboard');
@@ -201,9 +199,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       }
     } catch (err) {
       console.error('❌ Register error:', err);
-      // Fallback: ถ้า Supabase มีปัญหา → auto-login ในโหมด demo เพื่อไม่ให้ลูกค้าติดค้าง
-      toast.success('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ IAMROOT AI');
-      handleAutoLogin();
+      const errMessage = err instanceof Error ? err.message : 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่';
+      setError(errMessage);
+      toast.error(errMessage);
     } finally {
       setIsLoading(false);
     }
@@ -248,7 +246,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     <UserPlus className="w-10 h-10 mb-2" />
                   </motion.div>
                   <h2 className="text-lg font-bold mb-0.5">สมัครสมาชิก</h2>
-                  <p className="text-white/80 text-xs">สร้างบัญชีเพื่อเริ่มต้นใช้งาน IAMROOT AI</p>
+                  <p className="text-white/80 text-xs">สร้างบัญชีเพื่อเริ่มต้นใช้งาน All Pro</p>
                 </div>
               </div>
 

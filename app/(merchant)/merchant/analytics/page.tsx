@@ -6,104 +6,93 @@ import StatCards, { StatData } from '@/components/Merchant/Analytics/StatCards';
 import EngagementChart from '@/components/Merchant/Analytics/EngagementChart';
 import AudienceLocation from '@/components/Merchant/Analytics/AudienceLocation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useProductStore } from '@/store/useProductStore';
+import { fetchMerchantAnalytics, type MerchantDashboardStats } from '@/lib/analytics';
 import { useMemo, useState, useEffect } from 'react';
+
+// Real day-over-day % change from the last two entries of dailyStats
+// (both real, already fetched) — returns 0 when there's no prior-day
+// data to compare against, never a fabricated number
+function dayOverDayChange(daily: MerchantDashboardStats['dailyStats'], key: 'views' | 'claims' | 'revenue'): { change: number; trend: 'up' | 'down' } {
+  if (daily.length < 2) return { change: 0, trend: 'up' };
+  const today = daily[daily.length - 1][key];
+  const yesterday = daily[daily.length - 2][key];
+  if (yesterday === 0) return { change: today > 0 ? 100 : 0, trend: 'up' };
+  const pct = Math.round(((today - yesterday) / yesterday) * 1000) / 10;
+  return { change: pct, trend: pct >= 0 ? 'up' : 'down' };
+}
 
 export default function AnalyticsDashboard() {
   const { user } = useAuthStore();
-  const { products } = useProductStore();
 
-  // ═══ API-Ready State Management ═══
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  /**
-   * ROI Data — คาดหวัง data structure จาก API:
-   * GET /api/merchant/analytics/roi
-   * Response: {
-   *   investment: number,        // e.g. 2499
-   *   conversions: number,       // e.g. 4800
-   *   roi: number,               // e.g. 192
-   *   highlights: { text: string, bold: string }[]
-   * }
-   */
-  const [roiData, setRoiData] = useState<{
-    investment: number;
-    conversions: number;
-    roi: number;
-    highlights: { bold: string; text: string }[];
-  } | null>(null);
+  const [analytics, setAnalytics] = useState<MerchantDashboardStats | null>(null);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const load = async () => {
       try {
         setIsLoading(true);
         setError(null);
-
-        // TODO: Replace with real API call
-        // const res = await fetch('/api/merchant/analytics/roi');
-        // if (!res.ok) throw new Error('Failed to fetch analytics');
-        // const data = await res.json();
-        // setRoiData(data);
-
-        await new Promise(r => setTimeout(r, 500));
-        setRoiData(null);
-      } catch (err: any) {
-        setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        if (!user?.id) return;
+        const data = await fetchMerchantAnalytics(user.id, user.shopName || user.name || '', 30);
+        setAnalytics(data);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
         setIsLoading(false);
       }
     };
+    load();
+  }, [user?.id, user?.shopName, user?.name]);
 
-    fetchAnalytics();
-  }, []);
+  const merchantStats = useMemo((): StatData[] => {
+    if (!analytics) {
+      return [
+        { label: 'Total Views', value: '0', change: 0, trend: 'up', description: 'ยอดเข้าชม 30 วันล่าสุด', color: 'blue' },
+        { label: 'Coupons Saved', value: '0', change: 0, trend: 'up', description: 'ยอดกดรับโปร 30 วันล่าสุด', color: 'green' },
+        { label: 'Revenue', value: '฿0', change: 0, trend: 'up', description: 'ยอดขายจากคูปองที่กดรับ', color: 'purple' },
+        { label: 'Conversion Rate', value: '0%', change: 0, trend: 'up', description: 'กดรับโปร / ยอดเข้าชม', color: 'orange' },
+      ];
+    }
+    const viewsChange = dayOverDayChange(analytics.dailyStats, 'views');
+    const claimsChange = dayOverDayChange(analytics.dailyStats, 'claims');
+    const revenueChange = dayOverDayChange(analytics.dailyStats, 'revenue');
 
-  const merchantStats = useMemo(() => {
-    const myProducts = products.filter(p => p.shopName === user?.shopName);
-    
-    const totalLikes = myProducts.reduce((acc, p) => acc + (p.likes || 0), 0);
-    const totalReviews = myProducts.reduce((acc, p) => acc + (p.reviews || 0), 0);
-    
-    // Mock calculations based on available data
-    const totalViews = (totalLikes * 45) + (totalReviews * 120); 
-    const savedCoupons = totalLikes * 3;
-    const stockClicks = Math.floor(totalViews * 0.05);
-    
     return [
       {
         label: 'Total Views',
-        value: totalViews.toLocaleString(),
-        change: 12,
-        trend: 'up',
-        description: 'Impressions today',
+        value: analytics.totalViews.toLocaleString(),
+        change: viewsChange.change,
+        trend: viewsChange.trend,
+        description: 'ยอดเข้าชม 30 วันล่าสุด',
         color: 'blue'
       },
       {
         label: 'Coupons Saved',
-        value: savedCoupons.toLocaleString(),
-        change: 8.5,
-        trend: 'up',
-        description: 'High conversion rate',
+        value: analytics.totalClaims.toLocaleString(),
+        change: claimsChange.change,
+        trend: claimsChange.trend,
+        description: 'ยอดกดรับโปร 30 วันล่าสุด',
         color: 'green'
       },
       {
-        label: '"Check Stock" Clicks',
-        value: stockClicks.toLocaleString(),
-        change: 23,
-        trend: 'up',
-        description: 'High purchase intent',
+        label: 'Revenue',
+        value: `฿${analytics.totalRevenue.toLocaleString()}`,
+        change: revenueChange.change,
+        trend: revenueChange.trend,
+        description: 'ยอดขายจากคูปองที่กดรับ',
         color: 'purple'
       },
       {
-        label: 'Sold Out Events',
-        value: '0', // We don't have stock data yet
+        label: 'Conversion Rate',
+        value: `${analytics.conversionRate}%`,
         change: 0,
-        trend: 'down',
-        description: 'Branches need restock',
+        trend: 'up',
+        description: 'กดรับโปร / ยอดเข้าชม',
         color: 'orange'
       }
-    ] as StatData[];
-  }, [products, user?.shopName]);
+    ];
+  }, [analytics]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -208,63 +197,27 @@ export default function AnalyticsDashboard() {
 
         {/* 24-Hour Performance Chart */}
         <div className="mb-6">
-          <EngagementChart />
+          <EngagementChart hourlyData={analytics?.demographicData.hourlyDistribution || []} />
         </div>
 
         {/* Audience & Location Section */}
         <div className="mb-6">
-          <AudienceLocation />
+          <AudienceLocation
+            genderBreakdown={analytics?.demographicData.genderBreakdown || []}
+            locationBuckets={analytics?.demographicData.locationBuckets || []}
+          />
         </div>
 
-        {/* ROI Insights Card */}
-        {roiData ? (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xl font-bold">💰</span>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-green-900 mb-2">
-                ROI Analysis
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="bg-white rounded-lg p-4 border border-green-200">
-                  <p className="text-xs text-gray-500 mb-1">Platform Investment</p>
-                  <p className="text-2xl font-bold text-gray-900">฿{roiData.investment.toLocaleString()}</p>
-                  <p className="text-xs text-gray-600">Monthly SEO package</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-green-200">
-                  <p className="text-xs text-gray-500 mb-1">Estimated Conversions</p>
-                  <p className="text-2xl font-bold text-green-600">{roiData.conversions.toLocaleString()}</p>
-                  <p className="text-xs text-gray-600">Coupons saved → Store visits</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-green-200">
-                  <p className="text-xs text-gray-500 mb-1">Projected ROI</p>
-                  <p className="text-2xl font-bold text-green-600">{roiData.roi}%</p>
-                  <p className="text-xs text-gray-600">Based on avg. basket size</p>
-                </div>
-              </div>
-              <ul className="text-sm text-green-800 space-y-2">
-                {roiData.highlights.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="text-green-600 mt-0.5">✓</span>
-                    <span><strong>{item.bold}</strong> - {item.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+        {/* ROI Insights Card — no real ad-spend/investment tracking exists
+            anywhere in the app yet, so this honestly stays an empty state
+            rather than dividing real numbers by a made-up investment figure */}
+        <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-10 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">📊</span>
           </div>
+          <h3 className="text-lg font-bold text-gray-700 mb-2">ยังไม่มีข้อมูล ROI</h3>
+          <p className="text-sm text-gray-500">ฟีเจอร์นี้ต้องมีข้อมูลค่าใช้จ่ายโฆษณา/แพ็กเกจจริงก่อน ซึ่งระบบยังไม่มีการเก็บข้อมูลส่วนนี้</p>
         </div>
-        ) : (
-          /* ═══ Empty State: No ROI Data Yet ═══ */
-          <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-10 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">📊</span>
-            </div>
-            <h3 className="text-lg font-bold text-gray-700 mb-2">ยังไม่มีข้อมูล ROI</h3>
-            <p className="text-sm text-gray-500">ข้อมูลการวิเคราะห์ ROI จะแสดงเมื่อมีข้อมูลเพียงพอจากระบบ</p>
-          </div>
-        )}
 
         {/* Action Items — TODO: Fetch from /api/merchant/analytics/actions */}
         <div className="mt-6 bg-white rounded-xl border-2 border-gray-200 p-6 shadow-sm">

@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Store, Upload, Camera, Loader2, CheckCircle, MessageCircle, Globe } from 'lucide-react';
+import { X, Store, Upload, Camera, Loader2, CheckCircle, MessageCircle, Globe, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLoadScript } from '@react-google-maps/api';
+import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { useAuthStore } from '@/store/useAuthStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { resolveImageUrl } from '@/lib/imageUrl';
@@ -13,11 +15,112 @@ interface EditShopModalProps {
   onClose: () => void;
 }
 
+const GOOGLE_MAPS_LIBS: ('places')[] = ['places'];
+
+// ─── Address input with Google Places Autocomplete — captures lat/lng so the
+// shop can actually show up as a pin on the /map page ─────────────────────────
+interface AddressAutocompleteProps {
+  value: string;
+  onChange: (val: string) => void;
+  onSelectCoords: (coords: { lat: number; lng: number }) => void;
+}
+
+function AddressAutocomplete({ value, onChange, onSelectCoords }: AddressAutocompleteProps) {
+  const {
+    ready,
+    suggestions: { status, data },
+    setValue: setAutocompleteValue,
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: { componentRestrictions: { country: 'th' } },
+    debounce: 300,
+  });
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    onChange(val);
+    setAutocompleteValue(val);
+    setShowDropdown(true);
+  };
+
+  const handleSelect = async (description: string, placeId: string) => {
+    setAutocompleteValue(description, false);
+    clearSuggestions();
+    setShowDropdown(false);
+    onChange(description);
+
+    try {
+      const results = await getGeocode({ placeId });
+      const { lat, lng } = getLatLng(results[0]);
+      onSelectCoords({ lat, lng });
+    } catch {
+      // Address text is still saved even if geocoding fails — just won't show on /map
+    }
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <textarea
+        value={value}
+        onChange={handleInput}
+        disabled={!ready}
+        placeholder="เลขที่ ถนน แขวง เขต จังหวัด — พิมพ์เพื่อค้นหาบนแผนที่"
+        rows={2}
+        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all resize-none"
+      />
+      {showDropdown && status === 'OK' && data.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+          {data.map(({ place_id, structured_formatting }) => (
+            <li key={place_id}>
+              <button
+                type="button"
+                onClick={() => handleSelect(
+                  structured_formatting.main_text + (structured_formatting.secondary_text ? ', ' + structured_formatting.secondary_text : ''),
+                  place_id
+                )}
+                className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors flex items-start gap-3 border-b border-gray-50 last:border-0"
+              >
+                <MapPin className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{structured_formatting.main_text}</p>
+                  {structured_formatting.secondary_text && (
+                    <p className="text-xs text-gray-400 truncate">{structured_formatting.secondary_text}</p>
+                  )}
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
   const { user, updateUser } = useAuthStore();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const logoFileRef = useRef<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  // Loads the Google Maps script so usePlacesAutocomplete (inside
+  // AddressAutocomplete below) can become ready
+  useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBS,
+  });
 
   // ═══ Controlled Form State ═══
   const [formData, setFormData] = useState({
@@ -34,6 +137,8 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
     socialInstagram: user?.shopSocialInstagram || '',
     socialWebsite: user?.shopSocialWebsite || '',
   });
+  const [shopLat, setShopLat] = useState<number | undefined>(user?.shopLat);
+  const [shopLng, setShopLng] = useState<number | undefined>(user?.shopLng);
 
   // Re-sync form when modal opens (so updated user data is reflected)
   useEffect(() => {
@@ -52,6 +157,8 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
         socialInstagram: user?.shopSocialInstagram || '',
         socialWebsite: user?.shopSocialWebsite || '',
       });
+      setShopLat(user?.shopLat);
+      setShopLng(user?.shopLng);
       setLogoPreview(null);
     }
   }, [isOpen, user]);
@@ -121,6 +228,8 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
         shopSocialFacebook: formData.socialFacebook ? formatFacebookUrl(formData.socialFacebook) : undefined,
         shopSocialInstagram: formData.socialInstagram ? formatInstagramUrl(formData.socialInstagram) : undefined,
         shopSocialWebsite: formData.socialWebsite ? formatWebsiteUrl(formData.socialWebsite) : undefined,
+        shopLat,
+        shopLng,
         merchantProfileComplete: isComplete,
       });
 
@@ -177,6 +286,8 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
                 line_id: formData.socialLine || null,
                 instagram: formData.socialInstagram || null,
                 facebook: formData.socialFacebook || null,
+                shop_lat: shopLat ?? null,
+                shop_lng: shopLng ?? null,
                 website: formData.socialWebsite || null,
               }, { onConflict: 'user_id' }).select()),
               8000
@@ -186,6 +297,62 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
               console.log('[EditShop] ✅ Supabase upsert success:', upsertRes.data);
             } else {
               console.error('[EditShop] ❌ Supabase upsert error:', upsertRes?.error || 'timeout');
+            }
+
+            // Keep the "main" branch (merchant_branches) in sync with the
+            // shop's primary address/coords, so /map and BranchAvailability
+            // — which now read from merchant_branches, not merchant_profiles
+            // directly — always reflect the latest location
+            if (shopLat != null && shopLng != null) {
+              try {
+                const { data: existingMain } = await withTimeout(
+                  Promise.resolve(
+                    supabase
+                      .from('merchant_branches')
+                      .select('id')
+                      .eq('user_id', session.user.id)
+                      .eq('is_main', true)
+                      .maybeSingle()
+                  ),
+                  5000
+                ) || { data: null };
+
+                if (existingMain?.id) {
+                  await withTimeout(
+                    Promise.resolve(
+                      supabase
+                        .from('merchant_branches')
+                        .update({
+                          branch_name: formData.shopName || 'สาขาหลัก',
+                          address: formData.address || null,
+                          lat: shopLat,
+                          lng: shopLng,
+                          phone: formData.phone || null,
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq('id', existingMain.id)
+                    ),
+                    5000
+                  );
+                } else {
+                  await withTimeout(
+                    Promise.resolve(
+                      supabase.from('merchant_branches').insert({
+                        user_id: session.user.id,
+                        branch_name: formData.shopName || 'สาขาหลัก',
+                        address: formData.address || null,
+                        lat: shopLat,
+                        lng: shopLng,
+                        phone: formData.phone || null,
+                        is_main: true,
+                      })
+                    ),
+                    5000
+                  );
+                }
+              } catch (branchErr) {
+                console.warn('[EditShop] main branch sync error:', branchErr);
+              }
             }
           } catch (bgErr) {
             console.warn('[EditShop] Background save error:', bgErr);
@@ -332,13 +499,16 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
               {/* Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">ที่อยู่ร้านค้า</label>
-                <textarea
+                <AddressAutocomplete
                   value={formData.address}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="เลขที่ ถนน แขวง เขต จังหวัด"
-                  rows={2}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all resize-none"
+                  onChange={(val) => setFormData(prev => ({ ...prev, address: val }))}
+                  onSelectCoords={({ lat, lng }) => { setShopLat(lat); setShopLng(lng); }}
                 />
+                {shopLat != null && shopLng != null && (
+                  <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> ปักหมุดแล้ว — จะแสดงบนหน้าแผนที่
+                  </p>
+                )}
               </div>
 
               {/* Category & Opening Hours */}

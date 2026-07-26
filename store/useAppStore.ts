@@ -141,7 +141,7 @@ export const useAppStore = create<AppState>()(
         {
           id: 'notif-1',
           type: 'welcome',
-          title: 'เธขเธดเธเธ”เธตเธ•เนเธญเธเธฃเธฑเธเธชเธนเน IAMROOT AI!',
+          title: 'เธขเธดเธเธ”เธตเธ•เนเธญเธเธฃเธฑเธเธชเธนเน All Pro!',
           message: 'เน€เธฃเธดเนเธกเธ•เนเธเธฅเนเธฒเนเธเธฃเน€เธ”เนเธ”เธ—เธฑเนเธงเนเธ—เธขเนเธ”เนเน€เธฅเธข',
           time: 'Just now',
           isRead: false
@@ -594,7 +594,7 @@ export const useAppStore = create<AppState>()(
       }
     }),
     {
-      name: 'iamroot-ai-storage',
+      name: 'all-promotion-storage',
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

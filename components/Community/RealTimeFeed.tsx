@@ -23,8 +23,6 @@ import {
 import Image from 'next/image';
 import { useLoadScript } from '@react-google-maps/api';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
-import { mockBrandPosts, mockUserPosts } from '@/data/communityPosts';
-import type { BrandPost, UserPost } from '@/data/communityPosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -34,16 +32,6 @@ const GOOGLE_MAPS_LIBS: ('places')[] = ['places'];
 // ─── Category tags for filtering ────────────────────────────────────────────
 const CATEGORY_TAGS = ['ของกิน', 'เสื้อผ้า', 'การท่องเที่ยว', 'โปรพิเศษ'] as const;
 type CategoryTag = (typeof CATEGORY_TAGS)[number];
-
-// Map existing category names from mock data → Thai tag
-function mapCategoryToTag(category?: string): CategoryTag {
-  if (!category) return 'โปรพิเศษ';
-  const lower = category.toLowerCase();
-  if (['food', 'drinks', 'groceries', 'dining', 'café', 'cafe', 'restaurant', 'ของกิน'].includes(lower)) return 'ของกิน';
-  if (['fashion', 'clothing', 'apparel', 'เสื้อผ้า'].includes(lower)) return 'เสื้อผ้า';
-  if (['travel', 'hotel', 'tourism', 'การท่องเที่ยว'].includes(lower)) return 'การท่องเที่ยว';
-  return 'โปรพิเศษ';
-}
 
 // ─── Unified feed item ──────────────────────────────────────────────────────
 interface FeedItem {
@@ -75,57 +63,6 @@ interface CommentItem {
   avatar: string;
   text: string;
   timeAgo: string;
-}
-
-function brandToFeed(p: BrandPost): FeedItem {
-  return {
-    id: p.id,
-    displayName: p.brandName,
-    username: p.brandName.toLowerCase().replace(/[^a-z0-9]/g, ''),
-    avatar: p.brandLogo,
-    verified: p.brandVerified,
-    timeAgo: p.timeAgo,
-    content: `${p.title}\n\n${p.description}`,
-    imageUrl: p.imageUrl,
-    location: p.location,
-    discount: p.discount,
-    category: p.category,
-    tag: mapCategoryToTag(p.category),
-    likes: p.likes,
-    comments: Math.floor(Math.random() * 30) + 5,
-    reposts: Math.floor(p.shares * 0.6),
-    shares: p.shares,
-    isBrand: true,
-  };
-}
-
-// Map user post content to a tag based on keywords
-function guessUserTag(caption: string): CategoryTag {
-  const lower = caption.toLowerCase();
-  if (/coffee|café|food|lunch|ramen|pizza|snack|milk|chicken|meal|drink|อาหาร|กาแฟ/.test(lower)) return 'ของกิน';
-  if (/fashion|clothes|shirt|เสื้อ|skincare|beauty|boots/.test(lower)) return 'เสื้อผ้า';
-  if (/travel|hotel|flight|ท่องเที่ยว|gym|fitness/.test(lower)) return 'การท่องเที่ยว';
-  return 'โปรพิเศษ';
-}
-
-function userToFeed(p: UserPost): FeedItem {
-  return {
-    id: p.id,
-    displayName: p.userName,
-    username: p.userName.toLowerCase().replace(/\s/g, ''),
-    avatar: p.userAvatar,
-    verified: p.userLevel >= 10,
-    timeAgo: p.timeAgo,
-    content: p.caption,
-    imageUrl: p.imageUrl,
-    location: p.location,
-    tag: guessUserTag(p.caption),
-    likes: p.helpful,
-    comments: p.comments,
-    reposts: Math.floor(p.helpful * 0.3),
-    shares: Math.floor(p.helpful * 0.2),
-    isBrand: false,
-  };
 }
 
 function shortTime(t: string) {
@@ -842,12 +779,10 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
   const brandFeed: FeedItem[] = [
     ...extraBrandItems,
     ...dbPosts.filter(p => p.isBrand),
-    ...mockBrandPosts.map(brandToFeed),
   ];
   const userFeed: FeedItem[] = [
     ...extraUserItems,
     ...dbPosts.filter(p => !p.isBrand),
-    ...mockUserPosts.map(userToFeed),
   ];
   const rawFeed = activeTab === 'brands' ? brandFeed : userFeed;
   const feed = selectedTag === 'ทั้งหมด' ? rawFeed : rawFeed.filter((item) => item.tag === selectedTag);

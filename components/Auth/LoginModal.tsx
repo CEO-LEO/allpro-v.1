@@ -80,24 +80,15 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     onClose();
   };
 
-  // Social login handlers (demo mode — will redirect to real OAuth in production)
+  // Social login handlers are intentionally disabled until a real OAuth flow is configured.
   const handleAppleLogin = async () => {
     if (!selectedRole) {
       setError('กรุณาเลือกบทบาทก่อน');
       return;
     }
     setIsLoading(true);
-    // TODO: Replace with real Apple Sign-In
-    // window.location.href = '/api/auth/apple?role=' + selectedRole;
-    await new Promise((r) => setTimeout(r, 800));
-    if (selectedRole === 'USER') {
-      loginAsUser();
-    } else {
-      loginAsMerchant();
-    }
-    toast.success('เข้าสู่ระบบด้วย Apple สำเร็จ!');
-    handleClose();
-    if (selectedRole === 'MERCHANT') router.push('/merchant/dashboard');
+    setError('เข้าสู่ระบบด้วย Apple ยังไม่เปิดใช้งานในเวอร์ชันนี้ กรุณาใช้อีเมลและรหัสผ่าน');
+    setIsLoading(false);
   };
 
   const handleLineLogin = async () => {
@@ -106,17 +97,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       return;
     }
     setIsLoading(true);
-    // TODO: Replace with real LINE Login
-    // window.location.href = '/api/auth/line?role=' + selectedRole;
-    await new Promise((r) => setTimeout(r, 800));
-    if (selectedRole === 'USER') {
-      loginAsUser();
-    } else {
-      loginAsMerchant();
-    }
-    toast.success('เข้าสู่ระบบด้วย LINE สำเร็จ!');
-    handleClose();
-    if (selectedRole === 'MERCHANT') router.push('/merchant/dashboard');
+    setError('เข้าสู่ระบบด้วย LINE ยังไม่เปิดใช้งานในเวอร์ชันนี้ กรุณาใช้อีเมลและรหัสผ่าน');
+    setIsLoading(false);
   };
 
   // Biometric (WebAuthn) login handler
@@ -125,26 +107,9 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       setError('กรุณาเลือกบทบาทก่อน');
       return;
     }
-    try {
-      setIsLoading(true);
-      // TODO: Replace with real WebAuthn assertion
-      // const credential = await navigator.credentials.get({
-      //   publicKey: { challenge, rpId, allowCredentials, userVerification: 'required' }
-      // });
-      await new Promise((r) => setTimeout(r, 600));
-      if (selectedRole === 'USER') {
-        loginAsUser();
-      } else {
-        loginAsMerchant();
-      }
-      toast.success('เข้าสู่ระบบด้วย FaceID/TouchID สำเร็จ!');
-      handleClose();
-      if (selectedRole === 'MERCHANT') router.push('/merchant/dashboard');
-    } catch {
-      setError('ไม่สามารถยืนยันตัวตนได้ กรุณาลองใหม่');
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(true);
+    setError('การยืนยันตัวตนด้วย FaceID/TouchID ยังไม่เปิดใช้งานในเวอร์ชันนี้ กรุณาใช้อีเมลและรหัสผ่าน');
+    setIsLoading(false);
   };
 
   // Magic Link handler
@@ -154,21 +119,11 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       return;
     }
     setIsLoading(true);
-    setError('');
-    try {
-      // TODO: Replace with real magic link API
-      // await fetch('/api/auth/magic-link', { method: 'POST', body: JSON.stringify({ email: magicLinkEmail }) });
-      await new Promise((r) => setTimeout(r, 800));
-      setMagicLinkSent(true);
-      toast.success('ส่งลิงก์ล็อกอินไปที่อีเมลแล้ว!');
-    } catch {
-      setError('ไม่สามารถส่งลิงก์ได้ กรุณาลองใหม่');
-    } finally {
-      setIsLoading(false);
-    }
+    setError('ระบบ Magic Link ยังไม่เปิดใช้งานในเวอร์ชันนี้ กรุณาใช้อีเมลและรหัสผ่าน');
+    setIsLoading(false);
   };
 
-  // Supabase Auth Login (พร้อม Demo fallback)
+  // Supabase Auth Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -192,20 +147,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     console.log('[Login] Starting login —', { email: email.trim(), role: selectedRole, supabaseConfigured: isSupabaseConfigured });
 
     try {
-      // ── ถ้า Supabase ยังไม่ได้ตั้งค่า → ใช้ Demo Mode ──
       if (!isSupabaseConfigured) {
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        if (selectedRole === 'USER') {
-          loginAsUser();
-          toast.success('Demo Mode — ยินดีต้อนรับ!');
-        } else {
-          loginAsMerchant();
-          toast.success('Demo Mode — Merchant Dashboard');
-        }
-        handleClose();
-        if (selectedRole === 'MERCHANT') {
-          router.push('/merchant/dashboard');
-        }
+        setError('ระบบยืนยันตัวตนยังไม่พร้อมใช้งานในตอนนี้ กรุณาติดต่อผู้ดูแล');
         return;
       }
 
@@ -301,7 +244,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       console.error('[Login] Error:', err);
       const errMsg = err instanceof Error ? err.message : String(err);
       if (errMsg === 'TIMEOUT') {
-        setError('เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่ หรือใช้โหมดทดลอง');
+        setError('เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่');
       } else {
         setError('เกิดข้อผิดพลาด: ' + errMsg);
       }
@@ -316,23 +259,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     }
   };
 
-  // Demo mode fallback — ใช้เมื่อ Supabase ไม่ทำงาน
   const handleDemoLogin = () => {
-    if (!selectedRole) {
-      setError('กรุณาเลือกบทบาทก่อน');
-      return;
-    }
-    if (selectedRole === 'USER') {
-      loginAsUser();
-      toast.success('เข้าสู่ระบบโหมดทดลอง!');
-    } else {
-      loginAsMerchant();
-      toast.success('เข้าสู่ระบบร้านค้าโหมดทดลอง!');
-    }
-    handleClose();
-    if (selectedRole === 'MERCHANT') {
-      router.push('/merchant/dashboard');
-    }
+    setError('โหมดทดลองถูกปิดใช้งานแล้ว กรุณาใช้บัญชี Supabase จริง');
   };
 
   const portalContent = (
@@ -628,21 +556,21 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   {showAccountNotFound ? '👉 สมัครสมาชิกใหม่เลย!' : 'สมัครสมาชิกใหม่ →'}
                 </button>
 
-                {/* Demo Notice + Quick Login */}
+                {/* Real auth notice */}
                 <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-start gap-1.5">
                     <Lock className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-[10px] font-semibold text-amber-800">ล็อคอินไม่ได้?</p>
+                      <p className="text-[10px] font-semibold text-amber-800">ล็อคอินด้วยบัญชีจริง</p>
                       <p className="text-[10px] text-amber-600 mt-0.5 leading-relaxed">
-                        ใช้โหมดทดลองเพื่อเข้าใช้งานทันที
+                        ระบบโหมดทดลองถูกปิดใช้งานแล้ว กรุณาใช้บัญชี Supabase ที่ยืนยันตัวตนแล้ว
                       </p>
                       <button
                         type="button"
                         onClick={handleDemoLogin}
                         className="mt-1 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-semibold rounded-md transition-colors"
                       >
-                        เข้าสู่ระบบโหมดทดลอง
+                        ดูคำแนะนำเพิ่มเติม
                       </button>
                     </div>
                   </div>

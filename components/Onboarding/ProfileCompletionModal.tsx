@@ -41,70 +41,38 @@ export default function ProfileCompletionModal({ isOpen, onClose }: ProfileCompl
     if (!canSave) return;
     setIsSaving(true);
 
-    // Check if user already completed profile (prevent double points)
-    const alreadyCompleted = user?.profileCompleted === true;
+    // Demo-mode fallback (no Supabase configured) — award once based on local flag only
+    let bonusAwarded = user?.profileCompleted !== true;
 
     try {
-      // 1. Save to Supabase if configured
       if (isSupabaseConfigured) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
-          // Double-check DB to prevent point farming
-          let dbAlreadyCompleted = alreadyCompleted;
-          if (!dbAlreadyCompleted) {
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('profile_completed')
-                .eq('id', session.user.id)
-                .single();
-              dbAlreadyCompleted = profile?.profile_completed === true;
-            } catch {}
-          }
-
-          const { error } = await supabase
-            .from('profiles')
-            .update({
-              gender,
-              age_range: ageRange,
-              profile_completed: true,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', session.user.id);
+          // ★ Atomic server-side RPC — locks the row, checks + updates coins
+          // in one transaction so double-clicking or multi-tab can't farm points
+          const { data, error } = await supabase.rpc('complete_profile_bonus', {
+            p_gender: gender,
+            p_age_range: ageRange,
+          });
 
           if (error) {
-            console.error('[ProfileModal] Supabase update error:', error);
+            console.error('[ProfileModal] RPC error:', error);
+            bonusAwarded = false; // don't award locally if we couldn't confirm server-side
           } else {
-            console.log('[ProfileModal] Saved to Supabase');
-          }
-
-          // Only award points if not already completed in DB
-          if (!dbAlreadyCompleted) {
-            // Update coins in DB too
-            const { data: currentProfile } = await supabase
-              .from('profiles')
-              .select('coins')
-              .eq('id', session.user.id)
-              .single();
-            if (currentProfile) {
-              await supabase
-                .from('profiles')
-                .update({ coins: (currentProfile.coins || 0) + 10 })
-                .eq('id', session.user.id);
-            }
+            const result = Array.isArray(data) ? data[0] : data;
+            bonusAwarded = !!result?.bonus_awarded;
           }
         }
       }
 
-      // 2. Update local store
+      // Update local store
       updateUser({
         gender,
         ageRange,
         profileCompleted: true,
       });
 
-      // Reward 10 coins only if not already completed
-      if (!alreadyCompleted) {
+      if (bonusAwarded) {
         addCoins(10);
         toast.success('บันทึกข้อมูลสำเร็จ! รับ 10 Points', {
           duration: 3000,

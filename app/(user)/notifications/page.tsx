@@ -3,77 +3,135 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { 
-  ArrowLeftIcon, 
-  BellIcon, 
-  TagIcon, 
+import {
+  ArrowLeftIcon,
+  BellIcon,
+  TagIcon,
   GiftIcon,
   CheckCircleIcon,
   CreditCardIcon,
   CogIcon
 } from "@heroicons/react/24/outline";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
-// TODO: API Response Interface — GET /api/notifications
-// คาดว่า API จะส่งข้อมูลในรูปแบบนี้กลับมา
+// Matches the `type` CHECK constraint on the `notifications` table
+// (personalization-schema.sql)
 interface Notification {
   id: string;
-  type: "promotion" | "coupon" | "payment" | "system";
+  type: "promo" | "restock" | "welcome" | "system" | "deal";
   title: string;
   description: string;
-  timestamp: string;       // ISO string หรือ relative time จาก API
+  timestamp: string;
   isRead: boolean;
 }
 
-// กำหนดไอคอนและสีตามประเภทการแจ้งเตือน
-const NOTIFICATION_STYLE: Record<Notification["type"], { label: string; color: string; bg: string; gradient: string }> = {
-  promotion: { label: "โปรโมชั่น", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30", gradient: "from-orange-500 to-amber-500" },
-  coupon:    { label: "คูปอง",     color: "text-pink-600",   bg: "bg-pink-100 dark:bg-pink-900/30",   gradient: "from-pink-500 to-rose-500" },
-  payment:   { label: "การชำระเงิน", color: "text-green-600", bg: "bg-green-100 dark:bg-green-900/30", gradient: "from-green-500 to-emerald-500" },
-  system:    { label: "ระบบ",      color: "text-blue-600",   bg: "bg-blue-100 dark:bg-blue-900/30",   gradient: "from-blue-500 to-indigo-500" },
+const NOTIFICATION_STYLE: Record<Notification["type"], { label: string; color: string; bg: string; gradient: string; icon: "promo" | "deal" | "restock" | "system" }> = {
+  promo:   { label: "โปรโมชั่น", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30", gradient: "from-orange-500 to-amber-500", icon: "promo" },
+  deal:    { label: "ดีล",       color: "text-pink-600",   bg: "bg-pink-100 dark:bg-pink-900/30",   gradient: "from-pink-500 to-rose-500", icon: "deal" },
+  restock: { label: "สต็อกสินค้า", color: "text-green-600", bg: "bg-green-100 dark:bg-green-900/30", gradient: "from-green-500 to-emerald-500", icon: "restock" },
+  welcome: { label: "ยินดีต้อนรับ", color: "text-blue-600",   bg: "bg-blue-100 dark:bg-blue-900/30",   gradient: "from-blue-500 to-indigo-500", icon: "system" },
+  system:  { label: "ระบบ",      color: "text-blue-600",   bg: "bg-blue-100 dark:bg-blue-900/30",   gradient: "from-blue-500 to-indigo-500", icon: "system" },
 };
+
+function formatTimeAgo(dateStr: string): string {
+  const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+  if (mins < 1) return "เมื่อกี้";
+  if (mins < 60) return `${mins} นาทีที่แล้ว`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} ชั่วโมงที่แล้ว`;
+  return `${Math.floor(hours / 24)} วันที่แล้ว`;
+}
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // TODO: เปลี่ยนเป็น fetch จาก API จริง — e.g. const res = await fetch('/api/notifications');
   useEffect(() => {
+    let cancelled = false;
+
     const fetchNotifications = async () => {
       setIsLoading(true);
       try {
-        // const res = await fetch('/api/notifications');
-        // const data: Notification[] = await res.json();
-        // setNotifications(data);
-        await new Promise(r => setTimeout(r, 600));
-        setNotifications([]);
-      } catch {
-        setNotifications([]);
+        if (!isSupabaseConfigured) {
+          if (!cancelled) setNotifications([]);
+          return;
+        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) {
+          if (!cancelled) setNotifications([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.error('[Notifications] fetch error:', error);
+          if (!cancelled) setNotifications([]);
+          return;
+        }
+
+        if (!cancelled) {
+          setNotifications((data || []).map((n) => ({
+            id: n.id,
+            type: (n.type as Notification["type"]) || 'system',
+            title: n.title,
+            description: n.message,
+            timestamp: formatTimeAgo(n.created_at),
+            isRead: n.is_read || false,
+          })));
+        }
+      } catch (e) {
+        console.error('[Notifications] unexpected error:', e);
+        if (!cancelled) setNotifications([]);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
     fetchNotifications();
+    return () => { cancelled = true; };
   }, []);
 
-  const markAllAsRead = () => {
-    // TODO: API call — PATCH /api/notifications/read-all
+  const markAllAsRead = async () => {
+    const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+
+    if (!isSupabaseConfigured || unreadIds.length === 0) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', session.user.id)
+      .eq('is_read', false);
+    if (error) console.error('[Notifications] markAllAsRead error:', error);
   };
 
-  const markAsRead = (id: string) => {
-    // TODO: API call — PATCH /api/notifications/:id/read
+  const markAsRead = async (id: string) => {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
     );
+
+    if (!isSupabaseConfigured) return;
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id);
+    if (error) console.error('[Notifications] markAsRead error:', error);
   };
 
   const getIcon = (type: Notification["type"]) => {
     const cls = "w-6 h-6";
-    switch (type) {
-      case "promotion": return <TagIcon className={cls} />;
-      case "coupon":    return <GiftIcon className={cls} />;
-      case "payment":   return <CreditCardIcon className={cls} />;
-      case "system":    return <CogIcon className={cls} />;
+    switch (NOTIFICATION_STYLE[type].icon) {
+      case "promo":   return <TagIcon className={cls} />;
+      case "deal":    return <GiftIcon className={cls} />;
+      case "restock": return <CreditCardIcon className={cls} />;
+      case "system":  return <CogIcon className={cls} />;
     }
   };
 
@@ -94,9 +152,9 @@ export default function NotificationsPage() {
                 <ArrowLeftIcon className="w-6 h-6" />
               </motion.button>
             </Link>
-            
+
             <h1 className="text-2xl font-bold">แจ้งเตือน</h1>
-            
+
             <div className="w-10"></div>
           </div>
 

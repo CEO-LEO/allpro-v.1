@@ -715,7 +715,7 @@ export default function MerchantDashboard() {
 
         {/* Predictive Analytics Section */}
         <div className="mb-8">
-          <PredictiveInsights location={selectedLocation} />
+          <PredictiveInsights location={selectedLocation} hourlyData={analyticsData?.demographicData.hourlyDistribution || []} />
         </div>
 
         {/* Real-Time Stock Status Section */}
@@ -770,7 +770,7 @@ export default function MerchantDashboard() {
         {/* Info Banner */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h4 className="text-lg font-bold text-blue-700 mb-2">
-            Unfair Advantage: ทำไมต้อง IAMROOT AI?
+            Unfair Advantage: ทำไมต้อง All Pro?
           </h4>
           <ul className="space-y-2 text-sm text-gray-600">
             <li className="flex items-start gap-2"><CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" /> Data Insights แบบเรียลไทม์ - รู้ว่าลูกค้าต้องการอะไร</li>

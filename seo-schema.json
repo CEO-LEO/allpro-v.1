@@ -1,20 +1,20 @@
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "IAMROOT AI",
-  "url": "https://iamroot-ai.com",
-  "description": "IAMROOT AI คือแพลตฟอร์มค้นหาโปรโมชั่นและดีลที่ดีที่สุดจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศไทย พร้อม AI Insights",
+  "name": "All Pro",
+  "url": "https://all-promotions.com",
+  "description": "All Pro คือแพลตฟอร์มค้นหาโปรโมชั่นและดีลที่ดีที่สุดจาก 7-Eleven, Lotus, Makro และร้านค้าทั่วประเทศไทย พร้อม AI Insights",
   "keywords": [
     "โปรโมชั่น",
     "ส่วนลด",
     "ดีล",
     "Flash Sale",
     "คูปอง",
-    "IAMROOT AI"
+    "All Pro"
   ],
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://iamroot-ai.com/search?q={search_term_string}",
+    "target": "https://all-promotions.com/search?q={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 }

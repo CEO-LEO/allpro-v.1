@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useProductStore } from '@/store/useProductStore';
 
 interface Product {
   id: string;
@@ -19,47 +21,64 @@ interface Product {
 
 interface StockGridProps {
   branchName: string;
+  branchId?: string;
   products?: Product[];
 }
 
-export default function StockGrid({ branchName, products }: StockGridProps) {
+export default function StockGrid({ branchName, branchId, products }: StockGridProps) {
   const [productList, setProductList] = useState<Product[]>(products || []);
-  const [isLoading, setIsLoading] = useState(!products);
   const [flashingId, setFlashingId] = useState<string | null>(null);
+  const updateProduct = useProductStore((s) => s.updateProduct);
 
-  // TODO: เชื่อมต่อ API จริง
-  // useEffect(() => {
-  //   if (products) return;
-  //   const fetchProducts = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       const res = await fetch(`/api/merchant/stock?branch=${encodeURIComponent(branchName)}`);
-  //       const data = await res.json();
-  //       setProductList(data.products);
-  //     } catch (err) { console.error(err); }
-  //     finally { setIsLoading(false); }
-  //   };
-  //   fetchProducts();
-  // }, [branchName, products]);
-
+  // Keep local list in sync if the parent's product list changes
   useEffect(() => {
-    if (products) return;
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    setProductList(products || []);
   }, [products]);
 
-  const handleToggle = (productId: string) => {
-    setProductList(prev => 
+  const handleToggle = async (productId: string) => {
+    const current = productList.find(p => p.id === productId);
+    if (!current) return;
+    const newStatus = current.stockStatus === 'available' ? 'out_of_stock' : 'available';
+
+    // Persist to Supabase first — real merchants can have multiple browser
+    // tabs/devices open, so don't show success before it's actually saved
+    if (isSupabaseConfigured) {
+      const { error } = branchId
+        ? await supabase
+            .from('product_branch_stock')
+            .upsert(
+              { product_id: productId, branch_id: branchId, is_available: newStatus === 'available', updated_at: new Date().toISOString() },
+              { onConflict: 'product_id,branch_id' }
+            )
+        : await supabase
+            .from('products')
+            .update({ is_available: newStatus === 'available' })
+            .eq('id', productId);
+
+      if (error) {
+        console.error('[StockGrid] toggle error:', error);
+        toast.error('อัปเดตสต็อกไม่สำเร็จ กรุณาลองใหม่');
+        return;
+      }
+    }
+
+    // Keep the global product store in sync so other pages (e.g. product
+    // detail, dashboard) reflect the change immediately — only meaningful
+    // as an overall fallback when there's no specific branch
+    if (!branchId) {
+      updateProduct(productId, { isAvailable: newStatus === 'available' });
+    }
+
+    setProductList(prev =>
       prev.map(product => {
         if (product.id === productId) {
-          const newStatus = product.stockStatus === 'available' ? 'out_of_stock' : 'available';
           const now = new Date();
-          const timeString = now.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
+          const timeString = now.toLocaleTimeString('en-US', {
+            hour: 'numeric',
             minute: '2-digit',
-            hour12: true 
+            hour12: true
           });
-          
+
           // Flash animation
           setFlashingId(productId);
           setTimeout(() => setFlashingId(null), 600);
@@ -175,23 +194,6 @@ export default function StockGrid({ branchName, products }: StockGridProps) {
           <span className="text-xs text-gray-500">Tap to toggle</span>
         </div>
 
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border-2 border-gray-200 p-4 animate-pulse">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-lg bg-gray-200 flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                    <div className="h-3 bg-gray-100 rounded w-1/3" />
-                    <div className="h-3 bg-gray-100 rounded w-1/2" />
-                  </div>
-                  <div className="w-16 h-9 rounded-full bg-gray-200" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
         <AnimatePresence>
           {productList.map((product) => {
             const isAvailable = product.stockStatus === 'available';
@@ -318,7 +320,6 @@ export default function StockGrid({ branchName, products }: StockGridProps) {
             );
           })}
         </AnimatePresence>
-        )}
       </div>
 
       {/* Empty State */}

@@ -6,6 +6,8 @@ import {
   Loader2, CheckCircle, Trophy, Sparkles, ChevronRight
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { uploadProductImage } from '@/lib/uploadImage';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface ProfileData {
@@ -63,6 +65,7 @@ export default function ProfileSettings() {
 
   // ── Preview-only blob URL for selected file ───────────────────────────────
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync form state whenever user data or edit mode changes
@@ -102,6 +105,7 @@ export default function ProfileSettings() {
 
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
+    setAvatarFile(file);
     setForm((prev) => ({ ...prev, avatarUrl: url }));
   };
 
@@ -124,29 +128,56 @@ export default function ProfileSettings() {
   const handleSave = useCallback(async () => {
     setIsSaving(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    try {
+      let avatarUrl = user?.avatar || '';
 
-    // Persist to zustand store
-    updateUser({
-      name: form.name,
-      email: form.email,
-      avatar: form.avatarUrl,
-    });
+      if (isSupabaseConfigured) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          // Upload the picked file for real (previously this only kept a
+          // blob: URL that would break as soon as the tab was closed)
+          if (avatarFile) {
+            const uploadedPath = await uploadProductImage(avatarFile, 'avatars');
+            if (uploadedPath) {
+              const { data: pub } = supabase.storage.from('promotions').getPublicUrl(uploadedPath);
+              avatarUrl = pub.publicUrl;
+            }
+          }
 
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setIsEditing(false);
+          // Email intentionally excluded — changing it requires Supabase's
+          // auth.updateUser({ email }) confirmation flow, not a profiles column write
+          const { error } = await supabase
+            .from('profiles')
+            .update({ username: form.name, avatar_url: avatarUrl })
+            .eq('id', session.user.id);
+          if (error) console.error('[ProfileSettings] Supabase update error:', error);
+        }
+      }
 
-    // Clear preview blob
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
+      // Persist to zustand store
+      updateUser({
+        name: form.name,
+        avatar: avatarUrl,
+      });
+
+      setSaveSuccess(true);
+      setIsEditing(false);
+      setAvatarFile(null);
+
+      // Clear preview blob
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+
+      // Reset success badge after 2 s
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error('[ProfileSettings] handleSave error:', err);
+    } finally {
+      setIsSaving(false);
     }
-
-    // Reset success badge after 2 s
-    setTimeout(() => setSaveSuccess(false), 2000);
-  }, [form, previewUrl, updateUser]);
+  }, [form, previewUrl, avatarFile, user, updateUser]);
 
   // ── Guard: no user loaded yet ─────────────────────────────────────────────
   if (!user) {
@@ -319,31 +350,16 @@ export default function ProfileSettings() {
               )}
             </div>
 
-            {/* Email */}
+            {/* Email — read-only: changing it needs Supabase Auth's confirmation
+                flow (auth.updateUser), not a plain profiles-table write */}
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">
                 <Mail className="w-3.5 h-3.5" /> อีเมล
               </label>
-              {isEditing ? (
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  className="
-                    w-full px-4 py-3 rounded-xl text-sm
-                    bg-neutral-800/80 border border-neutral-700
-                    text-neutral-100 placeholder:text-neutral-600
-                    focus:outline-none focus:ring-2 focus:ring-lime-500/50 focus:border-lime-500/50
-                    transition-all duration-200
-                  "
-                  placeholder="email@example.com"
-                />
-              ) : (
-                <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-neutral-800/40 border border-neutral-800">
-                  <span className="text-sm">{user.email || '—'}</span>
-                  <ChevronRight className="w-4 h-4 text-neutral-600" />
-                </div>
-              )}
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-neutral-800/40 border border-neutral-800">
+                <span className="text-sm">{user.email || '—'}</span>
+                <span className="text-[10px] text-neutral-600">ไม่สามารถเปลี่ยนได้ที่นี่</span>
+              </div>
             </div>
 
             {/* Role (read-only) */}

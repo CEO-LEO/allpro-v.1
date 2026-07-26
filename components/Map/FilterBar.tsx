@@ -1,26 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Store as StoreIcon, Coffee, ShoppingBag, Shirt, Sparkles } from 'lucide-react';
-import { ReactNode } from 'react';
+import { Sparkles, Tag } from 'lucide-react';
 
-export type FilterCategory = 'all' | '7-Eleven' | "Lotus's" | 'coffee' | 'food' | 'fashion';
+export type FilterCategory = string;
 
 interface FilterBarProps {
+  categories: string[];
   activeFilters: FilterCategory[];
   onFilterChange: (filters: FilterCategory[]) => void;
 }
 
-const filters: { id: FilterCategory; label: string; icon: ReactNode }[] = [
-  { id: 'all', label: 'ทั้งหมด', icon: <Sparkles className="w-4 h-4" /> },
-  { id: '7-Eleven', label: '7-Eleven', icon: <StoreIcon className="w-4 h-4" /> },
-  { id: "Lotus's", label: "Lotus's", icon: <ShoppingBag className="w-4 h-4" /> },
-  { id: 'coffee', label: 'กาแฟ', icon: <Coffee className="w-4 h-4" /> },
-  { id: 'food', label: 'อาหาร', icon: <ShoppingBag className="w-4 h-4" /> },
-  { id: 'fashion', label: 'แฟชั่น', icon: <Shirt className="w-4 h-4" /> },
-];
-
-export default function FilterBar({ activeFilters, onFilterChange }: FilterBarProps) {
+export default function FilterBar({ categories, activeFilters, onFilterChange }: FilterBarProps) {
   const handleToggle = (id: FilterCategory) => {
     if (id === 'all') {
       onFilterChange(['all']);
@@ -38,6 +29,11 @@ export default function FilterBar({ activeFilters, onFilterChange }: FilterBarPr
     onFilterChange(next.length === 0 ? ['all'] : next);
   };
 
+  const filters: { id: FilterCategory; label: string }[] = [
+    { id: 'all', label: 'ทั้งหมด' },
+    ...categories.map(c => ({ id: c, label: c })),
+  ];
+
   return (
     <div className="absolute top-4 left-0 right-0 z-[1000] px-4">
       <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-lg p-2 max-w-full overflow-x-auto scrollbar-hide">
@@ -51,15 +47,15 @@ export default function FilterBar({ activeFilters, onFilterChange }: FilterBarPr
                 className={`
                   flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
                   transition-all duration-200 whitespace-nowrap
-                  ${isActive 
-                    ? 'bg-orange-500 text-white shadow-md' 
+                  ${isActive
+                    ? 'bg-orange-500 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }
                 `}
                 whileTap={{ scale: 0.95 }}
                 whileHover={{ scale: 1.02 }}
               >
-                {filter.icon}
+                {filter.id === 'all' ? <Sparkles className="w-4 h-4" /> : <Tag className="w-4 h-4" />}
                 <span>{filter.label}</span>
               </motion.button>
             );

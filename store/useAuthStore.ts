@@ -22,6 +22,8 @@ interface MerchantProfile {
   shopSocialFacebook?: string;
   shopSocialInstagram?: string;
   shopSocialWebsite?: string;
+  shopLat?: number;
+  shopLng?: number;
   verified: boolean;
   merchantProfileComplete: boolean;
 }
@@ -60,6 +62,8 @@ interface User {
   shopSocialFacebook?: string;
   shopSocialInstagram?: string;
   shopSocialWebsite?: string;
+  shopLat?: number;
+  shopLng?: number;
   merchantProfileComplete?: boolean;
 }
 
@@ -107,6 +111,8 @@ function extractMerchantProfile(user: User): MerchantProfile {
     shopSocialFacebook: user.shopSocialFacebook,
     shopSocialInstagram: user.shopSocialInstagram,
     shopSocialWebsite: user.shopSocialWebsite,
+    shopLat: user.shopLat,
+    shopLng: user.shopLng,
     verified: user.verified ?? false,
     merchantProfileComplete: user.merchantProfileComplete ?? false,
   };
@@ -132,6 +138,8 @@ function merchantProfileToUser(p: MerchantProfile): User {
     shopSocialFacebook: p.shopSocialFacebook,
     shopSocialInstagram: p.shopSocialInstagram,
     shopSocialWebsite: p.shopSocialWebsite,
+    shopLat: p.shopLat,
+    shopLng: p.shopLng,
     verified: p.verified,
     merchantProfileComplete: p.merchantProfileComplete,
   };
@@ -175,6 +183,8 @@ export const useAuthStore = create<AuthState>()(
               shopSocialFacebook: user.shopSocialFacebook || saved?.shopSocialFacebook,
               shopSocialInstagram: user.shopSocialInstagram || saved?.shopSocialInstagram,
               shopSocialWebsite: user.shopSocialWebsite || saved?.shopSocialWebsite,
+              shopLat: user.shopLat ?? saved?.shopLat,
+              shopLng: user.shopLng ?? saved?.shopLng,
               phone,
               verified: user.verified ?? saved?.verified ?? false,
               // Auto-calculate profile completeness

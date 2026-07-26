@@ -1,6 +1,6 @@
 # 🎨 Feature Guide - Complete Feature Documentation
 
-Comprehensive guide covering all features in IAMROOT AI platform.
+Comprehensive guide covering all features in All Pro platform.
 
 ---
 
@@ -393,7 +393,7 @@ Allow users to install the app to their home screen for a native-like experience
 
 ```json
 {
-  "name": "IAMROOT AI",
+  "name": "All Pro",
   "short_name": "AllPromo",
   "description": "Thailand's #1 Deal Discovery Platform",
   "start_url": "/",
@@ -423,14 +423,14 @@ Allow users to install the app to their home screen for a native-like experience
 
 ```typescript
 export const metadata: Metadata = {
-  title: 'IAMROOT AI',
+  title: 'All Pro',
   description: 'Hunt deals, hire freelancers, earn rewards',
   manifest: '/manifest.json',
   themeColor: '#f59e0b',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'IAMROOT AI',
+    title: 'All Pro',
   },
   viewport: {
     width: 'device-width',
@@ -455,7 +455,7 @@ export function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    window.addEventListener('beforeinstiamrootaimpt', (e) => {
+    window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setShowPrompt(true);
@@ -650,7 +650,7 @@ const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
 export async function getChatResponse(message: string) {
   const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
   
-  const prompt = `You are a helpful shopping assistant for IAMROOT AI app.
+  const prompt = `You are a helpful shopping assistant for All Pro app.
 Help users find deals, recommend products, and answer questions.
 User message: ${message}`;
 

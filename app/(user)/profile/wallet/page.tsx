@@ -16,7 +16,7 @@ import {
   TrendingUp,
   ArrowLeft
 } from 'lucide-react';
-import { getWalletVouchers, markVoucherAsUsed, getPointsBalance, getPointsHistory, type Voucher, type PointsTransaction } from '@/lib/pointsUtils';
+import { getWalletVouchers, getPointsBalance, getPointsHistory, type Voucher, type PointsTransaction } from '@/lib/pointsUtils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import QRCode from 'react-qr-code';
@@ -37,28 +37,17 @@ export default function WalletPage() {
 
   useEffect(() => {
     loadData();
-
-    const handleStorageChange = () => {
-      loadData();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const loadData = () => {
-    setVouchers(getWalletVouchers());
-    setHistory(getPointsHistory());
-    setPointsBalance(getPointsBalance());
-  };
-
-  const handleMarkAsUsed = (voucherId: string) => {
-    const success = markVoucherAsUsed(voucherId);
-    if (success) {
-      toast.success('ทำเครื่องหมายใช้งานแล้ว ✓');
-      loadData();
-      setSelectedVoucher(null);
-    }
+  const loadData = async () => {
+    const [walletVouchers, pointsHistory, balance] = await Promise.all([
+      getWalletVouchers(),
+      getPointsHistory(),
+      getPointsBalance(),
+    ]);
+    setVouchers(walletVouchers);
+    setHistory(pointsHistory);
+    setPointsBalance(balance);
   };
 
   const filteredVouchers = vouchers.filter(v => v.status === voucherFilter);
@@ -497,6 +486,7 @@ export default function WalletPage() {
             voucherValue={activeRedemption.value}
             brand={activeRedemption.brand}
             qrData={activeRedemption.qrData}
+            redeemPin={activeRedemption.redeemPin}
             onClose={() => {
               setActiveRedemption(null);
               loadData();

@@ -169,7 +169,7 @@ export default function DynamicNavbar() {
                 <h1 className={`text-h4 ${
                   user?.role === 'MERCHANT' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  IAMROOT AI
+                  All Pro
                 </h1>
                 <span className={`text-caption px-2 py-0.5 rounded-full ${
                   user?.role === 'MERCHANT'

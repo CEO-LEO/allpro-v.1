@@ -4,33 +4,27 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Coins, Sparkles, Gift, AlertCircle, Check, ShoppingBag, TrendingUp, ChevronRight, Flame, Pizza, Film, ShoppingCart, Heart, Bookmark } from 'lucide-react';
+import { Coins, Sparkles, Gift, AlertCircle, Check, ShoppingBag, TrendingUp, ChevronRight, Bookmark, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import LoginModal from '@/components/Auth/LoginModal';
 import { useProductStore } from '@/store/useProductStore';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
+import rewardsCatalogData from '@/data/rewards.json';
+import { getPointsBalance, getWalletVouchers, redeemReward } from '@/lib/pointsUtils';
 
-/*
- * Expected API Response: GET /api/rewards
- * Response: {
- *   rewards: RewardItem[],
- *   pointsBalance: number,
- *   redeemedIds: string[],
- *   categories: { id: string; label: string; icon: string }[]
- * }
- *
- * interface RewardItem {
- *   id: string;
- *   name: string;
- *   description: string;
- *   emoji: string;
- *   pointsCost: number;
- *   featured?: boolean;
- *   image?: string;
- *   category?: string;        // 'food-drink' | 'entertainment' | 'shopping' | 'wellness'
- * }
- */
+interface RewardCatalogEntry {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  pointsCost: number;
+  imageUrl: string;
+  stock: number;
+  brand: string;
+  validityDays: number;
+  terms: string;
+}
 
 interface RewardItem {
   id: string;
@@ -40,18 +34,45 @@ interface RewardItem {
   pointsCost: number;
   featured?: boolean;
   image?: string;
-  category?: string;
+  category: string;
+  brand: string;
+  validityDays: number;
 }
 
-type CategoryType = 'all' | 'food-drink' | 'entertainment' | 'shopping' | 'wellness';
+type CategoryType = 'all' | 'cash_vouchers' | 'food' | 'hot_deals' | 'entertainment' | 'gadgets';
 
 const categories = [
-  { id: 'all', label: 'All Rewards' },
-  { id: 'food-drink', label: 'Food & Drink' },
-  { id: 'entertainment', label: 'Entertainment' },
-  { id: 'shopping', label: 'Shopping' },
-  { id: 'wellness', label: 'Wellness' },
+  { id: 'all', label: 'ทั้งหมด' },
+  { id: 'cash_vouchers', label: 'บัตรกำนัล' },
+  { id: 'food', label: 'อาหาร' },
+  { id: 'hot_deals', label: 'ดีลเด็ด' },
+  { id: 'entertainment', label: 'บันเทิง' },
+  { id: 'gadgets', label: 'แกดเจ็ต' },
 ];
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  cash_vouchers: '💳',
+  food: '🍔',
+  hot_deals: '🔥',
+  entertainment: '🎬',
+  gadgets: '📱',
+};
+
+// Real catalog config (data/rewards.json) — not mock data, this is the
+// platform's actual reward listing. Live stock/balance/redemption all come
+// from Supabase (reward_stock / profiles.coins / voucher_redemptions).
+const REWARDS_CATALOG: RewardItem[] = (rewardsCatalogData as RewardCatalogEntry[]).map((r) => ({
+  id: r.id,
+  name: r.name,
+  description: r.description,
+  emoji: CATEGORY_EMOJI[r.category] || '🎁',
+  pointsCost: r.pointsCost,
+  featured: r.category === 'hot_deals',
+  image: r.imageUrl,
+  category: r.category,
+  brand: r.brand,
+  validityDays: r.validityDays,
+}));
 
 export default function RewardsPage() {
   const { user } = useAuthStore();
@@ -66,36 +87,28 @@ export default function RewardsPage() {
   const { products, savedProductIds } = useProductStore();
   const savedProducts = products.filter(p => savedProductIds.includes(p.id));
 
-  // ── API-Ready State ──
-  const [rewardsCatalog, setRewardsCatalog] = useState<RewardItem[]>([]);
+  const rewardsCatalog = REWARDS_CATALOG;
   const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
 
-  // TODO: Replace with actual API call
-  // useEffect(() => {
-  //   const fetchRewards = async () => {
-  //     setIsLoading(true);
-  //     setIsError(false);
-  //     try {
-  //       const res = await fetch('/api/rewards');
-  //       if (!res.ok) throw new Error('Failed to fetch');
-  //       const data = await res.json();
-  //       setRewardsCatalog(data.rewards);
-  //       setPointsBalance(data.pointsBalance);
-  //       setRedeemedRewards(data.redeemedIds || []);
-  //     } catch {
-  //       setIsError(true);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   fetchRewards();
-  // }, []);
-
+  // Load real balance + which rewards this user has already redeemed
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      setIsLoading(true);
+      const [balance, vouchers] = await Promise.all([getPointsBalance(), getWalletVouchers()]);
+      if (!cancelled) {
+        setPointsBalance(balance);
+        setRedeemedRewards(vouchers.map(v => v.rewardId));
+      }
+      setIsLoading(false);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [user]);
 
   const handleRedeemReward = async (reward: RewardItem) => {
     if (!user) {
@@ -123,20 +136,23 @@ export default function RewardsPage() {
     setConfirmReward(null);
     setRedeemingId(reward.id);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const result = await redeemReward({
+      rewardId: reward.id,
+      rewardName: reward.name,
+      rewardImage: reward.image || '',
+      brand: reward.brand,
+      pointsCost: reward.pointsCost,
+      valueLabel: reward.name,
+      validityDays: reward.validityDays,
+    });
 
-    const success = Math.random() > 0.1; // 90% success rate
-
-    if (success) {
-      // Confetti celebration
+    if (result.success) {
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 }
       });
 
-      // Success toast
       toast.success(
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -149,19 +165,26 @@ export default function RewardsPage() {
         </div>
       );
 
-      setPointsBalance(prev => prev - reward.pointsCost);
+      setPointsBalance(result.newBalance);
       setRedeemedRewards(prev => [...prev, reward.id]);
       setTimeout(() => {
         setRedeemingId(null);
       }, 600);
     } else {
-      toast.error('Failed to redeem reward');
+      const messages: Record<string, string> = {
+        OUT_OF_STOCK: 'ของรางวัลนี้หมดแล้ว',
+        INSUFFICIENT_POINTS: 'แต้มไม่เพียงพอ',
+        ALREADY_REDEEMED: 'คุณแลกของรางวัลนี้ไปแล้ว',
+        NOT_AUTHENTICATED: 'กรุณาเข้าสู่ระบบใหม่',
+        UNKNOWN: 'แลกของรางวัลไม่สำเร็จ กรุณาลองใหม่',
+      };
+      toast.error(messages[result.error] || messages.UNKNOWN);
       setRedeemingId(null);
     }
   };
 
-  const filteredRewards = selectedCategory === 'all' 
-    ? rewardsCatalog 
+  const filteredRewards = selectedCategory === 'all'
+    ? rewardsCatalog
     : rewardsCatalog.filter(reward => reward.category === selectedCategory);
 
   if (!user) {

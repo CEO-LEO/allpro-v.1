@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowLeftIcon, CameraIcon } from "@heroicons/react/24/outline";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { uploadProductImage } from "@/lib/uploadImage";
 
 const GENDER_OPTIONS = [
   { id: 'male' as const, label: 'ชาย', icon: '👨' },
@@ -25,7 +27,7 @@ const AGE_OPTIONS = [
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, updateProfile, updateUser } = useAuthStore();
+  const { user, updateProfile, updateUser, addCoins } = useAuthStore();
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -36,45 +38,120 @@ export default function EditProfilePage() {
   const [gender, setGender] = useState(user?.gender);
   const [ageRange, setAgeRange] = useState(user?.ageRange);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Revoke the preview blob URL when it's replaced or the page unmounts
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      let avatarUrl = user?.avatar || '';
 
-    // Update store
-    updateProfile({
-      name: formData.name,
-      phone: formData.phone
-    });
+      if (isSupabaseConfigured) {
+        const { data: { session } } = await supabase.auth.getSession();
 
-    // Update demographics
-    updateUser({
-      gender: gender,
-      ageRange: ageRange,
-      profileCompleted: !!(gender && ageRange),
-    });
+        if (session?.user?.id) {
+          // Upload the picked avatar file for real, then store the public URL
+          if (avatarFile) {
+            const uploadedPath = await uploadProductImage(avatarFile, 'avatars');
+            if (uploadedPath) {
+              const { data: pub } = supabase.storage.from('promotions').getPublicUrl(uploadedPath);
+              avatarUrl = pub.publicUrl;
+            } else {
+              toast.error('อัปโหลดรูปโปรไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง');
+            }
+          }
 
-    toast.success("✓ บันทึกข้อมูลสำเร็จ", {
-      duration: 3000,
-      style: {
-        background: "#10b981",
-        color: "white",
-        fontWeight: "bold"
+          // Name + phone + avatar — plain update, not gated by the coins/role trigger
+          const { error: profileErr } = await supabase
+            .from('profiles')
+            .update({ username: formData.name, phone: formData.phone, avatar_url: avatarUrl || null })
+            .eq('id', session.user.id);
+          if (profileErr) console.error('[EditProfile] name/phone update error:', profileErr);
+
+          // Gender + age range: only counts as "profile completed" (+10 coins,
+          // once) if both are filled in — otherwise save them without touching
+          // profile_completed/coins
+          if (gender && ageRange) {
+            const alreadyCompleted = user?.profileCompleted === true;
+            const { data, error } = await supabase.rpc('complete_profile_bonus', {
+              p_gender: gender,
+              p_age_range: ageRange,
+            });
+            if (error) {
+              console.error('[EditProfile] complete_profile_bonus error:', error);
+            } else {
+              const result = Array.isArray(data) ? data[0] : data;
+              if (result?.bonus_awarded && !alreadyCompleted) {
+                addCoins(10);
+                toast.success('🎉 กรอกข้อมูลครบ รับ 10 Points!', { duration: 3000 });
+              }
+            }
+          } else if (gender || ageRange) {
+            const { error: demoErr } = await supabase
+              .from('profiles')
+              .update({ gender: gender || null, age_range: ageRange || null })
+              .eq('id', session.user.id);
+            if (demoErr) console.error('[EditProfile] gender/age update error:', demoErr);
+          }
+        }
       }
-    });
 
-    setIsSubmitting(false);
-    router.push("/profile");
+      // Update store
+      updateProfile({
+        name: formData.name,
+        phone: formData.phone
+      });
+      updateUser({ avatar: avatarUrl });
+
+      // Update demographics
+      updateUser({
+        gender: gender,
+        ageRange: ageRange,
+        profileCompleted: !!(gender && ageRange) || user?.profileCompleted || false,
+      });
+
+      toast.success("✓ บันทึกข้อมูลสำเร็จ", {
+        duration: 3000,
+        style: {
+          background: "#10b981",
+          color: "white",
+          fontWeight: "bold"
+        }
+      });
+
+      router.push("/profile");
+    } catch (err) {
+      console.error('[EditProfile] handleSubmit error:', err);
+      toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAvatarClick = () => {
-    toast("📷 การเปลี่ยนรูปโปรไฟล์จะเปิดใช้งานในเร็วๆ นี้", {
-      icon: "🚧",
-      duration: 2000
-    });
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('กรุณาเลือกไฟล์รูปภาพ');
+      return;
+    }
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarPreview(URL.createObjectURL(file));
+    setAvatarFile(file);
   };
 
   return (
@@ -110,10 +187,27 @@ export default function EditProfilePage() {
             className="flex flex-col items-center mb-8"
           >
             <div className="relative">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-4xl font-bold shadow-xl">
-                {user?.name?.charAt(0).toUpperCase() || "U"}
-              </div>
-              
+              {(avatarPreview || user?.avatar) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarPreview || user!.avatar}
+                  alt={user?.name || 'Avatar'}
+                  className="w-32 h-32 rounded-full object-cover shadow-xl"
+                />
+              ) : (
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-4xl font-bold shadow-xl">
+                  {user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+
               <motion.button
                 type="button"
                 onClick={handleAvatarClick}

@@ -6,7 +6,6 @@ import { Bookmark, ArrowRight, Trash2, Clock, Store, LayoutGrid, List, Loader2 }
 import Link from 'next/link';
 import { toast } from 'sonner';
 import LoginModal from '@/components/Auth/LoginModal';
-import { getPromotions } from '@/lib/getPromotions';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 interface SavedPromo {
@@ -37,71 +36,53 @@ export default function SavedPage() {
     }
   }, [user?.id, loadSavedFromSupabase]);
 
-  // Fetch all available promotions (same sources as home page)
+  // Fetch all available promotions from the production API and merge with merchant store products.
   useEffect(() => {
     async function loadPromotions() {
       setIsLoading(true);
       const results: SavedPromo[] = [];
+      const existingIds = new Set<string>();
 
       try {
-        // Source 1: API / Supabase products
-        try {
-          const res = await fetch('/api/debug-products');
-          const json = await res.json();
-          if (json.data && json.data.length > 0) {
-            for (const p of json.data) {
-              results.push({
-                id: String(p.id || ''),
-                title: String(p.title || ''),
-                shopName: String(p.shopName || p.shop_name || 'ร้านค้า'),
-                image: String(p.image || '') || getCategoryFallbackImage(p.category as string),
-                promoPrice: Number(p.promoPrice || p.price || 0),
-                originalPrice: Number(p.originalPrice || p.original_price || 0),
-                validUntil: String(p.validUntil || p.valid_until || new Date(Date.now() + 7 * 86400000).toISOString()),
-                category: String(p.category || 'Other'),
-              });
-            }
-          }
-        } catch {
-          // API not available, continue with static data
-        }
-
-        // Source 2: Static promotions
-        const staticPromos = getPromotions();
-        const existingIds = new Set(results.map(r => r.id));
-        for (const p of staticPromos) {
-          if (!existingIds.has(p.id)) {
+        const res = await fetch('/api/products');
+        const json = await res.json();
+        if (Array.isArray(json?.data) && json.data.length > 0) {
+          for (const p of json.data) {
+            const id = String(p.id || '');
+            if (!id) continue;
+            existingIds.add(id);
             results.push({
-              id: p.id,
-              title: p.title,
-              shopName: p.shop_name,
-              image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
-              promoPrice: p.price,
-              originalPrice: Math.round(p.price / (1 - p.discount_rate / 100)),
-              validUntil: p.valid_until,
-              category: p.category,
-            });
-          }
-        }
-
-        // Source 3: Zustand store products (merchant-created)
-        const storeProducts = useProductStore.getState().products;
-        for (const p of storeProducts) {
-          if (!existingIds.has(p.id) && !results.find(r => r.id === p.id)) {
-            results.push({
-              id: p.id,
-              title: p.title,
-              shopName: p.shopName,
-              image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
-              promoPrice: p.promoPrice,
-              originalPrice: p.originalPrice,
-              validUntil: p.validUntil,
-              category: p.category,
+              id,
+              title: String(p.title || ''),
+              shopName: String(p.shopName || p.shop_name || 'ร้านค้า'),
+              image: resolveImageUrl(
+                String(p.image || ''),
+                getCategoryFallbackImage(String(p.category || 'Other'))
+              ),
+              promoPrice: Number(p.promoPrice || p.price || 0),
+              originalPrice: Number(p.originalPrice || p.original_price || 0),
+              validUntil: String(p.validUntil || p.valid_until || new Date(Date.now() + 7 * 86400000).toISOString()),
+              category: String(p.category || 'Other'),
             });
           }
         }
       } catch (err) {
-        console.error('[Saved] Failed to load promotions:', err);
+        console.error('[Saved] Failed to load promotions from /api/products:', err);
+      }
+
+      const storeProducts = useProductStore.getState().products;
+      for (const p of storeProducts) {
+        if (existingIds.has(p.id)) continue;
+        results.push({
+          id: p.id,
+          title: p.title,
+          shopName: p.shopName,
+          image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
+          promoPrice: p.promoPrice,
+          originalPrice: p.originalPrice,
+          validUntil: p.validUntil,
+          category: p.category,
+        });
       }
 
       setAllPromos(results);

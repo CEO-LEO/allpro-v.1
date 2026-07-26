@@ -71,7 +71,7 @@ export default function Navbar() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
-    try { return JSON.parse(localStorage.getItem('iamroot-recent-searches') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('allpro-recent-searches') || '[]'); } catch { return []; }
   });
 
   const TRENDING = ['ลดราคา', 'ส่วนลด 50%', 'บุฟเฟ่ต์', 'กาแฟ', 'เที่ยว', 'แฟชั่น'];
@@ -83,7 +83,7 @@ export default function Navbar() {
   const saveRecentSearch = (q: string) => {
     const updated = [q, ...recentSearches.filter(r => r !== q)].slice(0, 8);
     setRecentSearches(updated);
-    try { localStorage.setItem('iamroot-recent-searches', JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem('allpro-recent-searches', JSON.stringify(updated)); } catch {}
   };
 
   const handleCategoryClick = (category: string) => {
@@ -130,9 +130,9 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-12">
             {/* Logo */}
             <Link href="/" onClick={() => setSelectedCategory('All')} className="flex items-center gap-1.5 flex-shrink-0">
-              <Image src="/logo-circle.png" alt="IAMROOT AI" width={36} height={36} className="w-9 h-9" priority />
+              <Image src="/logo-circle.png" alt="All Pro" width={36} height={36} className="w-9 h-9" priority />
               <span className="text-base font-bold text-gray-900 hidden sm:inline">
-                IAMROOT AI
+                All Pro
               </span>
             </Link>
 

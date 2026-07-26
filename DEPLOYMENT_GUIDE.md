@@ -315,7 +315,7 @@ git push
 ### 1. Share & Collect Feedback
 ```
 แชร์ลิงก์:
-https://iamroot-ai.vercel.app
+https://all-promotion.vercel.app
 
 ให้เพื่อน/ครอบครัวทดสอบ 5-10 คน
 รวบรวม feedback

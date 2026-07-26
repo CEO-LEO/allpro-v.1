@@ -9,6 +9,32 @@ function getServiceClient() {
   return createClient(url, serviceKey);
 }
 
+// GET /api/products — list published products from Supabase
+export async function GET() {
+  const supabase = getServiceClient();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id,title,description,price,original_price,image,category,shop_name,shop_id,discount,location,conditions,created_at,tags,verified,is_sponsored,valid_until')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error('[API] Products fetch error:', error.message);
+      return NextResponse.json({ error: 'Unable to load products' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data: data || [] });
+  } catch (err: unknown) {
+    console.error('[API] Products fetch exception:', err);
+    return NextResponse.json({ error: 'Unexpected error' }, { status: 500 });
+  }
+}
+
 // POST /api/products — upload image + create product (server-side, bypasses RLS)
 export async function POST(request: Request) {
   const supabase = getServiceClient();

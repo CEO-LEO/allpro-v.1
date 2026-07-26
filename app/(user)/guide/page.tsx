@@ -123,7 +123,7 @@ const sections: Section[] = [
     steps: [
       { title: 'เปิด QR Scanner', desc: 'กดปุ่มกล้องบน Navbar หรือไปที่ /profile → สแกน QR เพื่อเปิดกล้อง' },
       { title: 'สแกน QR Code ร้านค้า', desc: 'สแกน QR ที่หน้าร้านค้าหรือโปรโมชั่น — ระบบจะให้ XP และ Coins ทันที' },
-      { title: 'รับรางวัล', desc: 'หลังสแกนสำเร็จ จะมีป๊อปอัพแสดง XP ที่ได้รับ — ตรวจสอบใน Rewards ได้เลย', tip: 'QR Code ที่ขึ้นต้นด้วย IAMROOT ให้รางวัลพิเศษสูงสุด' },
+      { title: 'รับรางวัล', desc: 'หลังสแกนสำเร็จ จะมีป๊อปอัพแสดง XP ที่ได้รับ — ตรวจสอบใน Rewards ได้เลย', tip: 'QR Code ที่ขึ้นต้นด้วย ALLPRO ให้รางวัลพิเศษสูงสุด' },
     ]
   },
   {
@@ -148,7 +148,7 @@ const sections: Section[] = [
     bg: 'bg-amber-50 border-amber-200',
     steps: [
       { title: 'วิธีได้รับ XP', desc: 'ทำกิจกรรมต่าง ๆ เพื่อรับ XP: สแกน QR (+50), โพสต์ชุมชน (+30), ล็อกอินรายวัน (+10), แชร์ดีล (+20)' },
-      { title: 'ระดับ (Level)', desc: 'XP สะสมจะเพิ่มระดับของคุณ: Novice Hunter → IAMROOT Hunter → IAMROOT Legend', tip: 'ระดับที่สูงขึ้น = สิทธิ์เข้าถึงดีลพิเศษที่ผู้ใช้ทั่วไปมองไม่เห็น' },
+      { title: 'ระดับ (Level)', desc: 'XP สะสมจะเพิ่มระดับของคุณ: Novice Hunter → ALLPRO Hunter → ALLPRO Legend', tip: 'ระดับที่สูงขึ้น = สิทธิ์เข้าถึงดีลพิเศษที่ผู้ใช้ทั่วไปมองไม่เห็น' },
       { title: 'แลก Rewards', desc: 'ไปที่ /rewards เพื่อแลก XP และ Coins เป็นคูปองส่วนลด, ของรางวัล หรือสิทธิพิเศษ' },
       { title: 'Daily Check-in', desc: 'ล็อกอินทุกวันติดต่อกันเพื่อรับ Streak Bonus — ยิ่งต่อเนื่องยิ่งได้มาก' },
     ]
@@ -211,12 +211,12 @@ export default function GuidePage() {
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-orange-100 text-sm font-medium">IAMROOT AI</p>
+              <p className="text-orange-100 text-sm font-medium">All Pro</p>
               <h1 className="text-3xl font-bold">คู่มือการใช้งาน</h1>
             </div>
           </div>
           <p className="text-orange-100 text-base leading-relaxed max-w-xl">
-            เรียนรู้วิธีใช้งาน IAMROOT AI ให้ครบทุกฟีเจอร์ — ตั้งแต่ค้นหาโปรโมชั่น สแกน QR สะสม XP ไปจนถึงเปิดร้านค้า Merchant
+            เรียนรู้วิธีใช้งาน All Pro ให้ครบทุกฟีเจอร์ — ตั้งแต่ค้นหาโปรโมชั่น สแกน QR สะสม XP ไปจนถึงเปิดร้านค้า Merchant
           </p>
           {/* Quick stats */}
           <div className="flex flex-wrap gap-4 mt-6">
@@ -364,7 +364,7 @@ export default function GuidePage() {
 
         {/* Footer note */}
         <div className="text-center py-6 text-gray-400 text-sm">
-          <p>IAMROOT AI — Platform เวอร์ชัน {new Date().getFullYear()}</p>
+          <p>All Pro — Platform เวอร์ชัน {new Date().getFullYear()}</p>
           <p className="mt-1">มีปัญหา? ติดต่อเราที่ <Link href="/contact" className="text-orange-500 hover:underline">หน้าติดต่อ</Link></p>
         </div>
       </div>

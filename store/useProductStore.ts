@@ -26,6 +26,7 @@ export interface Product {
   tags: string[];
   isBoosted?: boolean;
   boostedAt?: string;
+  isAvailable?: boolean;
 }
 
 interface ProductStore {
@@ -223,6 +224,7 @@ export const useProductStore = create<ProductStore>()(
                 createdAt: row.created_at || new Date().toISOString(),
                 tags: row.tags || [],
                 isBoosted: row.is_boosted || false,
+                isAvailable: row.is_available ?? true,
               });
             }
 

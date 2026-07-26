@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 // GET /api/merchant/profile — Check if merchant profile is complete
 export async function GET(req: NextRequest) {
-  // In a real app, extract merchant ID from session/token
-  // For demo, we accept merchantId as a query param
   const { searchParams } = new URL(req.url);
   const merchantId = searchParams.get('merchantId');
 
@@ -14,19 +13,33 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // TODO: Replace with real database query
-  // const merchant = await db.merchant.findUnique({ where: { id: merchantId } });
-  // For now, return a mock response
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase
+    .from('merchant_profiles')
+    .select('*')
+    .or(`id.eq.${merchantId},user_id.eq.${merchantId}`)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[merchant-profile] fetch error:', error.message);
+    return NextResponse.json(
+      { error: 'ไม่สามารถโหลดโปรไฟล์ร้านค้าได้' },
+      { status: 500 }
+    );
+  }
+
+  const checklist = {
+    shopName: Boolean(data?.shop_name),
+    shopLogo: Boolean(data?.shop_logo),
+    shopAddress: Boolean(data?.shop_address),
+    phone: Boolean(data?.phone),
+  };
+
   return NextResponse.json({
     merchantId,
-    isProfileComplete: false,
-    checklist: {
-      shopName: false,
-      shopLogo: false,
-      shopAddress: false,
-      phone: false,
-    },
-    message: 'Use local store for demo mode',
+    isProfileComplete: Object.values(checklist).every(Boolean),
+    checklist,
+    message: data ? 'Loaded from Supabase' : 'No merchant profile found yet',
   });
 }
 
@@ -43,7 +56,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate required fields
     const errors: string[] = [];
     if (!shopName?.trim()) errors.push('ชื่อร้านค้า');
     if (!shopLogo) errors.push('โลโก้ร้านค้า');
@@ -61,16 +73,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // TODO: Replace with real database write
-    // await db.merchant.update({
-    //   where: { id: merchantId },
-    //   data: {
-    //     shopName, shopLogo, shopAddress, phone,
-    //     shopCategory, shopDescription,
-    //     profileStatus: 'verified',
-    //     merchantProfileComplete: true,
-    //   },
-    // });
+    const supabase = createServiceRoleClient();
+    const { error } = await supabase.from('merchant_profiles').upsert({
+      id: merchantId,
+      user_id: merchantId,
+      shop_name: shopName,
+      shop_logo: shopLogo,
+      shop_address: shopAddress,
+      phone,
+      line_id: body.shopSocialLine || '',
+      instagram: body.shopSocialInstagram || '',
+      facebook: body.shopSocialFacebook || '',
+      website: body.shopSocialWebsite || '',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+
+    if (error) {
+      console.error('[merchant-profile] upsert error:', error.message);
+      return NextResponse.json(
+        { error: 'ไม่สามารถบันทึกโปรไฟล์ร้านค้าได้' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

@@ -200,11 +200,13 @@ export default function AuthListener() {
               shopName: merchantData?.shop_name || undefined,
               shopLogo: merchantData?.shop_logo || undefined,
               shopAddress: merchantData?.shop_address || undefined,
-              phone: merchantData?.phone || undefined,
+              phone: merchantData?.phone || profile?.phone || undefined,
               shopSocialLine: merchantData?.line_id || undefined,
               shopSocialFacebook: merchantData?.facebook || undefined,
               shopSocialInstagram: merchantData?.instagram || undefined,
               shopSocialWebsite: merchantData?.website || undefined,
+              shopLat: merchantData?.shop_lat ?? undefined,
+              shopLng: merchantData?.shop_lng ?? undefined,
             });
           }
 

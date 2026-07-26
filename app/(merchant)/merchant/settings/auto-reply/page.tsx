@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'react-hot-toast';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface AutoReply {
   id: string;
@@ -39,46 +40,45 @@ export default function MerchantAutoReplyPage() {
     // Check PRO status from store
     const proStatus = user.isPro || user.verified || false;
     setIsPro(proStatus);
-    
-    // Store key based on real user ID
-    const storeKey = `merchant_${user.id}`;
-    
-    if (proStatus) {
-      // Load AI settings
-      const aiSetting = localStorage.getItem(`${storeKey}_ai_enabled`) === 'true';
-      setAiEnabled(aiSetting);
-      
-      // Load auto replies
-      const savedReplies = localStorage.getItem(`${storeKey}_auto_replies`);
-      if (savedReplies) {
-        try {
-          const parsed = JSON.parse(savedReplies);
-          const repliesArray = Object.entries(parsed).map(([keyword, answer], index) => ({
-            id: `reply-${index}`,
-            keyword,
-            answer: answer as string,
-            enabled: true
-          }));
-          setAutoReplies(repliesArray);
-        } catch (e) {
-          // Initialize with defaults
+
+    const load = async () => {
+      if (proStatus) {
+        if (isSupabaseConfigured) {
+          try {
+            const { data, error } = await supabase
+              .from('merchant_auto_replies')
+              .select('ai_enabled, replies')
+              .eq('user_id', user.id)
+              .maybeSingle();
+
+            if (!error && data) {
+              setAiEnabled(data.ai_enabled || false);
+              setAutoReplies(
+                Array.isArray(data.replies) && data.replies.length > 0
+                  ? data.replies
+                  : getDefaultReplies()
+              );
+            } else {
+              // No row yet for this merchant — start with defaults
+              setAiEnabled(false);
+              setAutoReplies(getDefaultReplies());
+            }
+          } catch (e) {
+            console.error('[AutoReply] load error:', e);
+            setAutoReplies(getDefaultReplies());
+          }
+        } else {
           setAutoReplies(getDefaultReplies());
         }
-      } else {
-        setAutoReplies(getDefaultReplies());
+
+        // No live customer-chat channel exists yet, so this always starts at 0
+        setStats({ total: 0, today: 0 });
       }
-      
-      // Load stats
-      const chatbotStats = JSON.parse(
-        localStorage.getItem(`${storeKey}_chatbot_stats`) || '{"searches": 0, "auto_replies": 0}'
-      );
-      setStats({
-        total: chatbotStats.auto_replies,
-        today: Math.floor(chatbotStats.auto_replies / 7) // Mock daily average
-      });
-    }
-    
-    setIsLoading(false);
+
+      setIsLoading(false);
+    };
+
+    load();
   }, [user]);
 
   const getDefaultReplies = (): AutoReply[] => [
@@ -108,14 +108,23 @@ export default function MerchantAutoReplyPage() {
     }
   ];
 
-  const handleToggleAI = () => {
+  const handleToggleAI = async () => {
     if (!user) return;
     const newState = !aiEnabled;
     setAiEnabled(newState);
-    
-    // Store with real user ID
-    localStorage.setItem(`merchant_${user.id}_ai_enabled`, newState.toString());
-    
+
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from('merchant_auto_replies')
+        .upsert({ user_id: user.id, ai_enabled: newState, replies: autoReplies }, { onConflict: 'user_id' });
+      if (error) {
+        console.error('[AutoReply] toggle save error:', error);
+        toast.error('บันทึกสถานะไม่สำเร็จ');
+        setAiEnabled(!newState);
+        return;
+      }
+    }
+
     if (newState) {
       confetti({
         particleCount: 100,
@@ -157,20 +166,17 @@ export default function MerchantAutoReplyPage() {
     saveReplies(updated);
   };
 
-  const saveReplies = (replies: AutoReply[]) => {
-    if (!user) return;
-    const repliesObj: Record<string, string> = {};
-    
-    replies.forEach(reply => {
-      if (reply.enabled) {
-        reply.keyword.split(',').forEach(kw => {
-          repliesObj[kw.trim()] = reply.answer;
-        });
-      }
-    });
-    
-    // Store with real user ID
-    localStorage.setItem(`merchant_${user.id}_auto_replies`, JSON.stringify(repliesObj));
+  const saveReplies = async (replies: AutoReply[]) => {
+    if (!user || !isSupabaseConfigured) return;
+
+    const { error } = await supabase
+      .from('merchant_auto_replies')
+      .upsert({ user_id: user.id, ai_enabled: aiEnabled, replies }, { onConflict: 'user_id' });
+
+    if (error) {
+      console.error('[AutoReply] saveReplies error:', error);
+      toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่');
+    }
   };
 
   if (isLoading) {
@@ -266,12 +272,12 @@ export default function MerchantAutoReplyPage() {
                 Automate customer responses and save time
               </p>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <div className="text-sm text-gray-600">AI Status</div>
+                <div className="text-sm text-gray-600">Settings Saved</div>
                 <div className={`font-semibold ${aiEnabled ? 'text-green-600' : 'text-gray-400'}`}>
-                  {aiEnabled ? '✅ Active' : '⭕ Inactive'}
+                  {aiEnabled ? '✅ Enabled' : '⭕ Disabled'}
                 </div>
               </div>
               
@@ -289,6 +295,15 @@ export default function MerchantAutoReplyPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Honest status note — no live customer-chat channel exists yet */}
+        <div className="mb-8 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <ChatBubbleLeftRightIcon className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800">
+            การตั้งค่านี้ถูกบันทึกไว้เรียบร้อยแล้ว แต่ยังไม่มีระบบแชทลูกค้า-ร้านค้าที่ใช้งานจริงในแอปตอนนี้
+            ระบบจะเริ่มตอบคำถามลูกค้าอัตโนมัติทันทีที่ฟีเจอร์แชทเปิดใช้งาน
+          </p>
         </div>
 
         {/* Stats */}

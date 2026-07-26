@@ -10,7 +10,7 @@ export default function MerchantPublicLayout({ children }: { children: ReactNode
               IA
             </div>
             <div>
-              <p className="text-body-sm text-blue-300">IAMROOT AI</p>
+              <p className="text-body-sm text-blue-300">All Pro</p>
               <h1 className="text-h4 text-white">Merchant Partner</h1>
             </div>
           </div>

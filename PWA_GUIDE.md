@@ -1,7 +1,7 @@
 # 📱 PWA Implementation Guide
 
 ## Overview
-IAMROOT AI is now a **Progressive Web App (PWA)** that can be installed on iOS and Android devices, providing a native app-like experience without the App Store.
+All Pro is now a **Progressive Web App (PWA)** that can be installed on iOS and Android devices, providing a native app-like experience without the App Store.
 
 ---
 
@@ -10,8 +10,8 @@ IAMROOT AI is now a **Progressive Web App (PWA)** that can be installed on iOS a
 ### 1. **Manifest Configuration** (`public/manifest.json`)
 ```json
 {
-  "name": "IAMROOT AI",
-  "short_name": "IAMROOT AI",
+  "name": "All Pro",
+  "short_name": "All Pro",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#f59e0b"
@@ -31,7 +31,7 @@ IAMROOT AI is now a **Progressive Web App (PWA)** that can be installed on iOS a
 export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
-    title: 'IAMROOT AI',
+    title: 'All Pro',
     statusBarStyle: 'black-translucent'
   },
   formatDetection: {
@@ -59,7 +59,7 @@ export const viewport: Viewport = {
 // Smart install banner that:
 - Detects mobile devices only
 - Checks if already installed
-- Listens for 'beforeinstiamrootaimpt' event
+- Listens for 'beforeinstallprompt' event
 - Shows after 3-second delay
 - Dismissible with 7-day cooldown
 ```
@@ -78,7 +78,7 @@ export const viewport: Viewport = {
 ### Desktop (Chrome/Edge)
 1. Visit http://localhost:3000
 2. Look for install icon (⊕) in address bar
-3. Click → "InstIAMROOT AIHunter"
+3. Click → "InstAll ProHunter"
 4. App opens in standalone window
 
 ### iOS (Safari)
@@ -134,7 +134,7 @@ Required sizes (all provided):
    ↓
 3. Check if dismissed recently (7 days)
    ↓
-4. Listen for 'beforeinstiamrootaimpt' event
+4. Listen for 'beforeinstallprompt' event
    ↓
 5. Wait 3 seconds
    ↓
@@ -162,7 +162,7 @@ const isInstalled =
 
 **Before Install Prompt:**
 ```typescript
-window.addEventListener('beforeinstiamrootaimpt', (e) => {
+window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   // Store event for later use
   setDeferredPrompt(e);
@@ -176,7 +176,7 @@ window.addEventListener('beforeinstiamrootaimpt', (e) => {
 ### Before Install
 - User browses website normally
 - After 3 seconds, sees install banner (mobile only)
-- Banner shows: "Get the full experience. InstIAMROOT AIHunter"
+- Banner shows: "Get the full experience. InstAll ProHunter"
 - User can install or dismiss
 
 ### After Install
@@ -272,7 +272,7 @@ When user long-presses app icon:
 ```html
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="IAMROOT AI">
+<meta name="apple-mobile-web-app-title" content="All Pro">
 ```
 
 ---
@@ -494,4 +494,4 @@ Your app is now a **fully-functional Progressive Web App**! Users can:
 
 ---
 
-**Made with ❤️ by the IAMROOT AI Team**
+**Made with ❤️ by the All Pro Team**

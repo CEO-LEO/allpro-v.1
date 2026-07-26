@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 type ParamsInput = { id: string } | Promise<{ id: string }>;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://iamroot-ai.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://all-promotions.com';
 
 function toTHB(value?: number) {
   if (typeof value !== 'number' || Number.isNaN(value)) return 'พิเศษ';
@@ -69,20 +69,20 @@ export async function generateMetadata(
     return {
       metadataBase: new URL(SITE_URL),
       title: fallbackTitle,
-      description: 'ค้นหาโปรโมชั่นเด็ดใกล้คุณบน IAMROOT AI',
+      description: 'ค้นหาโปรโมชั่นเด็ดใกล้คุณบน All Pro',
       openGraph: {
         title: fallbackTitle,
-        description: 'ค้นหาโปรโมชั่นเด็ดใกล้คุณบน IAMROOT AI',
+        description: 'ค้นหาโปรโมชั่นเด็ดใกล้คุณบน All Pro',
         url: `${SITE_URL}/product/${id}`,
-        siteName: 'IAMROOT AI',
+        siteName: 'All Pro',
         type: 'website',
         locale: 'th_TH',
-        images: [{ url: fallbackImage, width: 1200, height: 630, alt: 'IAMROOT AI' }],
+        images: [{ url: fallbackImage, width: 1200, height: 630, alt: 'All Pro' }],
       },
       twitter: {
         card: 'summary_large_image',
         title: fallbackTitle,
-        description: 'ค้นหาโปรโมชั่นเด็ดใกล้คุณบน IAMROOT AI',
+        description: 'ค้นหาโปรโมชั่นเด็ดใกล้คุณบน All Pro',
         images: [fallbackImage],
       },
       alternates: {
@@ -104,7 +104,7 @@ export async function generateMetadata(
       title: dynamicTitle,
       description,
       url: `${SITE_URL}/product/${id}`,
-      siteName: 'IAMROOT AI',
+      siteName: 'All Pro',
       type: 'website',
       locale: 'th_TH',
       images: [

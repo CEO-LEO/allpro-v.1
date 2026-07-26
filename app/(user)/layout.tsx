@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Navbar from '@/components/Layout/Navbar';
 import BottomNav from '@/components/Layout/BottomNav';
 import Footer from '@/components/Footer';
-import AIChatbot from '@/components/AIChatbot';
 import QRScanner from '@/components/QRScanner';
 import ProfileCompletionModal from '@/components/Onboarding/ProfileCompletionModal';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -50,7 +49,6 @@ export default function UserLayout({
 
       {/* Floating Action Buttons */}
       <QRScanner />
-      <AIChatbot />
 
       {/* Toast Notifications */}
       <Toaster position="top-center" richColors />

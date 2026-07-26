@@ -128,7 +128,7 @@ function generateEmail(firstName, lastName, index) {
   const prefix = `user${String(index).padStart(3, '0')}`;
   const domains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
   const domain = index % 3 === 0 ? randomItem(domains) : 'gmail.com';
-  return `${prefix}.iamrootai@${domain}`;
+  return `${prefix}.allpro@${domain}`;
 }
 
 /** สร้างเบอร์โทรไทย */

@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// In-memory store for demo (replace with Supabase in production)
-// Schema for production:
-// CREATE TABLE saved_promotions (
-//   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-//   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-//   promotion_id TEXT NOT NULL,
-//   saved_at TIMESTAMPTZ DEFAULT NOW(),
-//   UNIQUE(user_id, promotion_id)
-// );
-// CREATE INDEX idx_saved_promotions_user ON saved_promotions(user_id);
-
-const savedMap = new Map<string, Set<string>>();
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 // POST — Save a promotion
 export async function POST(request: NextRequest) {
@@ -26,17 +14,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!savedMap.has(userId)) {
-      savedMap.set(userId, new Set());
-    }
-    savedMap.get(userId)!.add(promotionId);
+    const supabase = createServiceRoleClient();
+    const { error } = await supabase
+      .from('saved_promotions')
+      .upsert(
+        { user_id: userId, promo_id: promotionId },
+        { onConflict: 'user_id,promo_id' }
+      );
 
-    return NextResponse.json({ 
-      success: true, 
+    if (error) {
+      console.error('[save-promotion] upsert error:', error.message);
+      return NextResponse.json(
+        { error: 'Unable to save promotion right now' },
+        { status: 500 }
+      );
+    }
+
+    const { data: rows, error: countError } = await supabase
+      .from('saved_promotions')
+      .select('promo_id')
+      .eq('user_id', userId);
+
+    const savedCount = countError ? 0 : rows?.length ?? 0;
+
+    return NextResponse.json({
+      success: true,
       message: 'Promotion saved',
-      savedCount: savedMap.get(userId)!.size
+      savedCount,
     });
-  } catch {
+  } catch (error) {
+    console.error('[save-promotion] request error:', error);
     return NextResponse.json(
       { error: 'Invalid request body' },
       { status: 400 }
@@ -57,14 +64,30 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (savedMap.has(userId)) {
-      savedMap.get(userId)!.delete(promotionId);
+    const supabase = createServiceRoleClient();
+    const { error } = await supabase
+      .from('saved_promotions')
+      .delete()
+      .eq('user_id', userId)
+      .eq('promo_id', promotionId);
+
+    if (error) {
+      console.error('[save-promotion] delete error:', error.message);
+      return NextResponse.json(
+        { error: 'Unable to unsave promotion right now' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    const { data: rows } = await supabase
+      .from('saved_promotions')
+      .select('promo_id')
+      .eq('user_id', userId);
+
+    return NextResponse.json({
+      success: true,
       message: 'Promotion unsaved',
-      savedCount: savedMap.get(userId)?.size ?? 0
+      savedCount: rows?.length ?? 0,
     });
   } catch {
     return NextResponse.json(
@@ -85,13 +108,26 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const savedIds = savedMap.has(userId) 
-    ? Array.from(savedMap.get(userId)!) 
-    : [];
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase
+    .from('saved_promotions')
+    .select('promo_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
-  return NextResponse.json({ 
-    success: true, 
+  if (error) {
+    console.error('[save-promotion] fetch error:', error.message);
+    return NextResponse.json(
+      { error: 'Unable to fetch saved promotions right now' },
+      { status: 500 }
+    );
+  }
+
+  const savedIds = (data || []).map((row) => row.promo_id);
+
+  return NextResponse.json({
+    success: true,
     savedPromotionIds: savedIds,
-    count: savedIds.length
+    count: savedIds.length,
   });
 }

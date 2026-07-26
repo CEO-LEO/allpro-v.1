@@ -27,6 +27,8 @@ export interface AuthResult {
     shopSocialFacebook?: string;
     shopSocialInstagram?: string;
     shopSocialWebsite?: string;
+    shopLat?: number;
+    shopLng?: number;
     // Onboarding/profile status
     onboardingCompleted?: boolean;
     profileCompleted?: boolean;
@@ -249,11 +251,15 @@ export async function signIn(
       shopName: merchantData?.shop_name || undefined,
       shopLogo: merchantData?.shop_logo || undefined,
       shopAddress: merchantData?.shop_address || undefined,
-      phone: merchantData?.phone || undefined,
+      // Merchant phone (merchant_profiles) takes priority; fall back to the
+      // user's own profiles.phone for USER-role accounts
+      phone: merchantData?.phone || profile?.phone || undefined,
       shopSocialLine: merchantData?.line_id || undefined,
       shopSocialFacebook: merchantData?.facebook || undefined,
       shopSocialInstagram: merchantData?.instagram || undefined,
       shopSocialWebsite: merchantData?.website || undefined,
+      shopLat: merchantData?.shop_lat ?? undefined,
+      shopLng: merchantData?.shop_lng ?? undefined,
       // Onboarding/profile status from DB
       onboardingCompleted: profile?.onboarding_completed || false,
       profileCompleted: profile?.profile_completed || false,
@@ -397,11 +403,13 @@ export async function getCurrentSession() {
       shopName: merchantData?.shop_name || undefined,
       shopLogo: merchantData?.shop_logo || undefined,
       shopAddress: merchantData?.shop_address || undefined,
-      phone: merchantData?.phone || undefined,
+      phone: merchantData?.phone || profile?.phone || undefined,
       shopSocialLine: merchantData?.line_id || undefined,
       shopSocialFacebook: merchantData?.facebook || undefined,
       shopSocialInstagram: merchantData?.instagram || undefined,
       shopSocialWebsite: merchantData?.website || undefined,
+      shopLat: merchantData?.shop_lat ?? undefined,
+      shopLng: merchantData?.shop_lng ?? undefined,
     };
   } catch (err: unknown) {
     // AbortError is normal during React strict mode / component unmount — suppress it
