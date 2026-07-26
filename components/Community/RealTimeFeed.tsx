@@ -19,6 +19,7 @@ import {
   Copy,
   Check,
   PenLine,
+  Flag,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useLoadScript } from '@react-google-maps/api';
@@ -119,6 +120,7 @@ function PostRow({ item }: { item: FeedItem }) {
   const [repostCount, setRepostCount] = useState(item.reposts);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [reported, setReported] = useState(false);
 
   // Comments
   const [showComments, setShowComments] = useState(false);
@@ -257,6 +259,30 @@ function PostRow({ item }: { item: FeedItem }) {
       setToastMsg('✅ แชร์สำเร็จ!');
       setTimeout(() => setToastMsg(null), 2500);
     }
+  };
+
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const handleReport = async () => {
+    if (reported || !UUID_RE.test(item.id)) return;
+    if (!isSupabaseConfigured) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setToastMsg('กรุณาล็อกอินก่อนรายงานโพสต์');
+      setTimeout(() => setToastMsg(null), 2500);
+      return;
+    }
+    const { error } = await supabase.from('post_reports').insert({
+      post_id: item.id,
+      reporter_id: session.user.id,
+    });
+    if (error && error.code !== '23505') { // 23505 = already reported, treat as success
+      setToastMsg('รายงานไม่สำเร็จ ลองใหม่อีกครั้ง');
+      setTimeout(() => setToastMsg(null), 2500);
+      return;
+    }
+    setReported(true);
+    setToastMsg('🚩 รายงานโพสต์นี้แล้ว ทีมงานจะตรวจสอบ');
+    setTimeout(() => setToastMsg(null), 2500);
   };
 
   // localStorage key for this post's comments
@@ -472,6 +498,21 @@ function PostRow({ item }: { item: FeedItem }) {
                 <span className="text-xs">คัดลอกแล้ว!</span>
               )}
             </button>
+
+            {/* Report */}
+            {UUID_RE.test(item.id) && (
+              <button
+                type="button"
+                onClick={handleReport}
+                disabled={reported}
+                title={reported ? 'รายงานแล้ว' : 'รายงานโพสต์นี้'}
+                className={`group flex items-center gap-1.5 transition-colors ${reported ? 'text-orange-500' : 'text-gray-400 hover:text-orange-500'}`}
+              >
+                <span className="p-2 rounded-full group-hover:bg-orange-50 transition-colors">
+                  <Flag className={`w-[16px] h-[16px] ${reported ? 'fill-current' : ''}`} />
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Toast notification */}

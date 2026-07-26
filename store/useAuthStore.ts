@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { signOut } from '@/lib/supabase/auth';
 
-export type UserRole = 'USER' | 'MERCHANT' | null;
+export type UserRole = 'USER' | 'MERCHANT' | 'ADMIN' | null;
 
 // ═══ Merchant Profile — persisted as part of the account ═══
 interface MerchantProfile {

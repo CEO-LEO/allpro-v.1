@@ -164,9 +164,11 @@ export default function AuthListener() {
             const metadata = session.user.user_metadata || {};
 
             const resolvedRole: UserRole =
-              (profile?.role === 'MERCHANT' || (metadata.role as string) === 'MERCHANT')
-                ? 'MERCHANT'
-                : 'USER';
+              (profile?.role === 'ADMIN' || (metadata.role as string) === 'ADMIN')
+                ? 'ADMIN'
+                : (profile?.role === 'MERCHANT' || (metadata.role as string) === 'MERCHANT')
+                  ? 'MERCHANT'
+                  : 'USER';
 
             // ดึง merchant_profiles จาก DB ถ้าเป็น Merchant
             let merchantData: Record<string, any> | null = null;

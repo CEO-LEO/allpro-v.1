@@ -220,7 +220,9 @@ export async function signIn(
   const profileRole = profile?.role;
   const metaRole = metadata.role as string | undefined;
   let resolvedRole: UserRole = 'USER';
-  if (profileRole === 'MERCHANT' || metaRole === 'MERCHANT') {
+  if (profileRole === 'ADMIN' || metaRole === 'ADMIN') {
+    resolvedRole = 'ADMIN';
+  } else if (profileRole === 'MERCHANT' || metaRole === 'MERCHANT') {
     resolvedRole = 'MERCHANT';
   } else if (profileRole === 'USER' || metaRole === 'USER') {
     resolvedRole = 'USER';
@@ -354,7 +356,9 @@ export async function getCurrentSession() {
     const profileRole = profile?.role;
     const metaRole = metadata.role as string | undefined;
     let resolvedRole: UserRole = 'USER';
-    if (profileRole === 'MERCHANT' || metaRole === 'MERCHANT') {
+    if (profileRole === 'ADMIN' || metaRole === 'ADMIN') {
+      resolvedRole = 'ADMIN';
+    } else if (profileRole === 'MERCHANT' || metaRole === 'MERCHANT') {
       resolvedRole = 'MERCHANT';
     }
 

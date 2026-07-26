@@ -609,6 +609,57 @@ CREATE POLICY "Merchants manage own settings" ON merchant_settings
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS idx_merchant_settings_is_active ON merchant_settings (is_active);
 
+-- ┌─────────────────────────────────────────────────────────────────────────┐
+-- │ [11] add-moderation-and-banners.sql                                    │
+-- │ post_reports + banners ตารางจริงแทน Moderation Queue/Hero Banners      │
+-- │ ที่เดิมเป็น mock data/local state ล้วนๆ + สิทธิ์ ADMIN ระดับ RLS       │
+-- └─────────────────────────────────────────────────────────────────────────┘
+CREATE TABLE IF NOT EXISTS post_reports (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
+  reporter_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  reason TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (post_id, reporter_id)
+);
+ALTER TABLE post_reports ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view report counts" ON post_reports;
+DROP POLICY IF EXISTS "Users can report posts" ON post_reports;
+DROP POLICY IF EXISTS "Users can remove own report" ON post_reports;
+DROP POLICY IF EXISTS "Admins clear reports" ON post_reports;
+CREATE POLICY "Anyone can view report counts" ON post_reports FOR SELECT USING (true);
+CREATE POLICY "Users can report posts" ON post_reports FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+CREATE POLICY "Users can remove own report" ON post_reports FOR DELETE USING (auth.uid() = reporter_id);
+CREATE POLICY "Admins clear reports" ON post_reports FOR DELETE
+  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN'));
+CREATE INDEX IF NOT EXISTS idx_post_reports_post ON post_reports (post_id);
+
+DROP POLICY IF EXISTS "Admins delete any post" ON community_posts;
+CREATE POLICY "Admins delete any post" ON community_posts FOR DELETE
+  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN'));
+
+CREATE TABLE IF NOT EXISTS banners (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT,
+  image_url TEXT NOT NULL,
+  promotion_id TEXT,
+  is_pinned BOOLEAN NOT NULL DEFAULT false,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  priority INTEGER NOT NULL DEFAULT 0,
+  impressions INTEGER NOT NULL DEFAULT 0,
+  clicks INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE banners ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view active banners" ON banners;
+DROP POLICY IF EXISTS "Admins manage banners" ON banners;
+CREATE POLICY "Anyone can view active banners" ON banners FOR SELECT USING (is_active = true);
+CREATE POLICY "Admins manage banners" ON banners FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN'))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN'));
+CREATE INDEX IF NOT EXISTS idx_banners_active_priority ON banners (is_active, priority);
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ✅ เสร็จแล้ว — ดูขั้นตอนตรวจสอบผลลัพธ์ในคำตอบที่แนบไฟล์นี้มา
 -- ═══════════════════════════════════════════════════════════════════════════

@@ -2,20 +2,20 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Flag, 
-  Image, 
-  Users, 
-  Settings,
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  LayoutDashboard,
+  Flag,
+  Image,
+  Users,
   LogOut,
-  Activity,
-  TrendingUp,
   Shield,
   Sparkles,
-  Plus
+  Plus,
+  Loader2,
+  ShieldAlert
 } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -51,21 +51,41 @@ const menuItems = [
     label: 'User Management',
     href: '/admin/users',
     icon: Users
-  },
-  {
-    label: 'System Health',
-    href: '/admin/health',
-    icon: Activity
-  },
-  {
-    label: 'Settings',
-    href: '/admin/settings',
-    icon: Settings
   }
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isHydrating, logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
+
+  if (isHydrating) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-900">
+        <Loader2 className="w-8 h-8 text-gray-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (user?.role !== 'ADMIN') {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-gray-900 text-center px-6">
+        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+          <ShieldAlert className="w-8 h-8 text-red-400" />
+        </div>
+        <h1 className="text-xl font-bold text-white mb-2">ไม่มีสิทธิ์เข้าถึง</h1>
+        <p className="text-gray-400 mb-6 max-w-sm">หน้านี้สำหรับผู้ดูแลระบบเท่านั้น บัญชีของคุณไม่มีสิทธิ์แอดมิน</p>
+        <Link href="/" className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors">
+          กลับหน้าแรก
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-900 text-gray-100">
@@ -121,14 +141,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="p-4 border-t border-gray-800">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-body-sm">AD</span>
+              <span className="text-white text-body-sm">{(user.name || user.email || '?').charAt(0).toUpperCase()}</span>
             </div>
-            <div>
-              <p className="text-body-sm text-white">Admin User</p>
-              <p className="text-caption text-gray-400">Super Admin</p>
+            <div className="min-w-0">
+              <p className="text-body-sm text-white truncate">{user.name || user.email}</p>
+              <p className="text-caption text-gray-400">Admin</p>
             </div>
           </div>
-          <button className="flex items-center gap-2 text-gray-400 hover:text-red-400 text-body-sm transition-colors w-full">
+          <button onClick={handleLogout} className="flex items-center gap-2 text-gray-400 hover:text-red-400 text-body-sm transition-colors w-full">
             <LogOut className="w-4 h-4" />
             <span>Logout</span>
           </button>
