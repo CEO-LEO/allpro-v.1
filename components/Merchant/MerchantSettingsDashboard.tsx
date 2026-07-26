@@ -5,11 +5,14 @@ import {
   Store, Bell, ShieldCheck, CreditCard, Palette, Globe, Settings2,
   Save, Loader2, CheckCircle, Upload, Camera, AlertTriangle, Trash2,
   X, ChevronRight, Lock, Eye, EyeOff, Smartphone, Mail,
-  Zap, Clock, CreditCard as CardIcon, Building2, Languages,
-  Sun, Moon, Monitor, RotateCcw,
+  Zap, CreditCard as CardIcon, Building2, Languages,
+  Sun, Moon, RotateCcw,
   ChevronDown, Network, Truck, Award, Wallet, PackageCheck
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { resolveImageUrl } from '@/lib/imageUrl';
 import StoreLocations, { type LocationData } from '@/components/Merchant/StoreLocations';
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -25,7 +28,6 @@ interface TabDef {
 
 interface SettingsState {
   storeName: string;
-  branchCode: string;
   managerEmail: string;
   storeLogo: string | null;
   pushNotifications: boolean;
@@ -39,10 +41,8 @@ interface SettingsState {
   bankName: string;
   accountNumber: string;
   codEnabled: boolean;
-  theme: 'dark' | 'light' | 'system';
-  language: 'th' | 'en';
-  timezone: string;
   autoCleanExpired: boolean;
+  isActive: boolean;
   // Partner Services
   sevenDelivery: boolean;
   allMember: boolean;
@@ -187,28 +187,37 @@ function Divider() {
   return <div className="border-t border-gray-200 my-8" />;
 }
 
+function NotWiredNotice({ text }: { text: string }) {
+  return (
+    <div className="flex items-start gap-2.5 bg-amber-50 ring-1 ring-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+      <span>{text}</span>
+    </div>
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function MerchantSettingsDashboard() {
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
+  const { theme, setTheme, language, setLanguage } = useSettingsStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'info' | 'error'; text: string } | null>(null);
   const [dangerModal, setDangerModal] = useState<null | 'deactivate' | 'clearCache'>(null);
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoFileRef = useRef<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  // ═══ API-Ready State Management ═══
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const [settings, setSettings] = useState<SettingsState>({
     storeName: '',
-    branchCode: '',
     managerEmail: '',
     storeLogo: null,
     pushNotifications: false,
@@ -222,10 +231,8 @@ export default function MerchantSettingsDashboard() {
     bankName: '',
     accountNumber: '',
     codEnabled: false,
-    theme: 'light',
-    language: 'th',
-    timezone: 'Asia/Bangkok',
     autoCleanExpired: false,
+    isActive: true,
     // Partner Services
     sevenDelivery: false,
     allMember: false,
@@ -236,42 +243,53 @@ export default function MerchantSettingsDashboard() {
   const [isEcosystemExpanded, setIsEcosystemExpanded] = useState(false);
   const [locations, setLocations] = useState<LocationData[]>([]);
 
-  // ═══ Fetch shop settings from API ═══
+  // ═══ Load real shop profile — source of truth is useAuthStore, which is
+  //     itself populated from merchant_profiles on login (see useAuthStore.ts) ═══
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    setSettings(prev => ({
+      ...prev,
+      storeName: user?.shopName || '',
+      managerEmail: user?.email || '',
+      storeLogo: user?.shopLogo || null,
+    }));
 
-        // TODO: Replace with real API call
-        // const res = await fetch('/api/merchant/settings');
-        // if (!res.ok) throw new Error('Failed to fetch settings');
-        // const data: SettingsState = await res.json();
-        // setSettings(prev => ({ ...prev, ...data }));
+    if (!user?.id || !isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
 
-        await new Promise(r => setTimeout(r, 500));
+    (async () => {
+      const { data } = await supabase
+        .from('merchant_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-        // Demo Mode: populate from user store until API is connected
+      if (data) {
         setSettings(prev => ({
           ...prev,
-          storeName: user?.shopName || '',
-          managerEmail: user?.email || '',
-          storeLogo: user?.shopLogo || null,
+          pushNotifications: data.push_notifications ?? false,
+          emailNotifications: data.email_notifications ?? false,
+          flashSaleAlerts: data.flash_sale_alerts ?? false,
+          newOrderAlerts: data.new_order_alerts ?? false,
+          bankName: data.bank_name || '',
+          accountNumber: data.account_number || '',
+          codEnabled: data.cod_enabled ?? false,
+          autoCleanExpired: data.auto_clean_expired ?? false,
+          isActive: data.is_active ?? true,
         }));
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
-        setError(message);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchSettings();
+      setIsLoading(false);
+    })();
   }, [user]);
 
   const update = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
+
+  useEffect(() => {
+    setSaveMessage(null);
+  }, [activeTab]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -279,36 +297,195 @@ export default function MerchantSettingsDashboard() {
     if (logoPreview) URL.revokeObjectURL(logoPreview);
     const url = URL.createObjectURL(file);
     setLogoPreview(url);
+    logoFileRef.current = file;
     update('storeLogo', url);
   };
 
   const handleSave = useCallback(async () => {
+    setSaveMessage(null);
+    setIsSaving(true);
     try {
-      setIsSaving(true);
+      if (activeTab === 'profile') {
+        if (!isSupabaseConfigured) {
+          setSaveMessage({ type: 'error', text: 'ยังไม่ได้ตั้งค่า Supabase' });
+          return;
+        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setSaveMessage({ type: 'error', text: 'เซสชันหมดอายุ กรุณาล็อกอินใหม่' });
+          return;
+        }
 
-      // TODO: Replace with real API call
-      // const res = await fetch('/api/merchant/settings', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(settings),
-      // });
-      // if (!res.ok) throw new Error('Failed to save settings');
+        let finalLogo = settings.storeLogo;
+        if (logoFileRef.current) {
+          const file = logoFileRef.current;
+          const fileExt = file.name.split('.').pop() || 'png';
+          const filePath = `shop-logos/${session.user.id}_${Date.now()}.${fileExt}`;
+          const { error: uploadErr } = await supabase.storage
+            .from('promotions')
+            .upload(filePath, file, { contentType: file.type, upsert: true });
+          if (!uploadErr) {
+            finalLogo = filePath;
+          } else {
+            console.warn('[MerchantSettings] logo upload failed:', uploadErr.message);
+          }
+        }
 
-      await new Promise((r) => setTimeout(r, 1000));
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2500);
+        const { error: upsertErr } = await supabase
+          .from('merchant_profiles')
+          .upsert({ user_id: session.user.id, shop_name: settings.storeName || null, shop_logo: finalLogo || null }, { onConflict: 'user_id' });
+        if (upsertErr) throw new Error(upsertErr.message);
+
+        updateUser({ shopName: settings.storeName, shopLogo: finalLogo || undefined });
+        logoFileRef.current = null;
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2500);
+      } else if (activeTab === 'security') {
+        if (!settings.newPassword) {
+          setSaveMessage({ type: 'info', text: 'กรอกรหัสผ่านใหม่ก่อนบันทึก (การเปิด 2FA ยังไม่รองรับจริง)' });
+          return;
+        }
+        if (settings.newPassword.length < 6) {
+          setSaveMessage({ type: 'error', text: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร' });
+          return;
+        }
+        if (settings.newPassword !== settings.confirmPassword) {
+          setSaveMessage({ type: 'error', text: 'รหัสผ่านยืนยันไม่ตรงกัน' });
+          return;
+        }
+        if (!isSupabaseConfigured) {
+          setSaveMessage({ type: 'error', text: 'ยังไม่ได้ตั้งค่า Supabase' });
+          return;
+        }
+        const { error: pwErr } = await supabase.auth.updateUser({ password: settings.newPassword });
+        if (pwErr) throw new Error(pwErr.message);
+        setSettings((prev) => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2500);
+      } else if (activeTab === 'notifications' || activeTab === 'payment' || activeTab === 'advanced') {
+        if (!isSupabaseConfigured) {
+          setSaveMessage({ type: 'error', text: 'ยังไม่ได้ตั้งค่า Supabase' });
+          return;
+        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setSaveMessage({ type: 'error', text: 'เซสชันหมดอายุ กรุณาล็อกอินใหม่' });
+          return;
+        }
+
+        const { error: settingsErr } = await supabase.from('merchant_settings').upsert({
+          user_id: session.user.id,
+          push_notifications: settings.pushNotifications,
+          email_notifications: settings.emailNotifications,
+          flash_sale_alerts: settings.flashSaleAlerts,
+          new_order_alerts: settings.newOrderAlerts,
+          bank_name: settings.bankName || null,
+          account_number: settings.accountNumber || null,
+          cod_enabled: settings.codEnabled,
+          auto_clean_expired: settings.autoCleanExpired,
+          is_active: settings.isActive,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+        if (settingsErr) throw new Error(settingsErr.message);
+
+        // Auto-clean, when just turned on, runs once immediately right now —
+        // there's no cron scheduler wired up, so it is NOT continuously automatic
+        if (activeTab === 'advanced' && settings.autoCleanExpired) {
+          const nowIso = new Date().toISOString();
+          const { data: expired } = await supabase
+            .from('products')
+            .select('id')
+            .or(`shop_id.eq.${session.user.id},shop_name.eq.${settings.storeName}`)
+            .lt('valid_until', nowIso);
+          if (expired && expired.length > 0) {
+            await supabase.from('products').update({ is_available: false }).in('id', expired.map((p) => p.id));
+            setSaveMessage({ type: 'info', text: `ล้างโปรที่หมดอายุแล้ว ${expired.length} รายการ (ซ่อนจากลูกค้า) — จะรันอีกครั้งตอนกดบันทึกครั้งถัดไป ไม่ได้ทำงานอัตโนมัติต่อเนื่องเพราะยังไม่มี cron` });
+          }
+        }
+
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2500);
+      } else if (activeTab === 'theme' || activeTab === 'language') {
+        // Already applied instantly on click via useSettingsStore (real, persists to localStorage)
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2500);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ';
-      setError(message);
+      setSaveMessage({ type: 'error', text: message });
     } finally {
       setIsSaving(false);
     }
-  }, [settings]);
+  }, [activeTab, settings, updateUser]);
+
+  const handleClearCache = useCallback(() => {
+    try {
+      localStorage.removeItem('product-storage');
+      setSaveMessage({ type: 'info', text: 'ล้างแคชสินค้าในเครื่องนี้แล้ว กำลังโหลดหน้าใหม่...' });
+      setTimeout(() => window.location.reload(), 800);
+    } catch {
+      setSaveMessage({ type: 'error', text: 'ล้างแคชไม่สำเร็จ' });
+    }
+  }, []);
 
   const handleDangerAction = useCallback(() => {
+    const modal = dangerModal;
     setDangerModal(null);
-    handleSave();
-  }, [handleSave]);
+    if (modal === 'clearCache') {
+      handleClearCache();
+    } else if (modal === 'deactivate') {
+      setSettings((prev) => ({ ...prev, isActive: false }));
+      // isActive just flipped above — settings state won't be updated in this closure yet,
+      // so save explicitly with the new value rather than relying on stale `settings`
+      (async () => {
+        setIsSaving(true);
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            setSaveMessage({ type: 'error', text: 'เซสชันหมดอายุ กรุณาล็อกอินใหม่' });
+            return;
+          }
+          const { error } = await supabase.from('merchant_settings').upsert({
+            user_id: session.user.id,
+            is_active: false,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
+          if (error) throw new Error(error.message);
+          setSaveMessage({ type: 'info', text: 'ปิดร้านค้าแล้ว — ลูกค้าจะไม่เห็นร้านนี้จนกว่าจะเปิดใหม่' });
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'ปิดร้านค้าไม่สำเร็จ';
+          setSaveMessage({ type: 'error', text: message });
+        } finally {
+          setIsSaving(false);
+        }
+      })();
+    }
+  }, [dangerModal, handleClearCache]);
+
+  const handleReactivate = useCallback(async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setSaveMessage({ type: 'error', text: 'เซสชันหมดอายุ กรุณาล็อกอินใหม่' });
+        return;
+      }
+      const { error } = await supabase.from('merchant_settings').upsert({
+        user_id: session.user.id,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+      if (error) throw new Error(error.message);
+      setSettings((prev) => ({ ...prev, isActive: true }));
+      setSaveMessage({ type: 'info', text: 'เปิดร้านค้าอีกครั้งแล้ว — ลูกค้าเห็นร้านนี้ตามปกติ' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'เปิดร้านค้าไม่สำเร็จ';
+      setSaveMessage({ type: 'error', text: message });
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
 
   const currentTab = TABS.find((t) => t.id === activeTab)!;
 
@@ -333,7 +510,7 @@ export default function MerchantSettingsDashboard() {
             <div className="w-24 h-24 sm:w-20 sm:h-20 rounded-2xl overflow-hidden ring-2 ring-gray-200 group-hover:ring-blue-400 transition-all duration-200 bg-gray-50 flex items-center justify-center">
               {settings.storeLogo || logoPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoPreview || settings.storeLogo || ''} alt="logo" className="w-full h-full object-cover" />
+                <img src={logoPreview || resolveImageUrl(settings.storeLogo)} alt="logo" className="w-full h-full object-cover" />
               ) : (
                 <Store className="w-8 h-8 text-gray-400" />
               )}
@@ -358,11 +535,15 @@ export default function MerchantSettingsDashboard() {
       </GlassCard>
 
       {/* Form fields */}
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Input label="ชื่อร้านค้า" icon={Store} value={settings.storeName} onChange={(e) => update('storeName', e.target.value)} placeholder="ชื่อร้านค้าของคุณ" />
-        <Input label="รหัสสาขา" icon={Building2} value={settings.branchCode} onChange={(e) => update('branchCode', e.target.value)} placeholder="เช่น BRN-001" />
+      <Input label="ชื่อร้านค้า" icon={Store} value={settings.storeName} onChange={(e) => update('storeName', e.target.value)} placeholder="ชื่อร้านค้าของคุณ" />
+      <div>
+        <Input label="อีเมลผู้จัดการ (อีเมลที่ใช้ล็อกอิน)" icon={Mail} type="email" value={settings.managerEmail} disabled className="opacity-60 cursor-not-allowed" />
+        <p className="text-xs text-gray-400 mt-1.5">เปลี่ยนอีเมลล็อกอินไม่ได้จากหน้านี้ — ติดต่อฝ่ายช่วยเหลือหากต้องการเปลี่ยน</p>
       </div>
-      <Input label="อีเมลผู้จัดการ" icon={Mail} type="email" value={settings.managerEmail} onChange={(e) => update('managerEmail', e.target.value)} placeholder="manager@store.com" />
+
+      <p className="text-xs text-gray-400 -mt-2">
+        จัดการหลายสาขาได้ที่หน้า <a href="/merchant/branches" className="text-blue-600 hover:underline font-medium">สาขาร้านค้า</a>
+      </p>
 
       <Divider />
 
@@ -376,6 +557,8 @@ export default function MerchantSettingsDashboard() {
       <SectionTitle>
         <Bell className="w-5 h-5 text-blue-600" /> ตั้งค่าการแจ้งเตือน
       </SectionTitle>
+
+      <NotWiredNotice text="การตั้งค่านี้บันทึกจริงและมีผลกับสถานะ preference ของบัญชีคุณแล้ว — แต่ระบบส่ง push/email ยังไม่มีจริง (ต้องมีบัญชี Firebase/SendGrid ก่อน) จึงยังไม่มีการแจ้งเตือนส่งถึงคุณจริงๆ" />
 
       <GlassCard className="p-5 sm:p-6 divide-y divide-gray-200">
         <Toggle label="Push Notifications" description="รับการแจ้งเตือนบนอุปกรณ์ของคุณ" enabled={settings.pushNotifications} onChange={(v) => update('pushNotifications', v)} />
@@ -429,6 +612,7 @@ export default function MerchantSettingsDashboard() {
       <SectionTitle>
         <Smartphone className="w-5 h-5 text-blue-600" /> การยืนยันตัวตนแบบสองขั้นตอน (2FA)
       </SectionTitle>
+      <NotWiredNotice text="ยังไม่มีระบบส่ง OTP จริง (SMS/TOTP) — เปิดสวิตช์นี้ยังไม่มีผลใช้งานจริง" />
       <GlassCard className="p-5 sm:p-6">
         <Toggle label="เปิดใช้งาน 2FA" description="เพิ่มความปลอดภัยด้วยรหัส OTP ทุกครั้งที่เข้าสู่ระบบ" enabled={settings.twoFactorEnabled} onChange={(v) => update('twoFactorEnabled', v)} />
       </GlassCard>
@@ -437,6 +621,7 @@ export default function MerchantSettingsDashboard() {
 
   const renderPaymentTab = () => (
     <div className="space-y-8">
+      <NotWiredNotice text="ข้อมูลบัญชีธนาคารด้านล่างบันทึกจริงแล้ว (ใช้อ้างอิงตอนโอนเงินให้ร้านค้าด้วยมือ) — แต่ยังไม่มี payment gateway จริง จึงยังไม่มีการตัดยอด/รับเงินอัตโนมัติผ่านระบบ" />
       <SectionTitle>
         <Building2 className="w-5 h-5 text-blue-600" /> บัญชีธนาคารที่เชื่อมต่อ
       </SectionTitle>
@@ -478,10 +663,9 @@ export default function MerchantSettingsDashboard() {
   );
 
   const renderThemeTab = () => {
-    const themeOptions: { id: SettingsState['theme']; label: string; desc: string; icon: React.ElementType }[] = [
-      { id: 'dark',   label: 'โหมดมืด',   desc: 'ธีมสีเข้ม ถนอมสายตา',      icon: Moon },
-      { id: 'light',  label: 'โหมดสว่าง',  desc: 'ธีมสีอ่อน สว่างชัดเจน',     icon: Sun },
-      { id: 'system', label: 'ตามระบบ',    desc: 'ใช้ธีมตามการตั้งค่าอุปกรณ์', icon: Monitor },
+    const themeOptions: { id: 'light' | 'dark'; label: string; desc: string; icon: React.ElementType }[] = [
+      { id: 'dark',  label: 'โหมดมืด',  desc: 'ธีมสีเข้ม ถนอมสายตา',  icon: Moon },
+      { id: 'light', label: 'โหมดสว่าง', desc: 'ธีมสีอ่อน สว่างชัดเจน', icon: Sun },
     ];
 
     return (
@@ -490,14 +674,16 @@ export default function MerchantSettingsDashboard() {
           <Palette className="w-5 h-5 text-blue-600" /> เลือกธีมแอปพลิเคชัน
         </SectionTitle>
 
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+        <NotWiredNotice text="สลับได้จริง มีผลทันทีกับพื้นหลัง/สีตัวอักษรหลักของทั้งแอป (บันทึกไว้ในเครื่องนี้) — แต่การ์ด/องค์ประกอบย่อยของหลายหน้ายังไม่ได้ปรับสีตามธีมมืด เพราะยังไม่ได้ไล่แก้ทุกหน้า" />
+
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
           {themeOptions.map((opt) => {
-            const isActive = settings.theme === opt.id;
+            const isActive = theme === opt.id;
             return (
               <button
                 key={opt.id}
                 type="button"
-                onClick={() => update('theme', opt.id)}
+                onClick={() => setTheme(opt.id)}
                 className={`
                   relative p-5 sm:p-6 rounded-2xl text-left transition-all duration-200 border-2
                   ${isActive
@@ -526,18 +712,12 @@ export default function MerchantSettingsDashboard() {
         <Languages className="w-5 h-5 text-blue-600" /> ภาษาของระบบ
       </SectionTitle>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Select label="ภาษา" icon={Globe} value={settings.language} onChange={(v) => update('language', v as 'th' | 'en')} options={[
-          { value: 'th', label: '🇹🇭 ภาษาไทย' },
-          { value: 'en', label: '🇬🇧 English' },
-        ]} />
-        <Select label="เขตเวลา" icon={Clock} value={settings.timezone} onChange={(v) => update('timezone', v)} options={[
-          { value: 'Asia/Bangkok',   label: '(UTC+07:00) กรุงเทพ, ฮานอย, จาการ์ตา' },
-          { value: 'Asia/Tokyo',     label: '(UTC+09:00) โตเกียว, โซล' },
-          { value: 'Asia/Singapore', label: '(UTC+08:00) สิงคโปร์, กัวลาลัมเปอร์' },
-          { value: 'UTC',            label: '(UTC+00:00) เวลาสากล (UTC)' },
-        ]} />
-      </div>
+      <NotWiredNotice text="สลับได้จริง มีผลทันที (บันทึกไว้ในเครื่องนี้) — แต่มีแค่บางส่วนของแอปที่ต่อระบบแปลภาษาไว้แล้ว หน้าอื่นๆ ส่วนใหญ่ยังเป็นภาษาไทยคงที่" />
+
+      <Select label="ภาษา" icon={Globe} value={language} onChange={(v) => setLanguage(v as 'th' | 'en')} options={[
+        { value: 'th', label: '🇹🇭 ภาษาไทย' },
+        { value: 'en', label: '🇬🇧 English' },
+      ]} />
     </div>
   );
 
@@ -547,8 +727,10 @@ export default function MerchantSettingsDashboard() {
         <Settings2 className="w-5 h-5 text-blue-600" /> ตัวเลือกขั้นสูง
       </SectionTitle>
 
+      <NotWiredNotice text="ล้าง Flash Sale ที่หมดอายุจริงตอนกดบันทึก (ซ่อนสินค้าที่หมดอายุจากลูกค้าจริง) — แต่ไม่ได้รันอัตโนมัติต่อเนื่องเองเพราะยังไม่มี cron scheduler ต้องกดบันทึกทุกครั้งที่ต้องการให้ล้าง" />
+
       <GlassCard className="p-5 sm:p-6">
-        <Toggle label="ล้าง Flash Sale ที่หมดอายุอัตโนมัติ" description="ลบรายการ Flash Sale ที่หมดอายุแล้วออกจากระบบโดยอัตโนมัติ" enabled={settings.autoCleanExpired} onChange={(v) => update('autoCleanExpired', v)} />
+        <Toggle label="ล้าง Flash Sale ที่หมดอายุตอนกดบันทึก" description="ซ่อนสินค้าที่หมดอายุแล้วจากลูกค้าทุกครั้งที่กดปุ่มบันทึกการเปลี่ยนแปลง" enabled={settings.autoCleanExpired} onChange={(v) => update('autoCleanExpired', v)} />
       </GlassCard>
 
       <Divider />
@@ -563,7 +745,7 @@ export default function MerchantSettingsDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50">
           <div>
             <p className="text-sm sm:text-base font-medium text-amber-700">ล้างแคชข้อมูล</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">ล้างข้อมูลแคชในระบบเพื่อแก้ปัญหาข้อมูลค้าง</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">ล้างแคชสินค้าที่เก็บไว้ในเบราว์เซอร์นี้ (product-storage) แล้วโหลดหน้าใหม่</p>
           </div>
           <button
             type="button"
@@ -574,20 +756,37 @@ export default function MerchantSettingsDashboard() {
           </button>
         </div>
 
-        {/* Deactivate store */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 border-dashed border-red-300 bg-red-50">
-          <div>
-            <p className="text-sm sm:text-base font-medium text-red-500">ปิดการใช้งานร้านค้า</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">ร้านค้าจะไม่แสดงต่อสาธารณะจนกว่าจะเปิดอีกครั้ง</p>
+        {/* Deactivate / reactivate store */}
+        {settings.isActive ? (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 border-dashed border-red-300 bg-red-50">
+            <div>
+              <p className="text-sm sm:text-base font-medium text-red-500">ปิดการใช้งานร้านค้า</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">ร้านค้าจะไม่แสดงต่อสาธารณะจนกว่าจะเปิดอีกครั้ง (ซ่อนจากหน้าแรก, /map, และหน้าร้านของคุณ)</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDangerModal('deactivate')}
+              className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-red-50 text-red-500 ring-1 ring-red-200 hover:bg-red-100 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" /> ปิดร้านค้า
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setDangerModal('deactivate')}
-            className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-red-50 text-red-500 ring-1 ring-red-200 hover:bg-red-100 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" /> ปิดร้านค้า
-          </button>
-        </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 border-dashed border-green-300 bg-green-50">
+            <div>
+              <p className="text-sm sm:text-base font-medium text-green-700">ร้านค้าปิดใช้งานอยู่</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">ลูกค้ามองไม่เห็นร้านนี้อยู่ในขณะนี้</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleReactivate}
+              disabled={isSaving}
+              className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-500 transition-colors disabled:opacity-60"
+            >
+              <CheckCircle className="w-4 h-4" /> เปิดร้านค้าอีกครั้ง
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -684,23 +883,6 @@ export default function MerchantSettingsDashboard() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="min-h-screen bg-white text-gray-900 flex items-center justify-center">
-        <div className="text-center px-4">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-10 h-10 text-red-500" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h2>
-          <p className="text-gray-500 mb-4">{error}</p>
-          <button onClick={() => window.location.reload()} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
-            ลองใหม่อีกครั้ง
-          </button>
         </div>
       </section>
     );
@@ -810,6 +992,14 @@ export default function MerchantSettingsDashboard() {
               <p className="text-xs text-gray-500">{currentTab.description}</p>
             </div>
 
+            {saveMessage && (
+              <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium ${
+                saveMessage.type === 'error' ? 'bg-red-50 text-red-600 ring-1 ring-red-200' : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+              }`}>
+                {saveMessage.text}
+              </div>
+            )}
+
             <GlassCard className="p-5 sm:p-7 lg:p-8">
               {tabContent[activeTab]?.()}
             </GlassCard>
@@ -846,7 +1036,7 @@ export default function MerchantSettingsDashboard() {
                       การเชื่อมต่อ Partner Services
                     </p>
                     <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-                      เปิดใช้งาน {ecosystemEnabledCount} จาก {ECOSYSTEM_SERVICES.length} บริการ
+                      ยังไม่มี API พาร์ทเนอร์จริงเชื่อมต่ออยู่ — เปิดสวิตช์ด้านล่างยังไม่มีผลใช้งานจริง
                     </p>
                   </div>
                 </div>

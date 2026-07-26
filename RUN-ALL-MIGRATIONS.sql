@@ -583,6 +583,32 @@ BEGIN
   END IF;
 END $$;
 
+
+-- ┌─────────────────────────────────────────────────────────────────────────┐
+-- │ [10] add-merchant-settings.sql                                         │
+-- │ ตารางค่าตั้งค่าร้านค้าจริง (notifications/payment/advanced) แทนปุ่ม     │
+-- │ "บันทึก" ปลอมใน MerchantSettingsDashboard.tsx                          │
+-- └─────────────────────────────────────────────────────────────────────────┘
+CREATE TABLE IF NOT EXISTS merchant_settings (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  push_notifications BOOLEAN NOT NULL DEFAULT false,
+  email_notifications BOOLEAN NOT NULL DEFAULT false,
+  flash_sale_alerts BOOLEAN NOT NULL DEFAULT false,
+  new_order_alerts BOOLEAN NOT NULL DEFAULT false,
+  bank_name TEXT,
+  account_number TEXT,
+  cod_enabled BOOLEAN NOT NULL DEFAULT false,
+  auto_clean_expired BOOLEAN NOT NULL DEFAULT false,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE merchant_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Merchants manage own settings" ON merchant_settings;
+CREATE POLICY "Merchants manage own settings" ON merchant_settings
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS idx_merchant_settings_is_active ON merchant_settings (is_active);
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ✅ เสร็จแล้ว — ดูขั้นตอนตรวจสอบผลลัพธ์ในคำตอบที่แนบไฟล์นี้มา
 -- ═══════════════════════════════════════════════════════════════════════════

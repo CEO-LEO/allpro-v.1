@@ -17,11 +17,25 @@ export async function GET() {
   }
 
   try {
-    const { data, error } = await supabase
+    // Hide products belonging to merchants who deactivated their store
+    // (merchant/settings → Advanced tab → "ปิดการใช้งานร้านค้า")
+    const { data: inactive } = await supabase
+      .from('merchant_settings')
+      .select('user_id')
+      .eq('is_active', false);
+    const inactiveIds = (inactive || []).map((m) => m.user_id);
+
+    let query = supabase
       .from('products')
-      .select('id,title,description,price,original_price,image,category,shop_name,shop_id,discount,location,conditions,created_at,tags,verified,is_sponsored,valid_until')
+      .select('id,title,description,price,original_price,image,category,shop_name,shop_id,discount,location,conditions,created_at,tags')
       .order('created_at', { ascending: false })
       .limit(50);
+
+    if (inactiveIds.length > 0) {
+      query = query.not('shop_id', 'in', `(${inactiveIds.join(',')})`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('[API] Products fetch error:', error.message);

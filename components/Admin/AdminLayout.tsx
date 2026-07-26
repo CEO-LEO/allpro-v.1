@@ -40,8 +40,7 @@ const menuItems = [
   {
     label: 'Moderation Queue',
     href: '/admin/moderation',
-    icon: Flag,
-    badge: 12
+    icon: Flag
   },
   {
     label: 'Hero Banners',
@@ -112,11 +111,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <Icon className="w-5 h-5" />
                     <span>{item.label}</span>
                   </div>
-                  {item.badge && (
-                    <span className="bg-red-500 text-white text-caption px-2 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               );
             })}

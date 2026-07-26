@@ -1,11 +1,36 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useProductStore } from '@/store/useProductStore';
+import { fetchMerchantAnalytics, type MerchantDashboardStats } from '@/lib/analytics';
 import { Settings, LogOut, ChevronRight, Bell, HelpCircle, LayoutDashboard, Store } from 'lucide-react';
 import Link from 'next/link';
 
+// Compact number formatting for the small floating stat card (e.g. 2400 -> "2.4K")
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return `${n}`;
+}
+
 export default function ProfilePage() {
   const { user, logout } = useAuthStore();
+  const { savedProductIds, loadSavedFromSupabase } = useProductStore();
+  const [merchantStats, setMerchantStats] = useState<MerchantDashboardStats | null>(null);
+  const [loadingMerchantStats, setLoadingMerchantStats] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'MERCHANT') {
+      setLoadingMerchantStats(true);
+      const shopName = user.shopName || user.name || '';
+      fetchMerchantAnalytics(user.id, shopName, 30)
+        .then(setMerchantStats)
+        .finally(() => setLoadingMerchantStats(false));
+    } else {
+      loadSavedFromSupabase(user.id);
+    }
+  }, [user?.id, user?.role, user?.shopName, user?.name, loadSavedFromSupabase]);
 
   if (!user) {
     return (
@@ -59,21 +84,27 @@ export default function ProfilePage() {
         {/* Stats Card (Floating) - Different stats for User vs Merchant */}
         <div className="absolute -bottom-10 left-6 right-6 bg-white rounded-2xl p-4 shadow-xl flex justify-around text-center">
             {isMerchant ? (
-              // Merchant Stats
+              // Merchant Stats — real data from fetchMerchantAnalytics (last 30 days)
               <>
                 <div>
                   <p className="text-xs text-slate-400 font-bold uppercase">Products</p>
-                  <p className="text-2xl font-black text-blue-600">12</p>
+                  <p className="text-2xl font-black text-blue-600">
+                    {loadingMerchantStats ? '…' : formatCompact(merchantStats?.productStats.length ?? 0)}
+                  </p>
                 </div>
                 <div className="w-px bg-slate-100"></div>
                 <div>
                   <p className="text-xs text-slate-400 font-bold uppercase">Views</p>
-                  <p className="text-2xl font-black text-purple-600">2.4K</p>
+                  <p className="text-2xl font-black text-purple-600">
+                    {loadingMerchantStats ? '…' : formatCompact(merchantStats?.totalViews ?? 0)}
+                  </p>
                 </div>
                 <div className="w-px bg-slate-100"></div>
                 <div>
                   <p className="text-xs text-slate-400 font-bold uppercase">Revenue</p>
-                  <p className="text-2xl font-black text-green-600">฿45K</p>
+                  <p className="text-2xl font-black text-green-600">
+                    {loadingMerchantStats ? '…' : `฿${formatCompact(merchantStats?.totalRevenue ?? 0)}`}
+                  </p>
                 </div>
               </>
             ) : (
@@ -91,7 +122,7 @@ export default function ProfilePage() {
                 <div className="w-px bg-slate-100"></div>
                 <div>
                   <p className="text-xs text-slate-400 font-bold uppercase">Saved</p>
-                  <p className="text-2xl font-black text-red-500">0</p>
+                  <p className="text-2xl font-black text-red-500">{savedProductIds.length}</p>
                 </div>
               </>
             )}

@@ -30,6 +30,7 @@ interface ShopInfo {
   socialFacebook?: string;
   socialInstagram?: string;
   socialWebsite?: string;
+  isActive?: boolean;
 }
 
 // ── Avatar helpers ──────────────────────────────────────────────────────
@@ -184,6 +185,17 @@ export default function PublicShopPage() {
             console.log('[ShopPage] DB result:', merchant ? `Found: ${merchant.shop_name}` : 'Not found in DB');
 
             if (merchant) {
+              // Check if the merchant deactivated their store (merchant/settings → Advanced)
+              let isActive = true;
+              if (merchant.user_id) {
+                const { data: settingsRow } = await supabase
+                  .from('merchant_settings_public')
+                  .select('is_active')
+                  .eq('user_id', merchant.user_id)
+                  .maybeSingle();
+                if (settingsRow) isActive = settingsRow.is_active !== false;
+              }
+
               // Also fetch products for this shop from DB
               const { data: dbProducts } = await supabase
                 .from('products')
@@ -231,6 +243,7 @@ export default function PublicShopPage() {
                 socialFacebook: merchant.facebook || undefined,
                 socialInstagram: merchant.instagram || undefined,
                 socialWebsite: merchant.website || undefined,
+                isActive,
               });
               return;
             }
@@ -418,6 +431,12 @@ export default function PublicShopPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
+
+      {shopInfo.isActive === false && !isOwnShop && (
+        <div className="bg-red-600 text-white text-center text-sm font-semibold px-4 py-3">
+          ร้านนี้ปิดให้บริการชั่วคราว
+        </div>
+      )}
 
       {/* ─────────────────── HERO BANNER ─────────────────────────────── */}
       <div className="relative bg-gradient-to-br from-blue-600 via-indigo-700 to-violet-800 pb-16">
