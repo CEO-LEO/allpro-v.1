@@ -6,9 +6,11 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowLeftIcon, CameraIcon } from "@heroicons/react/24/outline";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useSettingsStore } from "@/store/useSettingsStore";
 import { toast } from "react-hot-toast";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { uploadProductImage } from "@/lib/uploadImage";
+import { SunIcon, MoonIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
 
 const GENDER_OPTIONS = [
   { id: 'male' as const, label: 'ชาย', icon: '👨' },
@@ -28,6 +30,7 @@ const AGE_OPTIONS = [
 export default function EditProfilePage() {
   const router = useRouter();
   const { user, updateProfile, updateUser, addCoins } = useAuthStore();
+  const { theme, setTheme, language, setLanguage } = useSettingsStore();
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -338,6 +341,82 @@ export default function EditProfilePage() {
                   </button>
                 ))}
               </div>
+            </div>
+          </motion.div>
+
+          {/* Theme & Language */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.18 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg space-y-5"
+          >
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">ธีมและภาษา</h3>
+              <p className="text-xs text-gray-400">มีผลทันที บันทึกไว้ในเครื่องนี้</p>
+            </div>
+
+            {/* Theme */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                ธีมแอปพลิเคชัน
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTheme('light')}
+                  className={`flex items-center justify-center gap-2 py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                    theme === 'light'
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+                      : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 hover:border-gray-300'
+                  }`}
+                >
+                  <SunIcon className="w-5 h-5" /> โหมดสว่าง
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={`flex items-center justify-center gap-2 py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                    theme === 'dark'
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+                      : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 hover:border-gray-300'
+                  }`}
+                >
+                  <MoonIcon className="w-5 h-5" /> โหมดมืด
+                </button>
+              </div>
+            </div>
+
+            {/* Language */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                ภาษา
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLanguage('th')}
+                  className={`flex items-center justify-center gap-2 py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                    language === 'th'
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+                      : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 hover:border-gray-300'
+                  }`}
+                >
+                  <GlobeAltIcon className="w-5 h-5" /> ไทย
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage('en')}
+                  className={`flex items-center justify-center gap-2 py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                    language === 'en'
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+                      : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 hover:border-gray-300'
+                  }`}
+                >
+                  <GlobeAltIcon className="w-5 h-5" /> English
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-2">ตอนนี้มีแค่บางส่วนของแอปที่รองรับการแปลภาษาแล้ว หน้าอื่นยังเป็นภาษาไทยเป็นหลัก</p>
             </div>
           </motion.div>
 

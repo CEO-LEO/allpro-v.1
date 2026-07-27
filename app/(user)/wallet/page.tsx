@@ -3,9 +3,25 @@ import React, { useState, useEffect } from 'react';
 import { useProductStore } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
-import { QrCode, Trash2, ArrowRight, Bookmark, Ticket, Clock, Store, Loader2, AlertTriangle, Tag, CheckCircle } from 'lucide-react';
+import { QrCode, Trash2, ArrowRight, Bookmark, Ticket, Clock, Store, Loader2, AlertTriangle, Tag, CheckCircle, History, PackageCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
+interface ClaimedPromo {
+  id: string;
+  productId: string;
+  title: string;
+  shopName: string;
+  image: string;
+  category: string;
+  promoPrice: number;
+  originalPrice: number;
+  amountSaved: number;
+  status: string; // claimed, used, expired, cancelled
+  claimedAt: string;
+  usedAt: string | null;
+}
 
 interface SavedPromo {
   id: string;
@@ -18,7 +34,7 @@ interface SavedPromo {
   category: string;
 }
 
-type Tab = 'coupons' | 'saved';
+type Tab = 'coupons' | 'saved' | 'claims';
 
 export default function WalletPage() {
   const [activeTab, setActiveTab] = useState<Tab>('saved');
@@ -39,6 +55,8 @@ export default function WalletPage() {
   const { user } = useAuthStore();
   const [allPromos, setAllPromos] = useState<SavedPromo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [claims, setClaims] = useState<ClaimedPromo[]>([]);
+  const [claimsLoading, setClaimsLoading] = useState(true);
 
   // Load saved IDs from Supabase on mount
   useEffect(() => {
@@ -46,6 +64,51 @@ export default function WalletPage() {
       loadSavedFromSupabase(user.id);
     }
   }, [user?.id, loadSavedFromSupabase]);
+
+  // Load real claim/usage history (promotion_claims) for the logged-in user
+  useEffect(() => {
+    async function loadClaims() {
+      if (!user?.id || !isSupabaseConfigured) {
+        setClaimsLoading(false);
+        return;
+      }
+      setClaimsLoading(true);
+      const { data, error } = await supabase
+        .from('promotion_claims')
+        .select('id, product_id, status, claimed_at, used_at, original_price, promo_price, amount_saved, products (title, image, shop_name, category)')
+        .eq('user_id', user.id)
+        .order('claimed_at', { ascending: false });
+
+      if (error) {
+        console.error('[Wallet] Failed to load claim history:', error.message);
+        setClaimsLoading(false);
+        return;
+      }
+
+      const mapped: ClaimedPromo[] = (data || []).map((row) => {
+        // Supabase อาจส่ง joined relation กลับมาเป็น object หรือ array แล้วแต่ schema cache
+        const product = Array.isArray(row.products) ? row.products[0] : row.products;
+        const category = product?.category || 'Other';
+        return {
+          id: row.id,
+          productId: row.product_id,
+          title: product?.title || 'โปรโมชั่นที่ถูกลบไปแล้ว',
+          shopName: product?.shop_name || 'ร้านค้า',
+          image: resolveImageUrl(product?.image, getCategoryFallbackImage(category)),
+          category,
+          promoPrice: Number(row.promo_price) || 0,
+          originalPrice: Number(row.original_price) || 0,
+          amountSaved: Number(row.amount_saved) || 0,
+          status: row.status || 'claimed',
+          claimedAt: row.claimed_at,
+          usedAt: row.used_at,
+        };
+      });
+      setClaims(mapped);
+      setClaimsLoading(false);
+    }
+    loadClaims();
+  }, [user?.id]);
 
   // Fetch available promotions from the production API and merge with merchant store products.
   useEffect(() => {
@@ -155,6 +218,24 @@ export default function WalletPage() {
           >
             <Ticket className="w-4 h-4" />
             คูปองสะสม
+          </button>
+          <button
+            onClick={() => setActiveTab('claims')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'claims'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            ที่กดรับ
+            {claims.length > 0 && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                activeTab === 'claims' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {claims.length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -364,6 +445,97 @@ export default function WalletPage() {
               </Link>
             </div>
           </div>
+        )}
+
+        {/* ===== Tab: Claim/Usage History (promotion_claims) ===== */}
+        {activeTab === 'claims' && (
+          <>
+            {claimsLoading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 text-orange-400 animate-spin mb-3" />
+                <p className="text-sm text-gray-400">กำลังโหลด...</p>
+              </div>
+            ) : claims.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                  <History className="w-7 h-7 text-gray-300" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900 mb-1">ยังไม่มีประวัติการกดรับโปรโมชั่น</h3>
+                <p className="text-sm text-gray-400 mb-6">กดปุ่ม &quot;รับโปรโมชั่น&quot; ในหน้ารายละเอียดสินค้าเพื่อเริ่มสะสมประวัติ</p>
+                <Link href="/" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:text-orange-600">
+                  ไปหน้าแรก <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {claims.map((claim) => {
+                  const isUsed = claim.status === 'used';
+                  const isExpiredOrCancelled = claim.status === 'expired' || claim.status === 'cancelled';
+                  return (
+                    <div
+                      key={claim.id}
+                      className={`bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3 flex gap-3 ${
+                        isExpiredOrCancelled ? 'opacity-60' : ''
+                      }`}
+                    >
+                      <Link href={`/promo/${claim.productId}`} className="flex-shrink-0">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-50 relative">
+                          <img
+                            src={claim.image}
+                            alt={claim.title}
+                            className={`w-full h-full object-cover ${isExpiredOrCancelled ? 'grayscale' : ''}`}
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        </div>
+                      </Link>
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <Store className="w-3 h-3 text-orange-500" />
+                            <span className="text-[11px] text-orange-600 font-medium">{claim.shopName}</span>
+                          </div>
+                          <Link href={`/promo/${claim.productId}`}>
+                            <h3 className="text-sm font-semibold text-gray-900 line-clamp-1 hover:text-orange-600 transition-colors">{claim.title}</h3>
+                          </Link>
+                          <p className="text-[11px] text-gray-400 mt-0.5">
+                            กดรับเมื่อ {new Date(claim.claimedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {claim.amountSaved > 0 && <> · ประหยัด ฿{claim.amountSaved.toLocaleString()}</>}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between mt-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${
+                              isUsed
+                                ? 'bg-green-50 text-green-600'
+                                : isExpiredOrCancelled
+                                  ? 'bg-gray-100 text-gray-500'
+                                  : 'bg-amber-50 text-amber-600'
+                            }`}
+                          >
+                            {isUsed ? (
+                              <><PackageCheck className="w-3 h-3" /> ใช้แล้ว{claim.usedAt ? ` · ${new Date(claim.usedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}` : ''}</>
+                            ) : isExpiredOrCancelled ? (
+                              <>{claim.status === 'expired' ? 'หมดอายุ' : 'ยกเลิกแล้ว'}</>
+                            ) : (
+                              <><Clock className="w-3 h-3" /> ยังไม่ได้ใช้</>
+                            )}
+                          </span>
+                          {!isUsed && !isExpiredOrCancelled && (
+                            <Link
+                              href={`/wallet/use/${claim.productId}`}
+                              className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-orange-600 active:scale-95 transition-all"
+                            >
+                              <QrCode className="w-3.5 h-3.5" /> ใช้คูปอง
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

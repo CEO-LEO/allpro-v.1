@@ -608,8 +608,10 @@ export async function fetchShopPublicStats(
     if (viewErr) console.warn('[ShopStats] views query:', viewErr.message);
 
     // ── Revenue: รวม promo_price จากการกดรับโปรทั้งหมด ─────────────────
+    // ใช้ view สาธารณะ (ไม่มี user_id) แทนตารางจริง เพราะหน้านี้เปิดให้
+    // ผู้เยี่ยมชมที่ไม่ล็อกอินดูได้ — promotion_claims เองถูกจำกัดสิทธิ์แล้ว
     const { data: claims, error: claimErr } = await supabase
-      .from('promotion_claims')
+      .from('promotion_claims_public')
       .select('promo_price')
       .in('product_id', validIds);
 

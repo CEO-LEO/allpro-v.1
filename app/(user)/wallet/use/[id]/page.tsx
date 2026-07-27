@@ -2,7 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useProductStore } from '@/store/useProductStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getPromotionById } from '@/lib/getPromotions';
+import { markClaimAsUsed } from '@/lib/analytics';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { X, Clock, Loader2, Copy, Check, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import QRCode from 'react-qr-code';
@@ -17,6 +20,7 @@ interface CouponProduct {
 export default function UseCouponPage() {
   const router = useRouter();
   const { id } = useParams();
+  const { user } = useAuthStore();
   const decodedId = decodeURIComponent(id as string);
   const [product, setProduct] = useState<CouponProduct | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +28,8 @@ export default function UseCouponPage() {
   const [refCode] = useState(() => `PRO-${decodedId.slice(0, 4).toUpperCase()}-${Date.now().toString(36).toUpperCase().slice(-4)}`);
   const [copied, setCopied] = useState(false);
   const [isUsed, setIsUsed] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [claimId, setClaimId] = useState<string | null>(null);
 
   const qrValue = `ALLPRO:${decodedId}:${Date.now()}`;
 
@@ -62,6 +68,25 @@ export default function UseCouponPage() {
     findProduct();
   }, [decodedId]);
 
+  // หา claim จริงของ user คนนี้สำหรับสินค้านี้ (ถ้ามี) เพื่อให้ "ใช้แล้ว" อัปเดต
+  // สถานะจริงใน promotion_claims แทนการปลอมแค่ state ในเครื่อง
+  useEffect(() => {
+    async function findClaim() {
+      if (!user?.id || !isSupabaseConfigured) return;
+      const { data } = await supabase
+        .from('promotion_claims')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', decodedId)
+        .eq('status', 'claimed')
+        .order('claimed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) setClaimId(data.id);
+    }
+    findClaim();
+  }, [user?.id, decodedId]);
+
   // นับถอยหลัง 15 นาที
   useEffect(() => {
     const timer = setInterval(() => {
@@ -84,9 +109,24 @@ export default function UseCouponPage() {
     });
   };
 
-  const handleConfirmUsed = () => {
-    setIsUsed(true);
-    toast.success('ใช้คูปองสำเร็จ! ขอบคุณที่ใช้บริการ');
+  const handleConfirmUsed = async () => {
+    if (isConfirming) return;
+    setIsConfirming(true);
+    try {
+      if (claimId) {
+        const ok = await markClaimAsUsed(claimId);
+        if (!ok) {
+          toast.error('บันทึกสถานะไม่สำเร็จ กรุณาลองใหม่');
+          return;
+        }
+      }
+      // ไม่มี claim ให้ปิด (เช่น มาจากรายการที่บันทึกไว้แต่ไม่เคยกด "รับโปรโมชั่น" มาก่อน)
+      // — ยังให้ใช้ QR ได้ตามปกติ แต่จะไม่มีประวัติเข้าไปในแท็บ "ที่กดรับ"
+      setIsUsed(true);
+      toast.success('ใช้คูปองสำเร็จ! ขอบคุณที่ใช้บริการ');
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   // Days until expiry
@@ -197,9 +237,10 @@ export default function UseCouponPage() {
             {!isExpired && (
               <button
                 onClick={handleConfirmUsed}
-                className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                disabled={isConfirming}
+                className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
               >
-                <CheckCircle className="w-4 h-4" />
+                {isConfirming ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                 ใช้แล้ว
               </button>
             )}

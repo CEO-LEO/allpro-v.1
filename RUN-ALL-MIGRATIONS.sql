@@ -660,6 +660,23 @@ CREATE POLICY "Admins manage banners" ON banners FOR ALL
   WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN'));
 CREATE INDEX IF NOT EXISTS idx_banners_active_priority ON banners (is_active, priority);
 
+-- ┌─────────────────────────────────────────────────────────────────────────┐
+-- │ [12] add-claim-history-privacy.sql                                     │
+-- │ ปิดรูรั่ว promotion_claims (เดิมใครก็อ่านประวัติกดรับของทุกคนได้)      │
+-- │ + view สาธารณะสำหรับ Revenue รวมบนหน้าร้าน                             │
+-- └─────────────────────────────────────────────────────────────────────────┘
+DROP POLICY IF EXISTS "Anyone can select claims" ON promotion_claims;
+DROP POLICY IF EXISTS "Owner or merchant can view claims" ON promotion_claims;
+CREATE POLICY "Owner or merchant can view claims" ON promotion_claims FOR SELECT
+  USING (
+    auth.uid() = user_id
+    OR EXISTS (SELECT 1 FROM products WHERE products.id = promotion_claims.product_id AND products.shop_id = auth.uid()::text)
+  );
+CREATE OR REPLACE VIEW promotion_claims_public AS
+  SELECT id, product_id, merchant_id, status, claimed_at, original_price, promo_price, amount_saved
+  FROM promotion_claims;
+GRANT SELECT ON promotion_claims_public TO anon, authenticated;
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ✅ เสร็จแล้ว — ดูขั้นตอนตรวจสอบผลลัพธ์ในคำตอบที่แนบไฟล์นี้มา
 -- ═══════════════════════════════════════════════════════════════════════════
