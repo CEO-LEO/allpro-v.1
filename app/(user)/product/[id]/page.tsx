@@ -75,10 +75,10 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">กำลังโหลด...</p>
+          <p className="text-gray-500 dark:text-gray-400">กำลังโหลด...</p>
         </div>
       </div>
     );
@@ -87,10 +87,10 @@ export default function ProductDetailPage() {
   // ถ้าหาสินค้าไม่เจอ (404 Logic)
   if (!product) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center px-6 text-center">
+      <div className="h-screen flex flex-col items-center justify-center px-6 text-center bg-white dark:bg-gray-900">
         <div className="text-8xl mb-6">😢</div>
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">ไม่พบโปรโมชั่น</h1>
-        <p className="text-slate-500 mb-8">ดีลนี้อาจหมดอายุหรือถูกลบไปแล้ว</p>
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">ไม่พบโปรโมชั่น</h1>
+        <p className="text-slate-500 dark:text-slate-400 mb-8">ดีลนี้อาจหมดอายุหรือถูกลบไปแล้ว</p>
         <button 
           onClick={() => router.push('/')}
           className="px-6 py-3 bg-orange-500 text-white font-bold rounded-full hover:bg-orange-600 transition"
@@ -107,9 +107,9 @@ export default function ProductDetailPage() {
   const discountPercent = Math.round((savings / originalPrice) * 100);
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div className="min-h-screen bg-white dark:bg-gray-900 pb-24">
       {/* Header Image */}
-      <div className="relative h-80 w-full bg-gradient-to-br from-orange-100 to-orange-50">
+      <div className="relative h-80 w-full bg-gradient-to-br from-orange-100 to-orange-50 dark:from-gray-800 dark:to-gray-800">
         {product.image ? (
           <img 
             src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))} 
@@ -152,24 +152,24 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Content Container */}
-      <div className="px-6 py-8 -mt-8 relative bg-white rounded-t-[2rem] shadow-lg">
+      <div className="px-6 py-8 -mt-8 relative bg-white dark:bg-gray-900 rounded-t-[2rem] shadow-lg">
         {/* Shop Info Badge */}
-        <div className="inline-flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full mb-4">
-            <div className="w-6 h-6 bg-orange-200 rounded-full flex items-center justify-center text-xs">🏪</div>
-            <span className="text-sm font-bold text-orange-700">{product.shopName}</span>
+        <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 px-3 py-1 rounded-full mb-4">
+            <div className="w-6 h-6 bg-orange-200 dark:bg-orange-800 rounded-full flex items-center justify-center text-xs">🏪</div>
+            <span className="text-sm font-bold text-orange-700 dark:text-orange-400">{product.shopName}</span>
         </div>
 
-        <h1 className="text-2xl font-black text-slate-900 leading-tight mb-2">{product.title}</h1>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white leading-tight mb-2">{product.title}</h1>
         
         <div className="inline-block bg-blue-50 border-2 border-blue-200 px-3 py-1 rounded-full text-xs font-bold text-blue-700 mb-6">
           {product.category}
         </div>
 
         {/* Pricing */}
-        <div className="flex items-baseline gap-3 mb-4 border-b border-gray-100 pb-6">
+        <div className="flex items-baseline gap-3 mb-4 border-b border-gray-100 dark:border-gray-700 pb-6">
             <span className="text-4xl font-black text-red-600">฿{promoPrice.toLocaleString()}</span>
             <div className="flex flex-col">
-                <span className="text-sm text-gray-400 line-through">ปกติ ฿{originalPrice.toLocaleString()}</span>
+                <span className="text-sm text-gray-400 dark:text-gray-500 line-through">ปกติ ฿{originalPrice.toLocaleString()}</span>
                 <span className="text-xs text-red-500 font-bold">ประหยัด ฿{savings.toLocaleString()}</span>
             </div>
         </div>
@@ -310,11 +310,11 @@ export default function ProductDetailPage() {
         <div className="space-y-6 mb-8">
           {/* Main Description */}
           <div>
-            <h3 className="font-bold text-lg mb-3 text-gray-900 flex items-center gap-2">
+            <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white flex items-center gap-2">
               📋 รายละเอียดสินค้า
             </h3>
-            <div className="bg-gray-50 rounded-xl p-4 border-l-4 border-orange-500">
-              <p className="text-slate-700 leading-relaxed">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border-l-4 border-orange-500">
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
                 {product.description || `${product.title} ลดราคาสุดพิเศษ! สินค้าคุณภาพ ราคาดีที่สุด`}
               </p>
             </div>
@@ -322,7 +322,7 @@ export default function ProductDetailPage() {
 
           {/* Key Features */}
           <div>
-            <h3 className="font-bold text-lg mb-3 text-gray-900 flex items-center gap-2">
+            <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white flex items-center gap-2">
               ⭐ คุณสมบัติเด่น
             </h3>
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 space-y-3">
@@ -330,124 +330,124 @@ export default function ProductDetailPage() {
                 <>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>เทคโนโลยีล้ำสมัย:</strong> ชิปประมวลผลรุ่นใหม่ล่าสุด ประสิทธิภาพสูงสุด</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>เทคโนโลยีล้ำสมัย:</strong> ชิปประมวลผลรุ่นใหม่ล่าสุด ประสิทธิภาพสูงสุด</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>หน้าจอคมชัด:</strong> ความละเอียดสูง สีสันสดใส ใช้งานได้ทั้งวัน</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>หน้าจอคมชัด:</strong> ความละเอียดสูง สีสันสดใส ใช้งานได้ทั้งวัน</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>แบตเตอรี่ทนทาน:</strong> ใช้งานได้ยาวนาน ชาร์จเร็ว</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>แบตเตอรี่ทนทาน:</strong> ใช้งานได้ยาวนาน ชาร์จเร็ว</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ของแท้ 100%:</strong> นำเข้าอย่างถูกต้อง พร้อมใบเสร็จและเอกสาร</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ของแท้ 100%:</strong> นำเข้าอย่างถูกต้อง พร้อมใบเสร็จและเอกสาร</p>
                   </div>
                 </>
               ) : ['อาหาร', 'ร้านอาหาร', 'เครื่องดื่ม', 'Food'].includes(product.category) ? (
                 <>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ส่วนผสมคุณภาพ:</strong> วัตถุดิบสด สะอาด ปลอดภัย</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ส่วนผสมคุณภาพ:</strong> วัตถุดิบสด สะอาด ปลอดภัย</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>รสชาติอร่อย:</strong> สูตรพิเศษ รสชาติเข้มข้น คุณภาพคงที่</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>รสชาติอร่อย:</strong> สูตรพิเศษ รสชาติเข้มข้น คุณภาพคงที่</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>มาตรฐานอนามัย:</strong> ผ่านการตรวจสอบ ได้มาตรฐาน อย.</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>มาตรฐานอนามัย:</strong> ผ่านการตรวจสอบ ได้มาตรฐาน อย.</p>
                   </div>
                 </>
               ) : ['แฟชั่นผู้ชาย', 'แฟชั่นผู้หญิง', 'รองเท้า', 'กระเป๋า', 'Fashion'].includes(product.category) ? (
                 <>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>คุณภาพพรีเมียม:</strong> ผ้านิ่ม สวมใส่สบาย ทนทาน</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>คุณภาพพรีเมียม:</strong> ผ้านิ่ม สวมใส่สบาย ทนทาน</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ดีไซน์ทันสมัย:</strong> สไตล์เท่ ใส่ได้หลายโอกาส</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ดีไซน์ทันสมัย:</strong> สไตล์เท่ ใส่ได้หลายโอกาส</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ของแท้ มีประกัน:</strong> นำเข้าถูกต้อง มีใบรับรอง</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ของแท้ มีประกัน:</strong> นำเข้าถูกต้อง มีใบรับรอง</p>
                   </div>
                 </>
               ) : ['ความงาม', 'เครื่องสำอาง', 'สุขภาพ', 'สปา', 'Beauty'].includes(product.category) ? (
                 <>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ส่วนผสมคุณภาพ:</strong> ผ่านการทดสอบ ปลอดภัยต่อผิว</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ส่วนผสมคุณภาพ:</strong> ผ่านการทดสอบ ปลอดภัยต่อผิว</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ผลลัพธ์เห็นชัด:</strong> เห็นผลตั้งแต่ครั้งแรกที่ใช้</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ผลลัพธ์เห็นชัด:</strong> เห็นผลตั้งแต่ครั้งแรกที่ใช้</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>อย. รับรอง:</strong> ของแท้จากแบรนด์ มาตรฐานสากล</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>อย. รับรอง:</strong> ของแท้จากแบรนด์ มาตรฐานสากล</p>
                   </div>
                 </>
               ) : ['ท่องเที่ยว', 'โรงแรม', 'Travel'].includes(product.category) ? (
                 <>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ที่พักคุณภาพ:</strong> ผ่านการคัดสรร รีวิวดี สะอาด ปลอดภัย</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ที่พักคุณภาพ:</strong> ผ่านการคัดสรร รีวิวดี สะอาด ปลอดภัย</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>รวมมื้ออาหาร:</strong> อาหารเช้า-เที่ยง-เย็น คุณภาพดี</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>รวมมื้ออาหาร:</strong> อาหารเช้า-เที่ยง-เย็น คุณภาพดี</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>บริการครบวงจร:</strong> รถรับส่ง ไกด์ กิจกรรม ดูแลตลอดทริป</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>บริการครบวงจร:</strong> รถรับส่ง ไกด์ กิจกรรม ดูแลตลอดทริป</p>
                   </div>
                 </>
               ) : ['บ้านและสวน', 'เฟอร์นิเจอร์'].includes(product.category) ? (
                 <>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>วัสดุคุณภาพ:</strong> แข็งแรง ทนทาน ใช้งานได้นาน</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>วัสดุคุณภาพ:</strong> แข็งแรง ทนทาน ใช้งานได้นาน</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ดีไซน์สวยงาม:</strong> เข้ากับทุกสไตล์การตกแต่ง</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ดีไซน์สวยงาม:</strong> เข้ากับทุกสไตล์การตกแต่ง</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ส่งฟรี + ติดตั้ง:</strong> จัดส่งและประกอบให้ถึงบ้าน</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ส่งฟรี + ติดตั้ง:</strong> จัดส่งและประกอบให้ถึงบ้าน</p>
                   </div>
                 </>
               ) : ['กีฬา', 'ฟิตเนส'].includes(product.category) ? (
                 <>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>คุณภาพระดับโปร:</strong> มาตรฐานเดียวกับนักกีฬาอาชีพ</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>คุณภาพระดับโปร:</strong> มาตรฐานเดียวกับนักกีฬาอาชีพ</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ทนทาน แข็งแรง:</strong> ออกแบบมาสำหรับการใช้งานหนัก</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ทนทาน แข็งแรง:</strong> ออกแบบมาสำหรับการใช้งานหนัก</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ของแท้ มีประกัน:</strong> รับประกันสินค้าจากผู้ผลิต</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ของแท้ มีประกัน:</strong> รับประกันสินค้าจากผู้ผลิต</p>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>คุณภาพพรีเมียม:</strong> สินค้าคุณภาพดี ผ่านการคัดสรร</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>คุณภาพพรีเมียม:</strong> สินค้าคุณภาพดี ผ่านการคัดสรร</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>คุ้มค่าทุกบาท:</strong> ราคาพิเศษ โปรโมชั่นสุดคุ้ม</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>คุ้มค่าทุกบาท:</strong> ราคาพิเศษ โปรโมชั่นสุดคุ้ม</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</div>
-                    <p className="text-sm text-gray-700"><strong>ของแท้ 100%:</strong> สินค้าต้นฉบับ มีการรับประกัน</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300"><strong>ของแท้ 100%:</strong> สินค้าต้นฉบับ มีการรับประกัน</p>
                   </div>
                 </>
               )}
@@ -456,32 +456,32 @@ export default function ProductDetailPage() {
 
           {/* Promotion Terms */}
           <div>
-            <h3 className="font-bold text-lg mb-3 text-gray-900 flex items-center gap-2">
+            <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white flex items-center gap-2">
               🎫 เงื่อนไขโปรโมชั่น
             </h3>
             <div className="bg-orange-50 rounded-xl p-4 space-y-2 border-l-4 border-orange-400">
               <div className="flex items-start gap-2">
                 <span className="text-orange-600 font-bold">•</span>
-                <p className="text-sm text-gray-700">ราคาพิเศษสำหรับการจองผ่าน All Pro เท่านั้น</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">ราคาพิเศษสำหรับการจองผ่าน All Pro เท่านั้น</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-orange-600 font-bold">•</span>
-                <p className="text-sm text-gray-700">โปรโมชั่นนี้มีจำนวนจำกัด จนกว่าสินค้าจะหมด</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">โปรโมชั่นนี้มีจำนวนจำกัด จนกว่าสินค้าจะหมด</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-orange-600 font-bold">•</span>
-                <p className="text-sm text-gray-700">ราคาอาจมีการเปลี่ยนแปลงตามร้านค้า กรุณาเช็คราคาล่าสุดก่อนสั่งซื้อ</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">ราคาอาจมีการเปลี่ยนแปลงตามร้านค้า กรุณาเช็คราคาล่าสุดก่อนสั่งซื้อ</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-orange-600 font-bold">•</span>
-                <p className="text-sm text-gray-700">การชำระเงินและการรับประกันเป็นไปตามเงื่อนไขของร้านค้า</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">การชำระเงินและการรับประกันเป็นไปตามเงื่อนไขของร้านค้า</p>
               </div>
             </div>
           </div>
 
           {/* Warranty & Service */}
           <div>
-            <h3 className="font-bold text-lg mb-3 text-gray-900 flex items-center gap-2">
+            <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white flex items-center gap-2">
               🛡️ การรับประกัน & บริการ
             </h3>
             <div className="bg-green-50 rounded-xl p-4 border-l-4 border-green-500">
@@ -491,8 +491,8 @@ export default function ProductDetailPage() {
                     <span className="text-lg">✅</span>
                   </div>
                   <div>
-                    <p className="font-bold text-gray-800 text-sm">รับประกันความเสียหายจากการขนส่ง</p>
-                    <p className="text-xs text-gray-600">หากสินค้าเสียหายระหว่างทาง สามารถเคลมได้</p>
+                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">รับประกันความเสียหายจากการขนส่ง</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">หากสินค้าเสียหายระหว่างทาง สามารถเคลมได้</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -500,8 +500,8 @@ export default function ProductDetailPage() {
                     <span className="text-lg">🔄</span>
                   </div>
                   <div>
-                    <p className="font-bold text-gray-800 text-sm">เปลี่ยน/คืนสินค้าได้ (ตามเงื่อนไข)</p>
-                    <p className="text-xs text-gray-600">ภายใน 7 วัน หากสินค้าไม่ตรงตามรายละเอียด</p>
+                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">เปลี่ยน/คืนสินค้าได้ (ตามเงื่อนไข)</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">ภายใน 7 วัน หากสินค้าไม่ตรงตามรายละเอียด</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -509,8 +509,8 @@ export default function ProductDetailPage() {
                     <span className="text-lg">💬</span>
                   </div>
                   <div>
-                    <p className="font-bold text-gray-800 text-sm">สอบถามข้อมูลได้ทุกเวลา</p>
-                    <p className="text-xs text-gray-600">ติดต่อฟรีแลนซ์หรือทีมงาน Fastwork ได้ตลอด 24/7</p>
+                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">สอบถามข้อมูลได้ทุกเวลา</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">ติดต่อฟรีแลนซ์หรือทีมงาน Fastwork ได้ตลอด 24/7</p>
                   </div>
                 </div>
               </div>
@@ -519,7 +519,7 @@ export default function ProductDetailPage() {
 
           {/* Why Buy Now */}
           <div>
-            <h3 className="font-bold text-lg mb-3 text-gray-900 flex items-center gap-2">
+            <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white flex items-center gap-2">
               🔥 ทำไมต้องซื้อตอนนี้?
             </h3>
             <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-4 border-2 border-red-200">
@@ -549,11 +549,11 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 px-6 z-50 flex items-center gap-4 pb-safe">
-        <button 
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 p-4 px-6 z-50 flex items-center gap-4 pb-safe">
+        <button
             onClick={handleSave}
             className={`p-4 rounded-full border transition-all ${
-                isSaved(id as string) ? 'bg-red-50 border-red-200 text-red-500' : 'border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500'
+                isSaved(id as string) ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-500' : 'border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-500 hover:border-red-200 hover:text-red-500'
             }`}
         >
             <Heart className={`w-6 h-6 ${isSaved(id as string) ? 'fill-current' : ''}`} />

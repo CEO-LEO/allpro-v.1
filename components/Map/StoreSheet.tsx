@@ -42,64 +42,64 @@ export default function StoreSheet({ store, onClose }: StoreSheetProps) {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[1101] bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-[1101] bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col"
           >
             {/* Handle Bar */}
             <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+              <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full" />
             </div>
 
             {/* Header */}
-            <div className="px-4 py-4 border-b border-gray-200">
+            <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <div 
+                    <div
                       className="w-2 h-2 rounded-full animate-pulse"
-                      style={{ 
-                        backgroundColor: store.brand === '7-Eleven' ? '#00843D' : 
-                                       store.brand === 'Lotus' ? '#E40428' : 
+                      style={{
+                        backgroundColor: store.brand === '7-Eleven' ? '#00843D' :
+                                       store.brand === 'Lotus' ? '#E40428' :
                                        store.brand === 'Big C' ? '#0066CC' : '#FFB81C'
                       }}
                     />
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       {store.brand}
                     </span>
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                     {store.name}
                   </h2>
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                     <MapPin className="w-4 h-4" />
                     <span>{store.address}</span>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
 
               {/* Quick Stats */}
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1.5 text-sm">
-                  <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
                     <Navigation className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Distance</p>
-                    <p className="font-bold text-gray-900">{store.distance} km</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Distance</p>
+                    <p className="font-bold text-gray-900 dark:text-white">{store.distance} km</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 text-sm">
-                  <div className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center">
                     <Tag className="w-4 h-4 text-red-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Active Deals</p>
-                    <p className="font-bold text-red-600">{store.activePromos}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Active Deals</p>
+                    <p className="font-bold text-red-600 dark:text-red-400">{store.activePromos}</p>
                   </div>
                 </div>
               </div>
@@ -121,7 +121,7 @@ export default function StoreSheet({ store, onClose }: StoreSheetProps) {
               <div className="px-4 py-4">
                 <div className="flex items-center gap-2 mb-4">
                   <TrendingUp className="w-5 h-5 text-red-600" />
-                  <h3 className="text-lg font-bold text-gray-900">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                     Active Promotions
                   </h3>
                   <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">
@@ -136,11 +136,11 @@ export default function StoreSheet({ store, onClose }: StoreSheetProps) {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:border-red-300 transition-colors"
+                      className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:border-red-300 transition-colors"
                     >
                       <div className="flex gap-3 p-3">
                         {/* Promo Image */}
-                        <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                        <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                           <Image
                             src={promo.imageUrl}
                             alt={promo.title}
@@ -155,17 +155,17 @@ export default function StoreSheet({ store, onClose }: StoreSheetProps) {
                         {/* Promo Details */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-1">
-                            <h4 className="font-bold text-gray-900 text-sm leading-tight">
+                            <h4 className="font-bold text-gray-900 dark:text-white text-sm leading-tight">
                               {promo.title}
                             </h4>
-                            <span className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap">
+                            <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap">
                               {promo.category}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600 mb-2">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
                             {promo.description}
                           </p>
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                             <Clock className="w-3 h-3" />
                             <span>Valid until {promo.validUntil}</span>
                           </div>

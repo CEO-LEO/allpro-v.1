@@ -34,10 +34,10 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6">
-        <div className="w-20 h-20 bg-gray-200 rounded-full mb-4 animate-pulse"></div>
-        <h2 className="text-xl font-bold text-slate-700">กรุณาเข้าสู่ระบบ</h2>
-        <p className="text-slate-400 mb-6">เพื่อดูข้อมูลนักล่าของคุณ</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-gray-900 p-6">
+        <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mb-4 animate-pulse"></div>
+        <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200">กรุณาเข้าสู่ระบบ</h2>
+        <p className="text-slate-400 dark:text-slate-500 mb-6">เพื่อดูข้อมูลนักล่าของคุณ</p>
         {/* ในความเป็นจริง Navbar จะจัดการเรื่อง Login Modal ให้ */}
         <div className="text-sm text-orange-500">กดปุ่ม "เข้าสู่ระบบ" ที่มุมขวาบน</div>
       </div>
@@ -48,7 +48,7 @@ export default function ProfilePage() {
   const isMerchant = user.role === 'MERCHANT';
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 pb-24">
       {/* Header Profile - Different for User vs Merchant */}
       <div className={`pt-12 pb-20 px-6 text-white rounded-b-[2.5rem] shadow-lg relative ${
         isMerchant 
@@ -82,26 +82,26 @@ export default function ProfilePage() {
         </div>
         
         {/* Stats Card (Floating) - Different stats for User vs Merchant */}
-        <div className="absolute -bottom-10 left-6 right-6 bg-white rounded-2xl p-4 shadow-xl flex justify-around text-center">
+        <div className="absolute -bottom-10 left-6 right-6 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-xl flex justify-around text-center">
             {isMerchant ? (
               // Merchant Stats — real data from fetchMerchantAnalytics (last 30 days)
               <>
                 <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase">Products</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Products</p>
                   <p className="text-2xl font-black text-blue-600">
                     {loadingMerchantStats ? '…' : formatCompact(merchantStats?.productStats.length ?? 0)}
                   </p>
                 </div>
-                <div className="w-px bg-slate-100"></div>
+                <div className="w-px bg-slate-100 dark:bg-gray-700"></div>
                 <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase">Views</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Views</p>
                   <p className="text-2xl font-black text-purple-600">
                     {loadingMerchantStats ? '…' : formatCompact(merchantStats?.totalViews ?? 0)}
                   </p>
                 </div>
-                <div className="w-px bg-slate-100"></div>
+                <div className="w-px bg-slate-100 dark:bg-gray-700"></div>
                 <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase">Revenue</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Revenue</p>
                   <p className="text-2xl font-black text-green-600">
                     {loadingMerchantStats ? '…' : `฿${formatCompact(merchantStats?.totalRevenue ?? 0)}`}
                   </p>
@@ -111,17 +111,17 @@ export default function ProfilePage() {
               // User Stats
               <>
                 <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase">Coins</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Coins</p>
                   <p className="text-2xl font-black text-yellow-500">{user.coins ?? 0}</p>
                 </div>
-                <div className="w-px bg-slate-100"></div>
+                <div className="w-px bg-slate-100 dark:bg-gray-700"></div>
                 <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase">XP</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">XP</p>
                   <p className="text-2xl font-black text-blue-500">{user.xp ?? 0}</p>
                 </div>
-                <div className="w-px bg-slate-100"></div>
+                <div className="w-px bg-slate-100 dark:bg-gray-700"></div>
                 <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase">Saved</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Saved</p>
                   <p className="text-2xl font-black text-red-500">{savedProductIds.length}</p>
                 </div>
               </>
@@ -150,7 +150,7 @@ export default function ProfilePage() {
               </div>
             </Link>
 
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
               <MenuItem icon={Store} title="ตั้งค่าร้านค้า" href="/merchant/settings" />
               <MenuItem icon={Settings} title="การตั้งค่า" href="/merchant/settings" />
               <MenuItem icon={HelpCircle} title="ช่วยเหลือ" href="/contact" />
@@ -158,7 +158,7 @@ export default function ProfilePage() {
           </>
         ) : (
           // USER MENU
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
             <MenuItem icon={Bell} title="การแจ้งเตือน" badge="2" href="/notifications" />
             <MenuItem icon={Settings} title="ตั้งค่าบัญชี" href="/profile/edit" />
             <MenuItem icon={HelpCircle} title="ช่วยเหลือ" href="/contact" />
@@ -166,17 +166,17 @@ export default function ProfilePage() {
         )}
         
 
-        <button 
+        <button
             onClick={logout}
-            className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 text-red-500 font-bold hover:bg-red-50 transition"
+            className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 text-red-500 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition"
         >
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                 <LogOut className="w-5 h-5" />
             </div>
             <span>ออกจากระบบ</span>
         </button>
 
-        <p className="text-center text-xs text-slate-300 mt-8">
+        <p className="text-center text-xs text-slate-300 dark:text-slate-600 mt-8">
           Version 1.0.0 {isMerchant ? '(Merchant Edition)' : '(Hunter Build)'}
         </p>
       </div>
@@ -187,13 +187,13 @@ export default function ProfilePage() {
 // Component ย่อยสำหรับเมนู
 function MenuItem({ icon: Icon, title, badge, href }: any) {
     const content = (
-        <div className="w-full p-4 flex items-center gap-4 hover:bg-slate-50 transition border-b border-gray-50 last:border-0">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+        <div className="w-full p-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition border-b border-gray-50 dark:border-gray-700 last:border-0">
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-gray-700 flex items-center justify-center text-slate-600 dark:text-slate-300">
                 <Icon className="w-5 h-5" />
             </div>
-            <span className="flex-1 text-left font-medium text-slate-700">{title}</span>
+            <span className="flex-1 text-left font-medium text-slate-700 dark:text-slate-200">{title}</span>
             {badge && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{badge}</span>}
-            <ChevronRight className="w-5 h-5 text-slate-300" />
+            <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600" />
         </div>
     );
 

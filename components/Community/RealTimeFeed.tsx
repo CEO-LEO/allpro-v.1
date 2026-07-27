@@ -361,7 +361,7 @@ function PostRow({ item }: { item: FeedItem }) {
   };
 
   return (
-    <article className="border-b border-gray-200 hover:bg-gray-50/60 transition-colors">
+    <article className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors">
       <div className="flex gap-3 px-4 py-4">
         {/* Avatar */}
         <div className="flex-shrink-0 pt-0.5">
@@ -384,7 +384,7 @@ function PostRow({ item }: { item: FeedItem }) {
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center gap-1.5 text-sm leading-5 flex-wrap">
-            <span className="font-bold text-gray-900 truncate max-w-[180px]">
+            <span className="font-bold text-gray-900 dark:text-white truncate max-w-[180px]">
               {item.displayName}
             </span>
             {item.verified && (
@@ -393,13 +393,13 @@ function PostRow({ item }: { item: FeedItem }) {
             {item.isBrand && (
               <Store className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
             )}
-            <span className="text-gray-400 truncate">@{item.username}</span>
-            <span className="text-gray-300">·</span>
-            <span className="text-gray-400 flex-shrink-0">{shortTime(item.timeAgo)}</span>
+            <span className="text-gray-400 dark:text-gray-500 truncate">@{item.username}</span>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <span className="text-gray-400 dark:text-gray-500 flex-shrink-0">{shortTime(item.timeAgo)}</span>
           </div>
 
           {/* Content */}
-          <div className="mt-1.5 text-[15px] leading-relaxed text-gray-800 whitespace-pre-line break-words">
+          <div className="mt-1.5 text-[15px] leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-line break-words">
             {item.content}
           </div>
 
@@ -433,7 +433,7 @@ function PostRow({ item }: { item: FeedItem }) {
 
           {/* Image */}
           {item.imageUrl && (
-            <div className="mt-3 relative rounded-2xl overflow-hidden border border-gray-200 max-h-80">
+            <div className="mt-3 relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 max-h-80">
               {item.imageUrl.startsWith('blob:') ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={item.imageUrl} alt="" className="w-full object-cover max-h-80" />
@@ -537,8 +537,8 @@ function PostRow({ item }: { item: FeedItem }) {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <span className="text-xs font-bold text-gray-700">{latestComment.author}</span>{' '}
-                <span className="text-xs text-gray-500 line-clamp-1">{latestComment.text}</span>
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{latestComment.author}</span>{' '}
+                <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{latestComment.text}</span>
               </div>
               <span className="text-[10px] text-blue-400 group-hover:text-blue-500 flex-shrink-0 mt-0.5">ดูทั้งหมด</span>
             </button>
@@ -561,12 +561,12 @@ function PostRow({ item }: { item: FeedItem }) {
                       {(cmt.author || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <div className="bg-gray-100 rounded-2xl px-3.5 py-2 flex-1 min-w-0">
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl px-3.5 py-2 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-800">{cmt.author}</span>
-                      <span className="text-[10px] text-gray-400">{cmt.timeAgo}</span>
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{cmt.author}</span>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500">{cmt.timeAgo}</span>
                     </div>
-                    <p className="text-sm text-gray-700 mt-0.5">{cmt.text}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{cmt.text}</p>
                   </div>
                 </div>
               ))}
@@ -588,7 +588,7 @@ function PostRow({ item }: { item: FeedItem }) {
                 {currentUserName.charAt(0).toUpperCase()}
               </div>
             )}
-            <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+            <div className="flex-1 flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
               <input
                 ref={commentRef}
                 type="text"
@@ -596,7 +596,7 @@ function PostRow({ item }: { item: FeedItem }) {
                 onChange={(e) => setCommentText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && submitComment()}
                 placeholder="เขียนความคิดเห็น..."
-                className="flex-1 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
+                className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
               />
               <button
                 type="button"
@@ -686,8 +686,8 @@ function PlacesAutocompleteInput({ value, onChange, onSelect, onClear, isTagged 
         onChange={handleInput}
         disabled={!ready}
         placeholder="ระบุสถานที่ร้านค้า เช่น Starbucks Siam Paragon"
-        className={`w-full bg-gray-50 border rounded-xl pl-10 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent transition-colors ${
-          isTagged ? 'border-green-300 bg-green-50/50 pr-10' : 'border-gray-200 pr-4'
+        className={`w-full bg-gray-50 dark:bg-gray-800 border rounded-xl pl-10 py-3 text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent transition-colors ${
+          isTagged ? 'border-green-300 bg-green-50/50 dark:bg-green-900/10 pr-10' : 'border-gray-200 dark:border-gray-600 pr-4'
         }`}
       />
       {/* Clear tag button */}
@@ -695,7 +695,7 @@ function PlacesAutocompleteInput({ value, onChange, onSelect, onClear, isTagged 
         <button
           type="button"
           onClick={onClear}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           title="ลบแท็กสถานที่"
         >
           <X className="w-3.5 h-3.5" />
@@ -704,17 +704,17 @@ function PlacesAutocompleteInput({ value, onChange, onSelect, onClear, isTagged 
 
       {/* Suggestions dropdown */}
       {showDropdown && status === 'OK' && data.length > 0 && (
-        <ul className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+        <ul className="absolute z-50 left-0 right-0 mt-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
           {data.map(({ place_id, structured_formatting }) => (
             <li key={place_id}>
               <button
                 type="button"
                 onClick={() => handleSelect(structured_formatting.main_text + (structured_formatting.secondary_text ? ', ' + structured_formatting.secondary_text : ''), place_id)}
-                className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors flex items-start gap-3 border-b border-gray-50 last:border-0"
+                className="w-full text-left px-4 py-3 hover:bg-orange-50 dark:hover:bg-gray-700 transition-colors flex items-start gap-3 border-b border-gray-50 dark:border-gray-700 last:border-0"
               >
                 <MapPin className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                     {structured_formatting.main_text}
                   </p>
                   {structured_formatting.secondary_text && (
@@ -940,7 +940,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-8 rounded-full bg-orange-500" />
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                 COMMUNITY FEED
               </h2>
               <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full animate-pulse">
@@ -957,13 +957,13 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 activeTab === 'brands'
                   ? 'bg-gradient-to-r from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-500/25 scale-105'
-                  : 'bg-white text-gray-500 hover:bg-gray-100 shadow-sm'
+                  : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm'
               }`}
             >
               <Store className="w-4 h-4" />
               Brand Posts
               <span className={`px-2 py-0.5 rounded-full text-xs ${
-                activeTab === 'brands' ? 'bg-white/20' : 'bg-gray-200'
+                activeTab === 'brands' ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700'
               }`}>{brandFeed.length}</span>
             </button>
             <button
@@ -972,13 +972,13 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 activeTab === 'users'
                   ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg shadow-orange-500/25 scale-105'
-                  : 'bg-white text-gray-500 hover:bg-gray-100 shadow-sm'
+                  : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm'
               }`}
             >
               <Users className="w-4 h-4" />
               User Posts
               <span className={`px-2 py-0.5 rounded-full text-xs ${
-                activeTab === 'users' ? 'bg-white/20' : 'bg-gray-200'
+                activeTab === 'users' ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700'
               }`}>{userFeed.length}</span>
             </button>
           </div>
@@ -993,7 +993,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${
                   selectedTag === tag
                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25 scale-105'
-                    : 'bg-white text-gray-500 hover:bg-purple-50 hover:text-purple-600 shadow-sm border border-gray-200'
+                    : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400 shadow-sm border border-gray-200 dark:border-gray-700'
                 }`}
               >
                 {tag}
@@ -1006,23 +1006,23 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
         <button
           type="button"
           onClick={openModal}
-          className="mx-4 mb-6 w-[calc(100%-2rem)] bg-white border-2 border-dashed border-gray-300 rounded-2xl p-4 hover:border-orange-400 hover:bg-orange-50/30 transition-all flex items-center gap-3"
+          className="mx-4 mb-6 w-[calc(100%-2rem)] bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-4 hover:border-orange-400 hover:bg-orange-50/30 dark:hover:bg-orange-900/10 transition-all flex items-center gap-3"
         >
-          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 ring-2 ring-orange-200">
+          <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0 ring-2 ring-orange-200 dark:ring-orange-800">
             <PenLine className="w-5 h-5 text-orange-500" />
           </div>
-          <span className="text-gray-400 text-[15px]">แชร์ดีลดีๆ ที่เจอ...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-[15px]">แชร์ดีลดีๆ ที่เจอ...</span>
         </button>
 
         {/* ─── Feed ─────────────────────────────────────────────────── */}
-        <div className="mx-4 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden divide-y divide-gray-200">
+        <div className="mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden divide-y divide-gray-200 dark:divide-gray-700">
           {isLoadingPosts ? (
-            <div className="py-16 text-center text-gray-400">
+            <div className="py-16 text-center text-gray-400 dark:text-gray-500">
               <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin opacity-40" />
               <p className="text-sm">กำลังโหลดโพสต์...</p>
             </div>
           ) : feed.length === 0 ? (
-            <div className="py-16 text-center text-gray-400">
+            <div className="py-16 text-center text-gray-400 dark:text-gray-500">
               <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-40" />
               <p className="text-sm">ยังไม่มีโพสต์ เริ่มแชร์เลย!</p>
             </div>
@@ -1046,14 +1046,14 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900">สร้างโพสต์ใหม่</h3>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">สร้างโพสต์ใหม่</h3>
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1077,8 +1077,8 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                   </div>
                 )}
                 <div>
-                  <p className="font-bold text-gray-900 text-sm">You</p>
-                  <p className="text-xs text-gray-400">@hunter_you</p>
+                  <p className="font-bold text-gray-900 dark:text-white text-sm">You</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">@hunter_you</p>
                 </div>
               </div>
 
@@ -1088,13 +1088,13 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                 onChange={(e) => setModalText(e.target.value)}
                 placeholder="เล่ารายละเอียดดีลที่เจอ..."
                 rows={4}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[15px] text-gray-800 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent leading-relaxed"
+                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-[15px] text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent leading-relaxed"
                 autoFocus
               />
 
               {/* Tag selector */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                   เลือกหมวดหมู่ <span className="text-red-500">*</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -1106,7 +1106,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                       className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
                         modalTag === tag
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md scale-105'
-                          : 'bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600 border border-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400 border border-gray-200 dark:border-gray-600'
                       }`}
                     >
                       {tag}
@@ -1128,7 +1128,7 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                   className="hidden"
                 />
                 {modalImagePreview ? (
-                  <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                  <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={modalImagePreview}
@@ -1147,10 +1147,10 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-36 border-2 border-dashed border-gray-300 rounded-xl hover:border-orange-400 hover:bg-orange-50/30 transition-all flex flex-col items-center justify-center gap-2 group"
+                    className="w-full h-36 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-orange-400 hover:bg-orange-50/30 dark:hover:bg-orange-900/10 transition-all flex flex-col items-center justify-center gap-2 group"
                   >
-                    <ImageIcon className="w-8 h-8 text-gray-300 group-hover:text-orange-400 transition-colors" />
-                    <span className="text-sm text-gray-400 group-hover:text-orange-500 font-medium">คลิกเพื่อเลือกรูปภาพ</span>
+                    <ImageIcon className="w-8 h-8 text-gray-300 dark:text-gray-600 group-hover:text-orange-400 transition-colors" />
+                    <span className="text-sm text-gray-400 dark:text-gray-500 group-hover:text-orange-500 font-medium">คลิกเพื่อเลือกรูปภาพ</span>
                   </button>
                 )}
               </div>
@@ -1181,14 +1181,14 @@ export default function RealTimeFeed({ showCreateModal = false, setShowCreateMod
                     value={modalLocation}
                     onChange={(e) => setModalLocation(e.target.value)}
                     placeholder="ระบุสถานที่ร้านค้า เช่น Starbucks Siam Paragon"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
                   />
                 </div>
               )}
             </div>
 
             {/* Footer — image icon removed per design requirement */}
-            <div className="flex items-center justify-end px-5 py-4 border-t border-gray-100 bg-gray-50/50">
+            <div className="flex items-center justify-end px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
               <button
                 type="button"
                 onClick={handleModalSubmit}

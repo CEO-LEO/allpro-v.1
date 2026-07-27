@@ -69,15 +69,15 @@ export default function CouponsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-base sm:text-xl font-bold text-[#FF5722] hover:text-[#E64A19] transition-colors">
               ← All Pro
             </Link>
-            <h1 className="text-sm sm:text-lg font-semibold">คูปองส่วนลด</h1>
+            <h1 className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-white">คูปองส่วนลด</h1>
             <div className="w-8 sm:w-20"></div>
           </div>
         </div>
@@ -99,35 +99,35 @@ export default function CouponsPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200 animate-pulse">
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 animate-pulse">
                 <div className="p-5 space-y-3">
-                  <div className="h-5 bg-gray-200 rounded w-2/3" />
-                  <div className="h-4 bg-gray-200 rounded w-full" />
-                  <div className="h-12 bg-gray-100 rounded-lg" />
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                  <div className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
                 </div>
-                <div className="p-5 space-y-3 border-t">
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  <div className="h-3 bg-gray-200 rounded w-1/3" />
-                  <div className="h-2 bg-gray-200 rounded-full" />
+                <div className="p-5 space-y-3 border-t dark:border-gray-700">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full" />
                 </div>
               </div>
             ))}
           </div>
         ) : isError ? (
           <div className="text-center py-16">
-            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">⚠️</span>
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
-            <p className="text-sm text-gray-600">ไม่สามารถโหลดคูปองได้ กรุณาลองใหม่</p>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">เกิดข้อผิดพลาด</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">ไม่สามารถโหลดคูปองได้ กรุณาลองใหม่</p>
           </div>
         ) : coupons.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <TicketIcon className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีคูปองในขณะนี้</h3>
-            <p className="text-sm text-gray-500">กลับมาตรวจสอบใหม่เร็วๆ นี้</p>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">ยังไม่มีคูปองในขณะนี้</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">กลับมาตรวจสอบใหม่เร็วๆ นี้</p>
           </div>
         ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

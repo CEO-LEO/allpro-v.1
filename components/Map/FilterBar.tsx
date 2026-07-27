@@ -36,7 +36,7 @@ export default function FilterBar({ categories, activeFilters, onFilterChange }:
 
   return (
     <div className="absolute top-4 left-0 right-0 z-[1000] px-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-lg p-2 max-w-full overflow-x-auto scrollbar-hide">
+      <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg p-2 max-w-full overflow-x-auto scrollbar-hide">
         <div className="flex gap-2 min-w-max">
           {filters.map((filter) => {
             const isActive = activeFilters.includes(filter.id);
@@ -49,7 +49,7 @@ export default function FilterBar({ categories, activeFilters, onFilterChange }:
                   transition-all duration-200 whitespace-nowrap
                   ${isActive
                     ? 'bg-orange-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }
                 `}
                 whileTap={{ scale: 0.95 }}

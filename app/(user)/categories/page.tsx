@@ -154,7 +154,7 @@ export default function CategoriesPage() {
   // ── Loading Skeleton ──
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white relative z-10">
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
@@ -167,14 +167,14 @@ export default function CategoriesPage() {
           {Array.from({ length: 4 }).map((_, gi) => (
             <div key={gi}>
               <div className="flex items-center gap-3 mb-5 px-2">
-                <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
-                <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />
+                <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
               </div>
               <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
                 {Array.from({ length: 7 }).map((_, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white border border-gray-200 animate-pulse">
-                    <div className="w-14 h-14 bg-gray-200 rounded-lg" />
-                    <div className="h-3 w-12 bg-gray-200 rounded" />
+                  <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 animate-pulse">
+                    <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                    <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
                   </div>
                 ))}
               </div>
@@ -188,13 +188,13 @@ export default function CategoriesPage() {
   // ── Error State ──
   if (isError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center max-w-md">
-          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center max-w-md">
+          <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-4xl">⚠️</span>
           </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
-          <p className="text-sm text-gray-500 mb-6">ไม่สามารถโหลดหมวดหมู่ได้</p>
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">เกิดข้อผิดพลาด</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">ไม่สามารถโหลดหมวดหมู่ได้</p>
           <button onClick={() => window.location.reload()} className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold">ลองใหม่</button>
         </div>
       </div>
@@ -202,7 +202,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white relative z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -216,7 +216,7 @@ export default function CategoriesPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white border-b sticky top-[64px] z-20">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-[64px] z-20">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-8">
             <button
@@ -224,7 +224,7 @@ export default function CategoriesPage() {
               className={`py-4 px-2 font-semibold transition-colors relative ${
                 selectedTab === 'สินค้า'
                   ? 'text-red-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               สินค้า
@@ -240,7 +240,7 @@ export default function CategoriesPage() {
               className={`py-4 px-2 font-semibold transition-colors relative ${
                 selectedTab === 'แบรนด์'
                   ? 'text-red-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               แบรนด์
@@ -267,12 +267,12 @@ export default function CategoriesPage() {
               transition={{ duration: 0.2 }}
             >
         {categoryGroups.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-16 text-center">
+            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <ShoppingBagIcon className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีหมวดหมู่สินค้า</h3>
-            <p className="text-sm text-gray-500">ข้อมูลจะแสดงเมื่อเชื่อมต่อ API</p>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">ยังไม่มีหมวดหมู่สินค้า</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">ข้อมูลจะแสดงเมื่อเชื่อมต่อ API</p>
           </div>
         ) : (
         categoryGroups.map((group, groupIndex) => {
@@ -411,7 +411,7 @@ export default function CategoriesPage() {
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <TagIcon className="w-5 h-5 text-gray-500" />
-                  <span className="text-body-sm font-medium text-gray-600">กรองตามหมวดหมู่</span>
+                  <span className="text-body-sm font-medium text-gray-600 dark:text-gray-400">กรองตามหมวดหมู่</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -419,7 +419,7 @@ export default function CategoriesPage() {
                     className={`px-4 py-2 rounded-full text-caption font-medium transition-all ${
                       brandFilter === 'ทั้งหมด'
                         ? 'bg-red-600 text-white shadow-md'
-                        : 'bg-white text-gray-600 border border-gray-200 hover:border-red-200 hover:text-red-600'
+                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-red-200 hover:text-red-600'
                     }`}
                   >
                     ทั้งหมด ({brands.length})
@@ -434,7 +434,7 @@ export default function CategoriesPage() {
                         className={`px-4 py-2 rounded-full text-caption font-medium transition-all flex items-center gap-1.5 ${
                           brandFilter === cat.id
                             ? 'bg-red-600 text-white shadow-md'
-                            : 'bg-white text-gray-600 border border-gray-200 hover:border-red-200 hover:text-red-600'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-red-200 hover:text-red-600'
                         }`}
                       >
                         <CatIcon className="w-3.5 h-3.5" />
@@ -447,12 +447,12 @@ export default function CategoriesPage() {
 
               {/* All Brands Grid */}
               {brands.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-16 text-center">
+                  <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                     <TagIcon className="w-10 h-10 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีข้อมูลแบรนด์</h3>
-                  <p className="text-sm text-gray-500">ข้อมูลจะแสดงเมื่อเชื่อมต่อ API</p>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">ยังไม่มีข้อมูลแบรนด์</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">ข้อมูลจะแสดงเมื่อเชื่อมต่อ API</p>
                 </div>
               ) : (
               <div className="mb-8">

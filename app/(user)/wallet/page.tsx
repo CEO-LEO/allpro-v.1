@@ -181,28 +181,28 @@ export default function WalletPage() {
   const expiredProducts = savedProducts.filter(p => isExpired(p.validUntil));
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div className="min-h-screen bg-white dark:bg-gray-900 pb-24">
       <div className="max-w-5xl mx-auto px-4">
         {/* Header */}
         <div className="pt-6 pb-4">
-          <h1 className="text-lg font-bold text-gray-900">กระเป๋าของฉัน</h1>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">กระเป๋าของฉัน</h1>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
           <button
             onClick={() => setActiveTab('saved')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               activeTab === 'saved'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             <Bookmark className="w-4 h-4" />
             โปรโมชันของฉัน
             {savedProducts.length > 0 && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                activeTab === 'saved' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-500'
+                activeTab === 'saved' ? 'bg-orange-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
               }`}>
                 {savedProducts.length}
               </span>
@@ -212,8 +212,8 @@ export default function WalletPage() {
             onClick={() => setActiveTab('coupons')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               activeTab === 'coupons'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             <Ticket className="w-4 h-4" />
@@ -223,15 +223,15 @@ export default function WalletPage() {
             onClick={() => setActiveTab('claims')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               activeTab === 'claims'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             <History className="w-4 h-4" />
             ที่กดรับ
             {claims.length > 0 && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                activeTab === 'claims' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-500'
+                activeTab === 'claims' ? 'bg-orange-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
               }`}>
                 {claims.length}
               </span>
@@ -245,15 +245,15 @@ export default function WalletPage() {
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 text-orange-400 animate-spin mb-3" />
-                <p className="text-sm text-gray-400">กำลังโหลด...</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">กำลังโหลด...</p>
               </div>
             ) : savedProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                  <Bookmark className="w-7 h-7 text-gray-300" />
+                <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <Bookmark className="w-7 h-7 text-gray-300 dark:text-gray-600" />
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-1">ยังไม่มีโปรโมชันที่บันทึก</h3>
-                <p className="text-sm text-gray-400 mb-6">กดไอคอน Bookmark บนการ์ดเพื่อบันทึกดีลที่ชอบ</p>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">ยังไม่มีโปรโมชันที่บันทึก</h3>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">กดไอคอน Bookmark บนการ์ดเพื่อบันทึกดีลที่ชอบ</p>
                 <Link href="/" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:text-orange-600">
                   ไปหน้าแรก <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -264,7 +264,7 @@ export default function WalletPage() {
                 {activeProducts.map((product) => {
                   const discountPercent = Math.round(((product.originalPrice - product.promoPrice) / product.originalPrice) * 100);
                   return (
-                    <div key={product.id} className="bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3 flex gap-3">
+                    <div key={product.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3 flex gap-3">
                       {/* Expiry warning */}
                       {(() => {
                         const d = Math.ceil((new Date(product.validUntil).getTime() - Date.now()) / 86400000);
@@ -273,7 +273,7 @@ export default function WalletPage() {
                         ) : null;
                       })()}
                       <Link href={`/promo/${product.id}`} className="flex-shrink-0">
-                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-50 relative">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700 relative">
                           <img
                             src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                             alt={product.title}
@@ -294,7 +294,7 @@ export default function WalletPage() {
                             <span className="text-[11px] text-orange-600 font-medium">{product.shopName}</span>
                           </div>
                           <Link href={`/promo/${product.id}`}>
-                            <h3 className="text-sm font-semibold text-gray-900 line-clamp-1 hover:text-orange-600 transition-colors">{product.title}</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-1 hover:text-orange-600 transition-colors">{product.title}</h3>
                           </Link>
                         </div>
                         {/* Expiry badge */}
@@ -311,7 +311,7 @@ export default function WalletPage() {
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-base font-bold text-orange-500">฿{product.promoPrice}</span>
                             {product.originalPrice > product.promoPrice && (
-                              <span className="text-[11px] text-gray-400 line-through">฿{product.originalPrice}</span>
+                              <span className="text-[11px] text-gray-400 dark:text-gray-500 line-through">฿{product.originalPrice}</span>
                             )}
                           </div>
                           <div className="flex items-center gap-1.5">
@@ -323,7 +323,7 @@ export default function WalletPage() {
                             </Link>
                             <button
                               onClick={() => handleRemove(product.id, product.title)}
-                              className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-all"
+                              className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -338,13 +338,13 @@ export default function WalletPage() {
                 {expiredProducts.length > 0 && (
                   <>
                     <div className="flex items-center gap-2 mt-6 mb-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">หมดอายุแล้ว</span>
-                      <div className="flex-1 h-px bg-gray-100" />
+                      <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">หมดอายุแล้ว</span>
+                      <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
                     </div>
                     {expiredProducts.map((product) => (
-                      <div key={product.id} className="bg-gray-50/50 rounded-xl border border-gray-100 p-3 flex gap-3 opacity-60">
-                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 relative flex-shrink-0">
+                      <div key={product.id} className="bg-gray-50/50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 p-3 flex gap-3 opacity-60">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 relative flex-shrink-0">
                           <img
                             src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                             alt={product.title}
@@ -357,14 +357,14 @@ export default function WalletPage() {
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
                           <div>
-                            <span className="text-[11px] text-gray-400">{product.shopName}</span>
-                            <h3 className="text-sm font-semibold text-gray-500 line-clamp-1">{product.title}</h3>
+                            <span className="text-[11px] text-gray-400 dark:text-gray-500">{product.shopName}</span>
+                            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 line-clamp-1">{product.title}</h3>
                           </div>
                           <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs text-gray-400">โปรโมชันนี้สิ้นสุดแล้ว</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">โปรโมชันนี้สิ้นสุดแล้ว</span>
                             <button
                               onClick={() => handleRemove(product.id, product.title)}
-                              className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg transition-all"
+                              className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 rounded-lg transition-all"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -377,7 +377,7 @@ export default function WalletPage() {
 
                 {/* Summary bar */}
                 <div className="mt-4 flex items-center justify-between px-1 py-2">
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
                     {activeProducts.length} ใช้งานได้ · {expiredProducts.length} หมดอายุ
                   </span>
                   <Link href="/saved" className="text-xs font-semibold text-orange-500 hover:text-orange-600 flex items-center gap-0.5">
@@ -393,10 +393,10 @@ export default function WalletPage() {
         {activeTab === 'coupons' && (
           <div className="space-y-6">
             {/* Manual coupon code input */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="w-4 h-4 text-orange-500" />
-                <h3 className="font-semibold text-gray-900 text-sm">กรอกโค้ดคูปอง</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm">กรอกโค้ดคูปอง</h3>
               </div>
               {couponApplied ? (
                 <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
@@ -420,7 +420,7 @@ export default function WalletPage() {
                     onChange={(e) => setCouponInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
                     placeholder="เช่น IAM-XXXX-YYYY"
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-300"
+                    className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-mono text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-300 dark:placeholder-gray-600"
                   />
                   <button
                     onClick={handleApplyCoupon}
@@ -430,16 +430,16 @@ export default function WalletPage() {
                   </button>
                 </div>
               )}
-              <p className="text-[11px] text-gray-400 mt-2">รับโค้ดได้จากการแลกรางวัล หรือแคมเปญพิเศษจาก All Pro</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2">รับโค้ดได้จากการแลกรางวัล หรือแคมเปญพิเศษจาก All Pro</p>
             </div>
 
             {/* Redirect to rewards */}
             <div className="flex flex-col items-center py-10 text-center">
-              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mb-4">
-                <Ticket className="w-7 h-7 text-orange-300" />
+              <div className="w-16 h-16 bg-orange-50 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4">
+                <Ticket className="w-7 h-7 text-orange-300 dark:text-orange-500" />
               </div>
-              <h3 className="text-base font-bold text-gray-900 mb-1">แลกคะแนนเพื่อรับคูปอง</h3>
-              <p className="text-sm text-gray-400 mb-6">สะสมคะแนนจากการดูดีลและแลกเป็นคูปองส่วนลด</p>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">แลกคะแนนเพื่อรับคูปอง</h3>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">สะสมคะแนนจากการดูดีลและแลกเป็นคูปองส่วนลด</p>
               <Link href="/rewards" className="bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold px-6 py-3 rounded-xl text-sm flex items-center gap-2 hover:opacity-90 transition-opacity">
                 <span>ไปหน้ารางวัล</span> <ArrowRight className="w-4 h-4" />
               </Link>
@@ -453,15 +453,15 @@ export default function WalletPage() {
             {claimsLoading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 text-orange-400 animate-spin mb-3" />
-                <p className="text-sm text-gray-400">กำลังโหลด...</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">กำลังโหลด...</p>
               </div>
             ) : claims.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                  <History className="w-7 h-7 text-gray-300" />
+                <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <History className="w-7 h-7 text-gray-300 dark:text-gray-600" />
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-1">ยังไม่มีประวัติการกดรับโปรโมชั่น</h3>
-                <p className="text-sm text-gray-400 mb-6">กดปุ่ม &quot;รับโปรโมชั่น&quot; ในหน้ารายละเอียดสินค้าเพื่อเริ่มสะสมประวัติ</p>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">ยังไม่มีประวัติการกดรับโปรโมชั่น</h3>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">กดปุ่ม &quot;รับโปรโมชั่น&quot; ในหน้ารายละเอียดสินค้าเพื่อเริ่มสะสมประวัติ</p>
                 <Link href="/" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:text-orange-600">
                   ไปหน้าแรก <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -474,12 +474,12 @@ export default function WalletPage() {
                   return (
                     <div
                       key={claim.id}
-                      className={`bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3 flex gap-3 ${
+                      className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3 flex gap-3 ${
                         isExpiredOrCancelled ? 'opacity-60' : ''
                       }`}
                     >
                       <Link href={`/promo/${claim.productId}`} className="flex-shrink-0">
-                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-50 relative">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700 relative">
                           <img
                             src={claim.image}
                             alt={claim.title}
@@ -495,9 +495,9 @@ export default function WalletPage() {
                             <span className="text-[11px] text-orange-600 font-medium">{claim.shopName}</span>
                           </div>
                           <Link href={`/promo/${claim.productId}`}>
-                            <h3 className="text-sm font-semibold text-gray-900 line-clamp-1 hover:text-orange-600 transition-colors">{claim.title}</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-1 hover:text-orange-600 transition-colors">{claim.title}</h3>
                           </Link>
-                          <p className="text-[11px] text-gray-400 mt-0.5">
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
                             กดรับเมื่อ {new Date(claim.claimedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
                             {claim.amountSaved > 0 && <> · ประหยัด ฿{claim.amountSaved.toLocaleString()}</>}
                           </p>
@@ -508,7 +508,7 @@ export default function WalletPage() {
                               isUsed
                                 ? 'bg-green-50 text-green-600'
                                 : isExpiredOrCancelled
-                                  ? 'bg-gray-100 text-gray-500'
+                                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                                   : 'bg-amber-50 text-amber-600'
                             }`}
                           >

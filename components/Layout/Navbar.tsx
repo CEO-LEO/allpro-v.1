@@ -124,14 +124,14 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-[70] bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <nav className="sticky top-0 z-[70] bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
           {/* Top Bar */}
           <div className="flex items-center justify-between h-12">
             {/* Logo */}
             <Link href="/" onClick={() => setSelectedCategory('All')} className="flex items-center gap-1.5 flex-shrink-0">
               <Image src="/logo-circle.png" alt="All Pro" width={36} height={36} className="w-9 h-9" priority />
-              <span className="text-base font-bold text-gray-900 hidden sm:inline">
+              <span className="text-base font-bold text-gray-900 dark:text-white hidden sm:inline">
                 All Pro
               </span>
             </Link>
@@ -146,7 +146,7 @@ export default function Navbar() {
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                   placeholder="ค้นหาโปรโมชั่น, ร้านค้า, หมวดหมู่..."
-                  className="w-full px-3 py-1.5 pl-9 pr-3 border border-gray-200 rounded-lg bg-gray-50/80 focus:bg-white focus:border-orange-400 focus:outline-none text-sm transition-colors placeholder:text-gray-400"
+                  className="w-full px-3 py-1.5 pl-9 pr-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/80 dark:bg-gray-800/80 focus:bg-white dark:focus:bg-gray-800 focus:border-orange-400 focus:outline-none text-sm transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500 text-gray-900 dark:text-white"
                 />
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
@@ -158,9 +158,9 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-[80]"
+                    className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-[80]"
                   >
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3 pt-2 pb-1">
+                    <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-3 pt-2 pb-1">
                       {searchQuery.trim() ? 'แนะนำ' : 'ค้นหาล่าสุด'}
                     </p>
                     {suggestions.map((s) => (
@@ -168,7 +168,7 @@ export default function Navbar() {
                         key={s}
                         type="button"
                         onMouseDown={() => handleSuggestionClick(s)}
-                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-orange-50 text-left text-sm text-gray-700 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 text-left text-sm text-gray-700 dark:text-gray-300 transition-colors"
                       >
                         <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                         {s}
@@ -176,7 +176,7 @@ export default function Navbar() {
                     ))}
                     {!searchQuery.trim() && TRENDING.length > 0 && (
                       <>
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3 pt-2 pb-1 border-t border-gray-100">กำลังฮิต</p>
+                        <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-3 pt-2 pb-1 border-t border-gray-100 dark:border-gray-700">กำลังฮิต</p>
                         <div className="flex flex-wrap gap-1.5 px-3 pb-3 pt-1">
                           {TRENDING.map((t) => (
                             <button
@@ -201,8 +201,8 @@ export default function Navbar() {
               <Link 
                 href="/" 
                 onClick={() => setSelectedCategory('All')}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 text-sm ${
-                  pathname === '/' ? 'text-orange-600 font-semibold' : 'text-gray-600'
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 dark:hover:bg-gray-800 text-sm ${
+                  pathname === '/' ? 'text-orange-600 font-semibold' : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
                 <Home size={15} />
@@ -211,8 +211,8 @@ export default function Navbar() {
               
               <Link 
                 href="/map" 
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 text-sm ${
-                  pathname === '/map' ? 'text-blue-600 font-semibold' : 'text-gray-600'
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 dark:hover:bg-gray-800 text-sm ${
+                  pathname === '/map' ? 'text-blue-600 font-semibold' : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
                 <Map size={15} />
@@ -221,8 +221,8 @@ export default function Navbar() {
 
               <Link 
                 href="/flash-sale" 
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 text-sm ${
-                  pathname === '/flash-sale' ? 'text-orange-600 font-semibold' : 'text-gray-600'
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 dark:hover:bg-gray-800 text-sm ${
+                  pathname === '/flash-sale' ? 'text-orange-600 font-semibold' : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
                 <Zap size={15} />
@@ -231,8 +231,8 @@ export default function Navbar() {
 
               <Link 
                 href="/community" 
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 text-sm ${
-                  pathname === '/community' ? 'text-purple-600 font-semibold' : 'text-gray-600'
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 dark:hover:bg-gray-800 text-sm ${
+                  pathname === '/community' ? 'text-purple-600 font-semibold' : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
                 <Users size={15} />
@@ -241,8 +241,8 @@ export default function Navbar() {
 
               <Link 
                 href="/rewards" 
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 text-sm ${
-                  pathname === '/rewards' ? 'text-green-600 font-semibold' : 'text-gray-600'
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-all hover:bg-gray-100 dark:hover:bg-gray-800 text-sm ${
+                  pathname === '/rewards' ? 'text-green-600 font-semibold' : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
                 <Gift size={15} />
@@ -255,9 +255,9 @@ export default function Navbar() {
               {/* Notifications */}
               <Link
                 href="/notifications"
-                className="relative p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                className="relative p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
               >
-                <Bell className="w-5 h-5 text-gray-600" />
+                <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -270,7 +270,7 @@ export default function Navbar() {
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                   >
                     {/* Coins */}
                     <div className="hidden sm:flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
@@ -283,7 +283,7 @@ export default function Navbar() {
                       {user.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
 
-                    <ChevronDown className="w-3.5 h-3.5 text-gray-500 hidden sm:block" />
+                    <ChevronDown className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 hidden sm:block" />
                   </button>
 
                   {/* Dropdown Menu */}
@@ -301,7 +301,7 @@ export default function Navbar() {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50"
+                          className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
                         >
                           {/* User Info */}
                           <div className="px-3 py-2.5 bg-orange-500 text-white">
@@ -319,35 +319,35 @@ export default function Navbar() {
                             <Link
                               href="/profile"
                               onClick={() => setShowUserMenu(false)}
-                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-100 transition-colors text-sm"
+                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-200 transition-colors text-sm"
                             >
-                              <User className="w-4 h-4 text-gray-500" />
+                              <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                               <span>โปรไฟล์</span>
                             </Link>
 
                             <Link
                               href="/wallet"
                               onClick={() => setShowUserMenu(false)}
-                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-100 transition-colors text-sm"
+                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-200 transition-colors text-sm"
                             >
-                              <Wallet className="w-4 h-4 text-gray-500" />
+                              <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                               <span>กระเป๋าของฉัน</span>
                             </Link>
 
                             <Link
                               href="/profile/edit"
                               onClick={() => setShowUserMenu(false)}
-                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-100 transition-colors text-sm"
+                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-200 transition-colors text-sm"
                             >
-                              <Settings className="w-4 h-4 text-gray-500" />
+                              <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                               <span>ตั้งค่า</span>
                             </Link>
 
-                            <div className="border-t border-gray-200 my-1" />
+                            <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
 
                             <button
                               onClick={handleLogout}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-red-50 text-red-600 transition-colors text-sm"
+                              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors text-sm"
                             >
                               <LogOut className="w-4 h-4" />
                               <span>ออกจากระบบ</span>
@@ -370,10 +370,10 @@ export default function Navbar() {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 aria-label={mobileMenuOpen ? 'ปิดเมนู' : 'เปิดเมนู'}
               >
-                {mobileMenuOpen ? <XIcon className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
+                {mobileMenuOpen ? <XIcon className="w-6 h-6 text-gray-700 dark:text-gray-200" /> : <Menu className="w-6 h-6 text-gray-700 dark:text-gray-200" />}
               </button>
             </div>
           </div>
@@ -387,7 +387,7 @@ export default function Navbar() {
                 className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                   selectedCategory === category
                     ? 'bg-orange-500 text-white'
-                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 {CATEGORY_LABEL[category] || category}
@@ -413,7 +413,7 @@ export default function Navbar() {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="lg:hidden border-t border-gray-100 overflow-hidden relative z-[70] bg-white"
+                className="lg:hidden border-t border-gray-100 dark:border-gray-800 overflow-hidden relative z-[70] bg-white dark:bg-gray-900"
               >
                 <div className="px-3 py-3 space-y-1">
                   {[
@@ -431,7 +431,7 @@ export default function Navbar() {
                         if (href === '/') setSelectedCategory('All');
                       }}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
-                        pathname === href ? 'text-orange-600 bg-orange-50 font-semibold' : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                        pathname === href ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700'
                       }`}
                     >
                       <Icon size={18} />
@@ -442,11 +442,11 @@ export default function Navbar() {
                   {/* User quick links */}
                   {user && (
                     <>
-                      <div className="border-t border-gray-100 my-2" />
+                      <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
                       <Link
                         href="/wallet"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700"
                       >
                         <Wallet size={18} />
                         <span>กระเป๋าของฉัน</span>
@@ -454,7 +454,7 @@ export default function Navbar() {
                       <Link
                         href="/profile"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700"
                       >
                         <User size={18} />
                         <span>โปรไฟล์</span>
@@ -475,7 +475,7 @@ export default function Navbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ค้นหาโปรโมชั่น..."
-              className="w-full px-3 py-1.5 pl-8 pr-3 border border-gray-200 rounded-lg bg-gray-50/80 focus:bg-white focus:border-orange-400 focus:outline-none text-sm transition-colors placeholder:text-gray-400"
+              className="w-full px-3 py-1.5 pl-8 pr-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/80 dark:bg-gray-800/80 focus:bg-white dark:focus:bg-gray-800 focus:border-orange-400 focus:outline-none text-sm transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500 text-gray-900 dark:text-white"
             />
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
@@ -490,7 +490,7 @@ export default function Navbar() {
               className={`px-3 py-1 rounded-full whitespace-nowrap transition-all text-xs font-medium ${
                 selectedCategory === category
                   ? 'bg-orange-500 text-white'
-                  : 'bg-gray-50 text-gray-500'
+                  : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
               }`}
             >
               {CATEGORY_LABEL[category] || category}

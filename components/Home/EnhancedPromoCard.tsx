@@ -44,19 +44,19 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
   const isBigBrand = promo.isPro || promo.is_sponsored;
   
   const brandStyles = isBigBrand ? {
-    borderColor: 'border-gray-100',
+    borderColor: 'border-gray-100 dark:border-gray-700',
     badgeColor: 'bg-purple-600',
-    accentColor: 'text-purple-600',
-    iconBg: 'bg-purple-50',
-    iconColor: 'text-purple-600',
-    hoverTitle: 'group-hover:text-purple-600',
+    accentColor: 'text-purple-600 dark:text-purple-400',
+    iconBg: 'bg-purple-50 dark:bg-purple-900/20',
+    iconColor: 'text-purple-600 dark:text-purple-400',
+    hoverTitle: 'group-hover:text-purple-600 dark:group-hover:text-purple-400',
   } : {
-    borderColor: 'border-gray-100',
+    borderColor: 'border-gray-100 dark:border-gray-700',
     badgeColor: 'bg-orange-500',
-    accentColor: 'text-orange-600',
-    iconBg: 'bg-orange-50',
-    iconColor: 'text-orange-600',
-    hoverTitle: 'group-hover:text-orange-600',
+    accentColor: 'text-orange-600 dark:text-orange-400',
+    iconBg: 'bg-orange-50 dark:bg-orange-900/20',
+    iconColor: 'text-orange-600 dark:text-orange-400',
+    hoverTitle: 'group-hover:text-orange-600 dark:group-hover:text-orange-400',
   };
 
   return (
@@ -74,7 +74,7 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
       <Link href={`/promo/${encodeURIComponent(promo.id)}`} className="block">
         <div className={`
           relative overflow-hidden rounded-xl border ${brandStyles.borderColor}
-          bg-white
+          bg-white dark:bg-gray-800
           shadow-[0_1px_4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]
         `}>
           {/* Badge ประเภทร้านค้า */}
@@ -123,7 +123,7 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
           </div>
 
           {/* รูปภาพโปรโมชั่น */}
-          <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
+          <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden">
             {(() => {
               // Resolve image: promo.image may already be a full URL (from API) or a storage path
               const imageUrl = resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category));
@@ -184,24 +184,24 @@ export default function EnhancedPromoCard({ promo, index = 0 }: EnhancedPromoCar
             </div>
 
             {/* หัวข้อโปรโมชั่น */}
-            <h3 className={`text-h4 text-gray-900 leading-tight line-clamp-2 ${brandStyles.hoverTitle} transition-colors`}>
+            <h3 className={`text-h4 text-gray-900 dark:text-white leading-tight line-clamp-2 ${brandStyles.hoverTitle} transition-colors`}>
               {promo.title}
             </h3>
 
             {/* คำอธิบาย */}
-            <p className="text-sm text-slate-500 line-clamp-2">
+            <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
               {promo.description}
             </p>
 
             {/* ราคาและข้อมูลเพิ่มเติม */}
-            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-700">
               <div className="space-y-1">
                 {promo.price && (
-                  <p className="text-h2 text-gray-900">
+                  <p className="text-h2 text-gray-900 dark:text-white">
                     ฿{promo.price}
                   </p>
                 )}
-                <div className="flex items-center gap-1 text-xs text-slate-400">
+                <div className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
                   <MapPinIcon className="w-3.5 h-3.5" />
                   <span className="line-clamp-1">{promo.location || 'ทุกสาขา'}</span>
                 </div>

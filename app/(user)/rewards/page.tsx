@@ -195,8 +195,8 @@ export default function RewardsPage() {
             <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-12 h-12 text-orange-600" />
             </div>
-            <h2 className="text-h2 text-gray-900 mb-2">Login Required</h2>
-            <p className="text-body text-gray-600 mb-6">Please login to access the rewards shop</p>
+            <h2 className="text-h2 text-gray-900 dark:text-white mb-2">Login Required</h2>
+            <p className="text-body text-gray-600 dark:text-gray-400 mb-6">Please login to access the rewards shop</p>
             <button 
               onClick={() => setShowLoginModal(true)}
               className="btn-primary"
@@ -211,7 +211,7 @@ export default function RewardsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Confirmation Dialog */}
       <AnimatePresence>
         {confirmReward && (
@@ -225,22 +225,22 @@ export default function RewardsPage() {
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
-              className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl"
+              className="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl"
             >
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Gift className="w-8 h-8 text-orange-500" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">ยืนยันการแลก</h3>
-              <p className="text-sm text-gray-500 mb-4">{confirmReward.name}</p>
-              <div className="bg-orange-50 rounded-2xl px-4 py-3 mb-5">
-                <p className="text-sm text-gray-600">ใช้คะแนน</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">ยืนยันการแลก</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{confirmReward.name}</p>
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl px-4 py-3 mb-5">
+                <p className="text-sm text-gray-600 dark:text-gray-400">ใช้คะแนน</p>
                 <p className="text-2xl font-bold text-orange-500">{confirmReward.pointsCost.toLocaleString()} pts</p>
-                <p className="text-xs text-gray-400 mt-1">คงเหลือ: {(pointsBalance - confirmReward.pointsCost).toLocaleString()} pts</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">คงเหลือ: {(pointsBalance - confirmReward.pointsCost).toLocaleString()} pts</p>
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmReward(null)}
-                  className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   ยกเลิก
                 </button>
@@ -269,13 +269,13 @@ export default function RewardsPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl p-8 max-w-md w-full text-center"
+              className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-md w-full text-center"
             >
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Gift className="w-10 h-10 text-green-600" />
               </div>
-              <h3 className="text-h2 text-gray-900 mb-2">Reward Unlocked!</h3>
-              <p className="text-body text-gray-600 mb-6">Your reward has been added to your wallet</p>
+              <h3 className="text-h2 text-gray-900 dark:text-white mb-2">Reward Unlocked!</h3>
+              <p className="text-body text-gray-600 dark:text-gray-400 mb-6">Your reward has been added to your wallet</p>
               <Link href="/profile/wallet" className="btn-primary w-full">
                 View in Wallet
               </Link>
@@ -285,10 +285,10 @@ export default function RewardsPage() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
+      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-xl font-bold text-gray-900">
+            <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">
               Rewards
             </Link>
             <Link 
@@ -349,24 +349,24 @@ export default function RewardsPage() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-2.5 mt-3">
-          <div className="bg-white rounded-xl px-3 py-3 text-center shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl px-3 py-3 text-center shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-gray-100 dark:border-gray-700">
             <div className="mb-1 flex justify-center"><Gift className="w-5 h-5 text-orange-500" /></div>
-            <p className="text-xs text-slate-500">แลกได้</p>
-            <p className="text-base font-semibold text-gray-900">
+            <p className="text-xs text-slate-500 dark:text-slate-400">แลกได้</p>
+            <p className="text-base font-semibold text-gray-900 dark:text-white">
               {rewardsCatalog.filter(r => r.pointsCost <= pointsBalance).length}
             </p>
           </div>
-          <div className="bg-white rounded-xl px-3 py-3 text-center shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl px-3 py-3 text-center shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-gray-100 dark:border-gray-700">
             <div className="mb-1 flex justify-center"><Flame className="w-5 h-5 text-red-500" /></div>
-            <p className="text-xs text-slate-500">ดีลเด็ด</p>
-            <p className="text-base font-semibold text-gray-900">
+            <p className="text-xs text-slate-500 dark:text-slate-400">ดีลเด็ด</p>
+            <p className="text-base font-semibold text-gray-900 dark:text-white">
               {rewardsCatalog.filter(r => r.featured).length}
             </p>
           </div>
-          <div className="bg-white rounded-xl px-3 py-3 text-center shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl px-3 py-3 text-center shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-gray-100 dark:border-gray-700">
             <div className="mb-1 flex justify-center"><Sparkles className="w-5 h-5 text-purple-500" /></div>
-            <p className="text-xs text-slate-500">ของรางวัล</p>
-            <p className="text-base font-semibold text-gray-900">{rewardsCatalog.length}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">ของรางวัล</p>
+            <p className="text-base font-semibold text-gray-900 dark:text-white">{rewardsCatalog.length}</p>
           </div>
         </div>
 
@@ -376,7 +376,7 @@ export default function RewardsPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Bookmark className="w-4 h-4 text-orange-500" />
-                <h3 className="text-sm font-bold text-gray-900">โปรโมชั่นที่บันทึกไว้</h3>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">โปรโมชั่นที่บันทึกไว้</h3>
               </div>
               <Link href="/saved" className="text-xs text-orange-500 font-medium hover:text-orange-600">
                 ดูทั้งหมด ({savedProducts.length})
@@ -389,7 +389,7 @@ export default function RewardsPage() {
                   href={`/promo/${product.id}`}
                   className="flex-shrink-0 w-28 group"
                 >
-                  <div className="w-28 h-28 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                  <div className="w-28 h-28 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <img
                       src={resolveImageUrl(product.image, getCategoryFallbackImage(product.category))}
                       alt={product.title}
@@ -399,7 +399,7 @@ export default function RewardsPage() {
                       }}
                     />
                   </div>
-                  <p className="text-[11px] text-slate-600 mt-1.5 line-clamp-2 leading-tight">{product.title}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1.5 line-clamp-2 leading-tight">{product.title}</p>
                   {product.promoPrice && (
                     <p className="text-xs font-semibold text-orange-500 mt-0.5">฿{product.promoPrice}</p>
                   )}
@@ -411,7 +411,7 @@ export default function RewardsPage() {
       </div>
 
       {/* Category Tabs */}
-      <div className="sticky top-[57px] z-30 bg-white/80 backdrop-blur-sm border-y border-gray-100">
+      <div className="sticky top-[57px] z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-y border-gray-100 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-4 py-2.5">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {categories.map((cat) => (
@@ -421,7 +421,7 @@ export default function RewardsPage() {
                 className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                   selectedCategory === cat.id
                     ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm'
-                    : 'bg-gray-100 text-slate-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-800 text-slate-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <span>{cat.label}</span>
@@ -436,26 +436,26 @@ export default function RewardsPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 animate-pulse">
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 animate-pulse">
                 <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full" />
+                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
                 </div>
                 <div className="space-y-3 text-center">
-                  <div className="h-5 bg-gray-200 rounded w-2/3 mx-auto" />
-                  <div className="h-4 bg-gray-200 rounded w-full" />
-                  <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto" />
-                  <div className="h-10 bg-gray-200 rounded-xl" />
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mx-auto" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mx-auto" />
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl" />
                 </div>
               </div>
             ))}
           </div>
         ) : rewardsCatalog.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-16 text-center">
+            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <Gift className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีของรางวัลในขณะนี้</h3>
-            <p className="text-sm text-gray-500">กลับมาตรวจสอบใหม่เร็วๆ นี้</p>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">ยังไม่มีของรางวัลในขณะนี้</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">กลับมาตรวจสอบใหม่เร็วๆ นี้</p>
           </div>
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -470,8 +470,8 @@ export default function RewardsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className={`relative bg-white rounded-xl p-5 shadow-[0_1px_6px_rgba(0,0,0,0.06)] border transition-all ${
-                  reward.featured ? 'border-orange-300 shadow-md' : 'border-gray-100'
+                className={`relative bg-white dark:bg-gray-800 rounded-xl p-5 shadow-[0_1px_6px_rgba(0,0,0,0.06)] border transition-all ${
+                  reward.featured ? 'border-orange-300 dark:border-orange-700 shadow-md' : 'border-gray-100 dark:border-gray-700'
                 } ${!canAfford && !isRedeemed ? 'opacity-60' : ''}`}
               >
                 {/* Redeemed Badge */}
@@ -489,22 +489,22 @@ export default function RewardsPage() {
                 {/* Content */}
                 <div className="text-center">
                   {/* Title */}
-                  <h3 className="text-h3 text-gray-900 mb-2 line-clamp-2">
+                  <h3 className="text-h3 text-gray-900 dark:text-white mb-2 line-clamp-2">
                     {reward.name}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-body text-gray-600 mb-4 line-clamp-3">
+                  <p className="text-body text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
                     {reward.description}
                   </p>
 
                   {/* Cost */}
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <Coins className="w-5 h-5 text-amber-500" />
-                    <span className="text-h2 text-gray-900">
+                    <span className="text-h2 text-gray-900 dark:text-white">
                       {reward.pointsCost}
                     </span>
-                    <span className="text-body text-gray-600">points</span>
+                    <span className="text-body text-gray-600 dark:text-gray-400">points</span>
                   </div>
 
                   {/* Action Button */}
@@ -513,11 +513,11 @@ export default function RewardsPage() {
                     disabled={!canAfford || isRedeemed || isRedeeming}
                     className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       isRedeemed
-                        ? 'bg-green-50 text-green-700 cursor-not-allowed'
+                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 cursor-not-allowed'
                         : !canAfford
-                        ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                         : isRedeeming
-                        ? 'bg-orange-50 text-orange-600'
+                        ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
                         : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 hover:shadow-md active:scale-[0.98]'
                     }`}
                   >
@@ -551,12 +551,12 @@ export default function RewardsPage() {
         {/* Tips Section */}
         <div className="mt-10 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-h4 text-gray-900 mb-2">How to Earn More Points</h3>
-              <ul className="text-body text-gray-600 space-y-1">
+              <h3 className="text-h4 text-gray-900 dark:text-white mb-2">How to Earn More Points</h3>
+              <ul className="text-body text-gray-600 dark:text-gray-400 space-y-1">
                 <li>• Complete daily check-ins (+10 points)</li>
                 <li>• Share promotions with friends (+5 points each)</li>
                 <li>• Write reviews for stores (+15 points each)</li>
@@ -569,8 +569,8 @@ export default function RewardsPage() {
 
         {/* Redeemed Count */}
         <div className="mt-8 text-center">
-          <p className="text-body text-gray-600">
-            You have redeemed <span className="font-bold text-gray-900">{redeemedRewards.length}</span> reward{redeemedRewards.length !== 1 ? 's' : ''} so far!
+          <p className="text-body text-gray-600 dark:text-gray-400">
+            You have redeemed <span className="font-bold text-gray-900 dark:text-white">{redeemedRewards.length}</span> reward{redeemedRewards.length !== 1 ? 's' : ''} so far!
           </p>
         </div>
       </div>

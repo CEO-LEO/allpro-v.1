@@ -174,7 +174,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Tag Selection Onboarding Modal */}
       <TagSelectionModal 
         isOpen={showTagModal} 
@@ -241,10 +241,10 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   🌟 แนะนำสำหรับคุณ
                 </h2>
-                <p className="text-body-sm text-gray-500 mt-1">
+                <p className="text-body-sm text-gray-500 dark:text-gray-400 mt-1">
                   ดีลที่ตรงกับความสนใจของคุณ
                 </p>
               </div>
@@ -335,10 +335,10 @@ export default function Home() {
           animate={{ opacity: 1 }}
           className="mb-8 scroll-mt-24"
         >
-          <h2 className="text-base font-bold text-gray-900">
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">
             {searchQuery ? 'ผลการค้นหา' : selectedCategory === 'All' ? 'โปรโมชั่นทั้งหมด' : ({'Food':'อาหาร','Fashion':'แฟชั่น','Travel':'ท่องเที่ยว','Gadget':'อุปกรณ์','Beauty':'ความงาม'} as Record<string,string>)[selectedCategory] || selectedCategory}
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
             พบ {filteredProducts.length} โปรโมชั่น
           </p>
         </motion.div>
@@ -371,13 +371,13 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center py-24 px-4"
           >
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-              <Megaphone className="w-12 h-12 text-gray-300" />
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
+              <Megaphone className="w-12 h-12 text-gray-300 dark:text-gray-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-700 mb-2">
+            <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">
               ยังไม่มีโพสต์หรือโปรโมชั่นในขณะนี้
             </h3>
-            <p className="text-gray-400 text-center max-w-sm">
+            <p className="text-gray-400 dark:text-gray-500 text-center max-w-sm">
               เมื่อมีโพสต์หรือโปรโมชั่นใหม่ จะแสดงที่นี่
             </p>
           </motion.div>
@@ -445,13 +445,13 @@ export default function Home() {
             className="text-center py-20"
           >
             <div className="max-w-md mx-auto">
-              <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <Search className="w-12 h-12 text-gray-400" />
+              <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                <Search className="w-12 h-12 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-h2 text-gray-900 mb-2">
+              <h3 className="text-h2 text-gray-900 dark:text-white mb-2">
                 ไม่พบโปรโมชั่นที่คุณค้นหา
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 ลองค้นหาด้วยคำอื่น หรือเปลี่ยนหมวดหมู่
               </p>
               <button

@@ -27,7 +27,7 @@ export default function UserLayout({
   }, [isAuthenticated, user?.role, user?.profileCompleted, user?.onboardingCompleted]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
       {/* Skip to content link for keyboard navigation */}
       <a href="#main-content" className="skip-link">
         ข้ามไปยังเนื้อหาหลัก

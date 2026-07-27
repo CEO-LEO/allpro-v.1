@@ -15,11 +15,11 @@ const PromoMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+      <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
         <div className="text-center">
           <MapPin className="w-12 h-12 text-orange-500 mx-auto mb-3 animate-pulse" />
-          <p className="text-gray-900 font-bold text-lg">กำลังโหลดแผนที่…</p>
-          <p className="text-gray-600 text-sm mt-1">กำลังค้นหาร้านค้าใกล้เคียง</p>
+          <p className="text-gray-900 dark:text-white font-bold text-lg">กำลังโหลดแผนที่…</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">กำลังค้นหาร้านค้าใกล้เคียง</p>
         </div>
       </div>
     )
@@ -119,27 +119,27 @@ export default function MapPage() {
   const categories = Array.from(new Set(stores.map(s => s.category))).sort();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Page Header */}
-      <div className="bg-white border-b border-gray-200 py-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-4">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-1 h-8 bg-orange-500 rounded-full" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <MapPin className="w-6 h-6 text-orange-500" />
                   Promo Map
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   ค้นหาร้านค้าใกล้เคียงที่มีโปรโมชั่น
                 </p>
               </div>
             </div>
             <div className="hidden md:flex items-center gap-2 text-sm">
               <TrendingUp className="w-4 h-4 text-green-600" />
-              <span className="text-gray-600">
-                <span className="font-bold text-gray-900">{stores.length}</span> ร้านค้า
+              <span className="text-gray-600 dark:text-gray-400">
+                <span className="font-bold text-gray-900 dark:text-white">{stores.length}</span> ร้านค้า
               </span>
             </div>
           </div>
@@ -149,15 +149,15 @@ export default function MapPage() {
       {/* Map Container */}
       <div className="flex-1 relative" style={{ height: 'calc(100vh - 200px)', minHeight: '400px' }}>
         {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
             <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
           </div>
         ) : stores.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 p-6">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-6">
             <div className="text-center max-w-sm">
-              <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-700 font-bold mb-1">ยังไม่มีร้านค้าปักหมุดบนแผนที่</p>
-              <p className="text-sm text-gray-500">
+              <MapPin className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-700 dark:text-gray-300 font-bold mb-1">ยังไม่มีร้านค้าปักหมุดบนแผนที่</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 ร้านค้าจะปรากฏที่นี่หลังจากตั้งค่าที่อยู่ร้านในหน้า "แก้ไขข้อมูลร้านค้า"
               </p>
             </div>

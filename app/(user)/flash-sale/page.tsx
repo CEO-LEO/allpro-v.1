@@ -107,7 +107,7 @@ function DealDetailModal({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal card */}
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -148,9 +148,9 @@ function DealDetailModal({
         {/* Content */}
         <div className="p-5 overflow-y-auto flex-1">
           {/* Title & merchant */}
-          <h2 className="text-lg font-bold text-gray-900 mb-1">{deal.title}</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{deal.title}</h2>
           <p className="text-sm font-semibold text-orange-600 mb-2">{deal.merchant}</p>
-          <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">
+          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-4">
             <MapPinIcon className="w-4 h-4" />
             <span>{deal.location}</span>
           </div>
@@ -158,17 +158,17 @@ function DealDetailModal({
           {/* Price */}
           <div className="flex items-baseline gap-3 mb-5">
             <span className="text-3xl font-bold text-orange-600">฿{deal.salePrice.toLocaleString()}</span>
-            <span className="text-base text-gray-400 line-through">฿{deal.originalPrice.toLocaleString()}</span>
+            <span className="text-base text-gray-400 dark:text-gray-500 line-through">฿{deal.originalPrice.toLocaleString()}</span>
             <span className="ml-auto text-sm font-bold text-white bg-red-500 px-2.5 py-0.5 rounded-full">ประหยัด ฿{(deal.originalPrice - deal.salePrice).toLocaleString()}</span>
           </div>
 
           {/* Progress */}
           <div className="mb-5">
-            <div className="flex justify-between text-xs text-gray-600 mb-1.5">
+            <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1.5">
               <span>ขายแล้ว {deal.claimed}/{deal.total}</span>
               <span className="font-semibold">{pct}%</span>
             </div>
-            <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-700"
                 style={{ width: `${pct}%` }}
@@ -178,7 +178,7 @@ function DealDetailModal({
         </div>
 
         {/* Action footer */}
-        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
           <button
             onClick={() => router.push(`/checkout?dealId=${deal.id}&price=${deal.salePrice}`)}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all"
@@ -318,7 +318,7 @@ export default function FlashSalePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 pb-20">
       {/* Header — z-30 so it sits below the global Navbar (z-50) */}
       <div className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -356,7 +356,7 @@ export default function FlashSalePage() {
       </div>
 
       {/* Category Filter — sticky below global navbar */}
-      <div className="sticky top-0 z-30 bg-white border-b shadow-sm">
+      <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {categories.map(cat => (
@@ -366,7 +366,7 @@ export default function FlashSalePage() {
                 className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-all ${
                   filter === cat
                     ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {cat}
@@ -381,37 +381,37 @@ export default function FlashSalePage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
-                <div className="aspect-[4/3] bg-gray-200" />
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse">
+                <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700" />
                 <div className="p-4 space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
                   <div className="flex gap-2">
-                    <div className="h-6 bg-gray-200 rounded w-20" />
-                    <div className="h-6 bg-gray-200 rounded w-16" />
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16" />
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full" />
-                  <div className="h-10 bg-gray-200 rounded-lg" />
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg" />
                 </div>
               </div>
             ))}
           </div>
         ) : isError ? (
           <div className="text-center py-20">
-            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">⚠️</span>
             </div>
-            <h3 className="text-h3 text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
-            <p className="text-gray-600 mb-6">ไม่สามารถโหลด Flash Sale ได้</p>
+            <h3 className="text-h3 text-gray-800 dark:text-gray-200 mb-2">เกิดข้อผิดพลาด</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">ไม่สามารถโหลด Flash Sale ได้</p>
             <button onClick={() => window.location.reload()} className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg font-semibold">ลองใหม่</button>
           </div>
         ) : flashSales.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
-            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-16 text-center">
+            <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <BoltIcon className="w-10 h-10 text-orange-300" />
             </div>
-            <h3 className="text-h3 text-gray-800 mb-2">ยังไม่มี Flash Sale ในขณะนี้</h3>
-            <p className="text-gray-500">กลับมาตรวจสอบอีกครั้งเร็วๆ นี้</p>
+            <h3 className="text-h3 text-gray-800 dark:text-gray-200 mb-2">ยังไม่มี Flash Sale ในขณะนี้</h3>
+            <p className="text-gray-500 dark:text-gray-400">กลับมาตรวจสอบอีกครั้งเร็วๆ นี้</p>
           </div>
         ) : (
         <AnimatePresence mode="popLayout">
@@ -426,7 +426,7 @@ export default function FlashSalePage() {
                 className="group cursor-pointer"
                 onClick={() => setSelectedDeal(sale)}
               >
-                <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700">
                   {/* Image */}
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
@@ -462,15 +462,15 @@ export default function FlashSalePage() {
 
                   {/* Content */}
                   <div className="p-4">
-                    <h3 className="font-bold text-gray-800 mb-1 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1 line-clamp-2 group-hover:text-orange-600 transition-colors">
                       {sale.title}
                     </h3>
-                    
-                    <p className="text-body-sm text-gray-600 mb-3 flex items-center gap-1">
+
+                    <p className="text-body-sm text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-1">
                       <span className="font-semibold text-orange-600">{sale.merchant}</span>
                     </p>
 
-                    <div className="flex items-center gap-1 text-caption text-gray-500 mb-3">
+                    <div className="flex items-center gap-1 text-caption text-gray-500 dark:text-gray-400 mb-3">
                       <MapPinIcon className="w-4 h-4" />
                       <span>{sale.location}</span>
                     </div>
@@ -480,18 +480,18 @@ export default function FlashSalePage() {
                       <span className="text-h2 font-bold text-orange-600">
                         ฿{sale.salePrice}
                       </span>
-                      <span className="text-body-sm text-gray-400 line-through">
+                      <span className="text-body-sm text-gray-400 dark:text-gray-500 line-through">
                         ฿{sale.originalPrice}
                       </span>
                     </div>
 
                     {/* Progress Bar */}
                     <div className="mb-3">
-                      <div className="flex justify-between text-caption text-gray-600 mb-1">
+                      <div className="flex justify-between text-caption text-gray-600 dark:text-gray-400 mb-1">
                         <span>ขายแล้ว {sale.claimed}/{sale.total}</span>
                         <span>{Math.round((sale.claimed / sale.total) * 100)}%</span>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${(sale.claimed / sale.total) * 100}%` }}
@@ -524,8 +524,8 @@ export default function FlashSalePage() {
         {!isLoading && filteredSales.length === 0 && flashSales.length > 0 && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🔥</div>
-            <h3 className="text-h3 text-gray-800 mb-2">ไม่พบ Flash Sale</h3>
-            <p className="text-gray-600">ลองเลือกหมวดหมู่อื่นดูสิ</p>
+            <h3 className="text-h3 text-gray-800 dark:text-gray-200 mb-2">ไม่พบ Flash Sale</h3>
+            <p className="text-gray-600 dark:text-gray-400">ลองเลือกหมวดหมู่อื่นดูสิ</p>
           </div>
         )}
       </div>

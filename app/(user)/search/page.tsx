@@ -207,19 +207,19 @@ export default function SearchPage() {
     : 'ค้นหาโปรโมชั่น';
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* ── Header (Light Mode — white bg, orange search bar) ── */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+      {/* ── Header ── */}
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
           {/* Row 1: Back + Title */}
           <div className="flex items-center gap-3 mb-3">
             <Link
               href="/"
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
             >
-              <ArrowLeftIcon className="w-5 h-5 text-gray-700" />
+              <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </Link>
-            <h1 className="text-lg font-bold text-gray-900 truncate">
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">
               {displayTitle}
             </h1>
           </div>
@@ -233,7 +233,7 @@ export default function SearchPage() {
               onChange={(e) => setSearchText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="ค้นหาโปรโมชั่น, ร้านค้า..."
-              className="w-full h-12 pl-11 pr-28 rounded-full border-2 border-orange-400 bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-base text-gray-700 placeholder:text-gray-400"
+              className="w-full h-12 pl-11 pr-28 rounded-full border-2 border-orange-400 bg-white dark:bg-gray-900 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 outline-none transition-all text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
             <button
               onClick={handleSearch}
@@ -247,13 +247,13 @@ export default function SearchPage() {
       </header>
 
       {/* ── Filters & Sort Bar ── */}
-      <div className="sticky top-[118px] z-40 bg-white border-b border-gray-200 shadow-sm">
+      <div className="sticky top-[118px] z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-2.5">
           <div className="flex items-center justify-between gap-4">
             {/* Results Count */}
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {isLoading ? (
-                <span className="inline-block h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                <span className="inline-block h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
               ) : (
                 <>
                   พบ{' '}
@@ -270,7 +270,7 @@ export default function SearchPage() {
               <select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -283,8 +283,8 @@ export default function SearchPage() {
                 onClick={() => setShowFilters(!showFilters)}
                 className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
                   showFilters || activeFilterCount > 0
-                    ? 'border-orange-500 bg-orange-50 text-orange-600'
-                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+                    : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 <FunnelIcon className="w-4 h-4" />
@@ -307,7 +307,7 @@ export default function SearchPage() {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="flex flex-wrap gap-2 pt-3 mt-2 border-t border-gray-100">
+                <div className="flex flex-wrap gap-2 pt-3 mt-2 border-t border-gray-100 dark:border-gray-700">
                   {FILTER_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
@@ -315,7 +315,7 @@ export default function SearchPage() {
                       className={`px-4 py-2 rounded-full text-sm transition-all ${
                         filterBy === opt.value
                           ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       {opt.label}
@@ -331,7 +331,7 @@ export default function SearchPage() {
       {/* ── Shop Search Section ── */}
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
         <div className="flex items-center gap-3 mb-3">
-          <p className="text-sm font-medium text-gray-700">ค้นหาร้านค้า</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">ค้นหาร้านค้า</p>
         </div>
         <ShopSearchBar />
       </div>
@@ -343,7 +343,7 @@ export default function SearchPage() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-3">
               <Megaphone className="w-4 h-4 text-orange-500" />
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">โฆษณา</span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">โฆษณา</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {semResults.map((ad, index) => (
@@ -358,12 +358,12 @@ export default function SearchPage() {
                     onClick={() => handleSEMClick(ad)}
                     className="block relative"
                   >
-                    <div className="relative rounded-2xl overflow-hidden border-2 border-orange-200 bg-white shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all">
+                    <div className="relative rounded-2xl overflow-hidden border-2 border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all">
                       {/* โฆษณา badge */}
                       <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full">
                         โฆษณา
                       </div>
-                      <div className="h-40 bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
+                      <div className="h-40 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-700 dark:to-gray-700 flex items-center justify-center">
                         {ad.image ? (
                           <img src={resolveImageUrl(ad.image, getCategoryFallbackImage(ad.category))} alt={ad.title} className="w-full h-full object-cover" />
                         ) : (
@@ -371,8 +371,8 @@ export default function SearchPage() {
                         )}
                       </div>
                       <div className="p-3">
-                        <p className="font-semibold text-gray-900 text-sm truncate">{ad.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{ad.shop_name}</p>
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{ad.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{ad.shop_name}</p>
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-orange-600 font-bold text-sm">฿{ad.price?.toLocaleString()}</span>
                           {ad.discount > 0 && (
@@ -394,14 +394,14 @@ export default function SearchPage() {
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse"
+                className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse"
               >
-                <div className="aspect-[4/3] bg-gray-200" />
+                <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700" />
                 <div className="p-4 space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  <div className="h-3 bg-gray-200 rounded w-full" />
-                  <div className="h-8 bg-gray-200 rounded w-1/3" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
                 </div>
               </div>
             ))}
@@ -423,13 +423,13 @@ export default function SearchPage() {
         ) : (
           /* Empty State */
           <div className="text-center py-20">
-            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Search className="w-10 h-10 text-orange-300" />
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
               ไม่พบโปรโมชั่น
             </h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
               {query
                 ? `ไม่พบผลลัพธ์สำหรับ "${query}" — ลองค้นหาคำอื่น`
                 : category
