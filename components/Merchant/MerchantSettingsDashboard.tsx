@@ -14,7 +14,6 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { resolveImageUrl } from '@/lib/imageUrl';
-import StoreLocations, { type LocationData } from '@/components/Merchant/StoreLocations';
 
 // ═════════════════════════════════════════════════════════════════════════════
 //  TYPES
@@ -246,7 +245,6 @@ export default function MerchantSettingsDashboard() {
   });
 
   const [isEcosystemExpanded, setIsEcosystemExpanded] = useState(false);
-  const [locations, setLocations] = useState<LocationData[]>([]);
 
   // ═══ Load real shop profile — source of truth is useAuthStore, which is
   //     itself populated from merchant_profiles on login (see useAuthStore.ts) ═══
@@ -547,13 +545,9 @@ export default function MerchantSettingsDashboard() {
       </div>
 
       <p className="text-xs text-gray-400 -mt-2">
-        จัดการหลายสาขาได้ที่หน้า <a href="/merchant/branches" className="text-blue-600 hover:underline font-medium">สาขาร้านค้า</a>
+        ตั้งที่อยู่ร้านหลักได้ที่หน้า <a href="/merchant/shop" className="text-blue-600 hover:underline font-medium">แก้ไขข้อมูลร้านค้า</a> (พิมพ์ที่อยู่แล้วเลือกจากรายการแนะนำ เพื่อให้ปักหมุดบนแผนที่ได้ถูกต้อง)
+        {' '}และจัดการหลายสาขาได้ที่หน้า <a href="/merchant/branches" className="text-blue-600 hover:underline font-medium">สาขาร้านค้า</a>
       </p>
-
-      <Divider />
-
-      {/* Store Locations Section */}
-      <StoreLocations locations={locations} onChange={setLocations} />
     </div>
   );
 
