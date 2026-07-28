@@ -146,8 +146,10 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Map Container */}
-      <div className="flex-1 relative" style={{ height: 'calc(100vh - 200px)', minHeight: '400px' }}>
+      {/* Map Container — flex-1 fills the remaining viewport height below the
+          (non-sticky) header above; pb-20 keeps the map's interactive bottom
+          edge clear of the fixed mobile BottomNav (h-16 + safe-area-inset). */}
+      <div className="flex-1 relative min-h-[400px] pb-20 md:pb-0">
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
             <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />

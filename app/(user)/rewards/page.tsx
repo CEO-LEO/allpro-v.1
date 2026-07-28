@@ -285,7 +285,7 @@ export default function RewardsPage() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 sticky top-0 z-40">
+      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 sticky top-[var(--navbar-h)] z-40">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">
@@ -411,7 +411,7 @@ export default function RewardsPage() {
       </div>
 
       {/* Category Tabs */}
-      <div className="sticky top-[57px] z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-y border-gray-100 dark:border-gray-800">
+      <div className="sticky top-[calc(var(--navbar-h)_+_57px)] z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-y border-gray-100 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-4 py-2.5">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {categories.map((cat) => (

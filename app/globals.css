@@ -91,6 +91,15 @@
     --text-secondary: #6B7280;    /* Gray-500: Body text (light) */
     --text-dark: #f1f5f9;         /* Slate-100: Headings (dark mode) */
     --text-dark-secondary: #cbd5e1; /* Slate-300: Body text (dark) */
+
+    /* ┌─────────────────────────────────────────────────────────────┐
+     * │ LAYOUT MEASUREMENTS                                        │
+     * └─────────────────────────────────────────────────────────────┘
+     * Set at runtime by Navbar.tsx (ResizeObserver) to its real
+     * rendered height, which differs between the mobile and desktop
+     * layouts. This default is the pre-hydration/no-JS fallback.
+     */
+    --navbar-h: 128px;
   }
 
   /* ═══════════════════════════════════════════════════════════════════

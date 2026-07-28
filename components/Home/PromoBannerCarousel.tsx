@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
 import Link from 'next/link';
 
 export interface BannerSlide {
@@ -112,6 +112,15 @@ export default function PromoBannerCarousel({ banners = defaultBanners }: PromoB
   const next = useCallback(() => goTo(current + 1, 1), [current, goTo]);
   const prev = useCallback(() => goTo(current - 1, -1), [current, goTo]);
 
+  const SWIPE_THRESHOLD = 60;
+  const handleDragEnd = (_e: unknown, info: PanInfo) => {
+    if (info.offset.x <= -SWIPE_THRESHOLD || info.velocity.x <= -500) {
+      next();
+    } else if (info.offset.x >= SWIPE_THRESHOLD || info.velocity.x >= 500) {
+      prev();
+    }
+  };
+
   // Autoplay
   useEffect(() => {
     if (isPaused) return;
@@ -140,7 +149,12 @@ export default function PromoBannerCarousel({ banners = defaultBanners }: PromoB
             animate="center"
             exit="exit"
             transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
-            className="absolute inset-0"
+            className="absolute inset-0 touch-pan-y"
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.6}
+            onDragStart={() => setIsPaused(true)}
+            onDragEnd={(e, info) => { handleDragEnd(e, info); setIsPaused(false); }}
           >
             {/* Image */}
             <img
@@ -202,14 +216,14 @@ export default function PromoBannerCarousel({ banners = defaultBanners }: PromoB
       <button
         onClick={prev}
         aria-label="Previous slide"
-        className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+        className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-white active:scale-90"
       >
         <ChevronLeft className="w-5 h-5 text-gray-800" />
       </button>
       <button
         onClick={next}
         aria-label="Next slide"
-        className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+        className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-white active:scale-90"
       >
         <ChevronRight className="w-5 h-5 text-gray-800" />
       </button>

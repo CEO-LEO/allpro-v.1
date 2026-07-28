@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -74,6 +74,27 @@ export default function Navbar() {
     try { return JSON.parse(localStorage.getItem('allpro-recent-searches') || '[]'); } catch { return []; }
   });
 
+  const navRef = useRef<HTMLElement>(null);
+
+  // Track the Navbar's real rendered height (differs between mobile/desktop
+  // layouts and when the mobile menu is expanded) so other sticky elements
+  // on the page can position themselves right below it via var(--navbar-h).
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const setNavbarHeightVar = () => {
+      document.documentElement.style.setProperty('--navbar-h', `${el.offsetHeight}px`);
+    };
+    setNavbarHeightVar();
+    const ro = new ResizeObserver(setNavbarHeightVar);
+    ro.observe(el);
+    window.addEventListener('resize', setNavbarHeightVar);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', setNavbarHeightVar);
+    };
+  }, []);
+
   const TRENDING = ['ลดราคา', 'ส่วนลด 50%', 'บุฟเฟ่ต์', 'กาแฟ', 'เที่ยว', 'แฟชั่น'];
 
   const suggestions = searchQuery.trim()
@@ -124,7 +145,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-[70] bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <nav ref={navRef} className="sticky top-0 z-[70] bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
           {/* Top Bar */}
           <div className="flex items-center justify-between h-12">

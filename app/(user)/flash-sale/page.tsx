@@ -356,7 +356,7 @@ export default function FlashSalePage() {
       </div>
 
       {/* Category Filter — sticky below global navbar */}
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
+      <div className="sticky top-[var(--navbar-h)] z-30 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {categories.map(cat => (

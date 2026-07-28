@@ -451,7 +451,7 @@ function PostRow({ item }: { item: FeedItem }) {
               onClick={handleComment}
               className={`group flex items-center gap-1.5 transition-colors ${showComments ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'}`}
             >
-              <span className="p-2 rounded-full group-hover:bg-blue-50 transition-colors">
+              <span className="p-2.5 rounded-full group-hover:bg-blue-50 transition-colors">
                 <MessageCircle className={`w-[18px] h-[18px] ${showComments ? 'fill-blue-100' : ''}`} />
               </span>
               <span className="text-xs tabular-nums">{commentCount}</span>
@@ -463,7 +463,7 @@ function PostRow({ item }: { item: FeedItem }) {
               onClick={handleRepost}
               className={`group flex items-center gap-1.5 transition-colors ${reposted ? 'text-green-500' : 'text-gray-400 hover:text-green-500'}`}
             >
-              <span className="p-2 rounded-full group-hover:bg-green-50 transition-colors">
+              <span className="p-2.5 rounded-full group-hover:bg-green-50 transition-colors">
                 <Repeat2 className="w-[18px] h-[18px]" />
               </span>
               <span className="text-xs tabular-nums">{repostCount}</span>
@@ -475,7 +475,7 @@ function PostRow({ item }: { item: FeedItem }) {
               onClick={handleLike}
               className={`group flex items-center gap-1.5 transition-colors ${liked ? 'text-pink-500' : 'text-gray-400 hover:text-pink-500'}`}
             >
-              <span className="p-2 rounded-full group-hover:bg-pink-50 transition-colors">
+              <span className="p-2.5 rounded-full group-hover:bg-pink-50 transition-colors">
                 <Heart className={`w-[18px] h-[18px] ${liked ? 'fill-current' : ''}`} />
               </span>
               <span className="text-xs tabular-nums">{likeCount}</span>
@@ -487,7 +487,7 @@ function PostRow({ item }: { item: FeedItem }) {
               onClick={handleShare}
               className={`group flex items-center gap-1.5 transition-colors ${shareStatus === 'copied' ? 'text-green-500' : 'text-gray-400 hover:text-blue-500'}`}
             >
-              <span className="p-2 rounded-full group-hover:bg-blue-50 transition-colors">
+              <span className="p-2.5 rounded-full group-hover:bg-blue-50 transition-colors">
                 {shareStatus === 'copied' ? (
                   <Check className="w-[18px] h-[18px]" />
                 ) : (
@@ -508,7 +508,7 @@ function PostRow({ item }: { item: FeedItem }) {
                 title={reported ? 'รายงานแล้ว' : 'รายงานโพสต์นี้'}
                 className={`group flex items-center gap-1.5 transition-colors ${reported ? 'text-orange-500' : 'text-gray-400 hover:text-orange-500'}`}
               >
-                <span className="p-2 rounded-full group-hover:bg-orange-50 transition-colors">
+                <span className="p-2.5 rounded-full group-hover:bg-orange-50 transition-colors">
                   <Flag className={`w-[16px] h-[16px] ${reported ? 'fill-current' : ''}`} />
                 </span>
               </button>

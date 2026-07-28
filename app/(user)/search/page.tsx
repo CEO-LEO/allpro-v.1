@@ -209,7 +209,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* ── Header ── */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-[var(--navbar-h)] z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
           {/* Row 1: Back + Title */}
           <div className="flex items-center gap-3 mb-3">
@@ -247,7 +247,7 @@ export default function SearchPage() {
       </header>
 
       {/* ── Filters & Sort Bar ── */}
-      <div className="sticky top-[118px] z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="sticky top-[calc(var(--navbar-h)_+_118px)] z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-2.5">
           <div className="flex items-center justify-between gap-4">
             {/* Results Count */}

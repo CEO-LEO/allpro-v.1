@@ -56,10 +56,10 @@ export default function ProfilePage() {
           : 'bg-gradient-to-br from-orange-500 to-red-600'
       }`}>
         <div className="flex items-center gap-4">
-            <img src={user.avatar} alt="Profile" className="w-20 h-20 rounded-full border-4 border-white/30 shadow-md" />
-            <div>
-                <h1 className="text-2xl font-bold">{user.name}</h1>
-                <div className="flex items-center gap-2 mt-1">
+            <img src={user.avatar} alt="Profile" className="w-20 h-20 rounded-full border-4 border-white/30 shadow-md flex-shrink-0" />
+            <div className="min-w-0">
+                <h1 className="text-2xl font-bold truncate">{user.name}</h1>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {isMerchant ? (
                       <div className="flex items-center gap-2">
                         <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm flex items-center gap-1">

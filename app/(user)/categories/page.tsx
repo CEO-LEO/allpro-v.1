@@ -216,7 +216,7 @@ export default function CategoriesPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-[64px] z-20">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-[var(--navbar-h)] z-20">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-8">
             <button

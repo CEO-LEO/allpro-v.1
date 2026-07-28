@@ -549,23 +549,26 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 p-4 px-6 z-50 flex items-center gap-4 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 p-3 px-4 sm:p-4 sm:px-6 z-50 flex items-center gap-3 sm:gap-4 pb-safe">
         <button
             onClick={handleSave}
-            className={`p-4 rounded-full border transition-all ${
+            className={`p-3 sm:p-4 rounded-full border transition-all flex-shrink-0 ${
                 isSaved(id as string) ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-500' : 'border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-500 hover:border-red-200 hover:text-red-500'
             }`}
         >
             <Heart className={`w-6 h-6 ${isSaved(id as string) ? 'fill-current' : ''}`} />
         </button>
-        
-        <button 
+
+        <button
             onClick={handleHireFastwork}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold h-14 rounded-full shadow-lg hover:opacity-90 active:scale-95 transition-transform flex items-center justify-center gap-2"
+            className="flex-1 min-w-0 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold h-14 rounded-full shadow-lg hover:opacity-90 active:scale-95 transition-transform flex items-center justify-center gap-1.5 sm:gap-2 px-2"
         >
-            <img src={FASTWORK_URLS.FAVICON} alt="Fastwork" className="w-5 h-5" />
-            <span>จ้างหิ้ว (Fastwork)</span>
-            <ExternalLink className="w-4 h-4" />
+            <img src={FASTWORK_URLS.FAVICON} alt="Fastwork" className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate">
+              <span className="sm:hidden">จ้างหิ้ว</span>
+              <span className="hidden sm:inline">จ้างหิ้ว (Fastwork)</span>
+            </span>
+            <ExternalLink className="w-4 h-4 flex-shrink-0" />
         </button>
       </div>
     </div>

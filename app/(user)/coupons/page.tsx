@@ -71,7 +71,7 @@ export default function CouponsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
+      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-[var(--navbar-h)] z-50">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-base sm:text-xl font-bold text-[#FF5722] hover:text-[#E64A19] transition-colors">
@@ -148,7 +148,7 @@ export default function CouponsPage() {
                 'bg-gradient-to-r from-purple-50 to-pink-50'
               }`}>
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       {coupon.type === 'verified' && (
                         <span className="badge-verified">
@@ -173,14 +173,14 @@ export default function CouponsPage() {
                         </span>
                       )}
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 line-clamp-2">
                       {coupon.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-gray-700">
+                    <p className="text-xs sm:text-sm text-gray-700 line-clamp-2">
                       {coupon.description}
                     </p>
                   </div>
-                  <div className="text-right ml-3">
+                  <div className="text-right ml-3 flex-shrink-0">
                     <p className="text-2xl sm:text-3xl font-bold text-[#FF5722]">
                       {coupon.discount}
                     </p>
@@ -188,16 +188,16 @@ export default function CouponsPage() {
                 </div>
 
                 {/* Coupon Code */}
-                <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-4 flex items-center justify-between">
-                  <div className="flex-1">
+                <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-4 flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-600 mb-1">รหัสคูปอง:</p>
-                    <p className="text-lg sm:text-xl font-mono font-bold text-gray-900">
+                    <p className="text-lg sm:text-xl font-mono font-bold text-gray-900 truncate">
                       {coupon.code}
                     </p>
                   </div>
                   <button
                     onClick={() => handleCopy(coupon.code)}
-                    className="bg-[#FF5722] hover:bg-[#E64A19] text-white px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm transition-colors"
+                    className="flex-shrink-0 bg-[#FF5722] hover:bg-[#E64A19] text-white px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm transition-colors"
                   >
                     คัดลอก
                   </button>
