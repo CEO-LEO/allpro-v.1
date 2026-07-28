@@ -76,8 +76,8 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as PricePoint;
     return (
-      <div className="bg-white border-2 border-gray-200 rounded-lg p-3 shadow-lg">
-        <p className="text-sm font-semibold text-gray-900 mb-1">{data.dateDisplay}</p>
+      <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-lg">
+        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{data.dateDisplay}</p>
         <p className="text-lg font-bold text-red-600 mb-1">฿{data.price}</p>
         {data.event && (
           <p className="text-xs text-blue-600 font-semibold">📅 {data.event}</p>
@@ -93,25 +93,25 @@ const CustomTooltip = ({ active, payload }: any) => {
 function PriceHistorySkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="bg-gray-100 border-2 border-gray-200 rounded-xl p-5">
+      <div className="bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-5">
         <div className="flex items-center gap-3">
-          <div className="w-16 h-16 bg-gray-200 rounded-full" />
+          <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
           <div className="flex-1 space-y-2">
-            <div className="h-5 w-32 bg-gray-200 rounded" />
-            <div className="h-4 w-48 bg-gray-200 rounded" />
+            <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+            <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3 mt-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg p-3 border border-gray-200 space-y-2">
-              <div className="h-3 w-16 bg-gray-200 rounded" />
-              <div className="h-5 w-12 bg-gray-200 rounded" />
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 space-y-2">
+              <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+              <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
             </div>
           ))}
         </div>
       </div>
-      <div className="bg-white rounded-xl border-2 border-gray-200 p-5">
-        <div className="h-64 bg-gray-100 rounded-lg" />
+      <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-5">
+        <div className="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg" />
       </div>
     </div>
   );
@@ -157,10 +157,10 @@ export default function PriceHistory({ productId, productName, currentPrice }: P
   /* Error / no data */
   if (error || !stats || history.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-xl border border-gray-200 p-8 text-center">
-        <TrendingDown className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">ยังไม่มีข้อมูลราคาย้อนหลัง</p>
-        <p className="text-sm text-gray-400 mt-1">ระบบจะเริ่มเก็บข้อมูลเมื่อมีการเปลี่ยนแปลงราคา</p>
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <TrendingDown className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+        <p className="text-gray-500 dark:text-gray-400 font-medium">ยังไม่มีข้อมูลราคาย้อนหลัง</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">ระบบจะเริ่มเก็บข้อมูลเมื่อมีการเปลี่ยนแปลงราคา</p>
       </div>
     );
   }
@@ -228,14 +228,14 @@ export default function PriceHistory({ productId, productName, currentPrice }: P
       </motion.div>
 
       {/* Price History Chart */}
-      <div className="bg-white rounded-xl border-2 border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
             <TrendingDown className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900">กราฟราคาย้อนหลัง</h3>
-            <p className="text-sm text-gray-500">ข้อมูล 6 สัปดาห์ที่ผ่านมา</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">กราฟราคาย้อนหลัง</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">ข้อมูล 6 สัปดาห์ที่ผ่านมา</p>
           </div>
         </div>
 
@@ -304,22 +304,22 @@ export default function PriceHistory({ productId, productName, currentPrice }: P
         </div>
 
         {/* Legend */}
-        <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm">
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-gray-500 rounded-full" />
-            <span className="text-gray-600">ประวัติราคา</span>
+            <span className="text-gray-600 dark:text-gray-400">ประวัติราคา</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-yellow-500 rounded-full" />
-            <span className="text-gray-600">ราคาเฉลี่ย</span>
+            <span className="text-gray-600 dark:text-gray-400">ราคาเฉลี่ย</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-green-500 rounded-full" />
-            <span className="text-gray-600">ราคาต่ำสุด</span>
+            <span className="text-gray-600 dark:text-gray-400">ราคาต่ำสุด</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-            <span className="text-gray-600">ราคาปัจจุบัน</span>
+            <span className="text-gray-600 dark:text-gray-400">ราคาปัจจุบัน</span>
           </div>
         </div>
 
@@ -339,12 +339,12 @@ export default function PriceHistory({ productId, productName, currentPrice }: P
       </div>
 
       {/* Price Analysis */}
-      <div className="bg-gray-50 rounded-xl border border-gray-200 p-5">
-        <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-gray-600" />
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h4 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           การวิเคราะห์ราคา
         </h4>
-        <div className="space-y-2 text-sm text-gray-700">
+        <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
           {currentPrice <= stats.lowestPrice ? (
             <p className="flex items-start gap-2">
               <span className="text-green-600">✓</span>

@@ -207,14 +207,14 @@ export default function BranchAvailability({ productId, productTitle, userLocati
           className="mt-6 space-y-3"
         >
           {/* Header */}
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-4">
             <div className="flex items-center gap-3 mb-2">
               <TrendingUp className="w-5 h-5 text-blue-600" />
-              <h3 className="font-bold text-gray-900 text-lg">
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg">
                 {myLocation ? 'Nearby Branches (within 5km)' : 'Branches'}
               </h3>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Real-time stock availability for: <span className="font-semibold">{productTitle}</span>
             </p>
           </div>
@@ -223,23 +223,23 @@ export default function BranchAvailability({ productId, productTitle, userLocati
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border-2 border-gray-200 p-4 animate-pulse">
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-4 animate-pulse">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0" />
+                    <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-5 bg-gray-200 rounded w-2/3" />
-                      <div className="h-4 bg-gray-100 rounded w-1/2" />
-                      <div className="h-4 bg-gray-100 rounded w-1/3 mt-3" />
+                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                      <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/2" />
+                      <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/3 mt-3" />
                     </div>
-                    <div className="h-9 w-24 bg-gray-200 rounded-lg" />
+                    <div className="h-9 w-24 bg-gray-200 dark:bg-gray-700 rounded-lg" />
                   </div>
                 </div>
               ))}
             </div>
           ) : noBranchesFound || nearbyBranches.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-gray-200">
-              <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">
+            <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+              <MapPin className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+              <p className="text-gray-600 dark:text-gray-400 font-medium">
                 {noBranchesFound ? 'ร้านนี้ยังไม่ได้ตั้งค่าสาขาในระบบ' : 'ไม่พบสาขาภายในระยะ 5 กม.'}
               </p>
             </div>
@@ -255,17 +255,17 @@ export default function BranchAvailability({ productId, productTitle, userLocati
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                     className={`
-                      bg-white rounded-xl border-2 p-4 transition-all
+                      bg-white dark:bg-gray-800 rounded-xl border-2 p-4 transition-all
                       ${isAvailable
-                        ? 'border-green-300 hover:border-green-400 hover:shadow-lg'
-                        : 'border-gray-300 opacity-75'
+                        ? 'border-green-300 dark:border-green-700 hover:border-green-400 hover:shadow-lg'
+                        : 'border-gray-300 dark:border-gray-600 opacity-75'
                       }
                     `}
                   >
                     <div className="flex items-start gap-4">
                       <div className={`
                         w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0
-                        ${isAvailable ? 'bg-green-100' : 'bg-red-100'}
+                        ${isAvailable ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}
                       `}>
                         {isAvailable ? (
                           <CheckCircle className="w-6 h-6 text-green-600" />
@@ -277,8 +277,8 @@ export default function BranchAvailability({ productId, productTitle, userLocati
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <h4 className="font-bold text-gray-900 mb-1">{branch.name}</h4>
-                            <p className="text-sm text-gray-600 flex items-center gap-1">
+                            <h4 className="font-bold text-gray-900 dark:text-white mb-1">{branch.name}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                               <MapPin className="w-4 h-4" />
                               {branch.address}
                             </p>
@@ -287,7 +287,7 @@ export default function BranchAvailability({ productId, productTitle, userLocati
                             {!reportedBranches.has(branch.id) && (
                               <button
                                 onClick={() => handleReportStock(branch)}
-                                className="flex items-center gap-1 px-3 py-2 rounded-lg font-semibold text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-all"
+                                className="flex items-center gap-1 px-3 py-2 rounded-lg font-semibold text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all"
                                 title="รายงานสต็อกไม่ถูกต้อง +10 แต้ม"
                               >
                                 <AlertCircle className="w-3 h-3" />
@@ -297,8 +297,8 @@ export default function BranchAvailability({ productId, productTitle, userLocati
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
-                          <span className="text-sm text-gray-600 font-medium">
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                          <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                             {branch.distance != null ? `📍 ${branch.distance.toFixed(1)} km away` : '📍 ไม่ทราบระยะทาง'}
                           </span>
                           <button
@@ -307,7 +307,7 @@ export default function BranchAvailability({ productId, productTitle, userLocati
                               flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all
                               ${isAvailable
                                 ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                                : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed'
                               }
                             `}
                             disabled={!isAvailable}
@@ -322,10 +322,10 @@ export default function BranchAvailability({ productId, productTitle, userLocati
                 );
               })}
 
-              <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
-                <p className="text-sm text-gray-600">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-200 dark:border-gray-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <span className="font-bold text-green-600">{availableCount}</span> out of{' '}
-                  <span className="font-bold text-gray-900">{totalCount}</span> branches have this item in stock
+                  <span className="font-bold text-gray-900 dark:text-white">{totalCount}</span> branches have this item in stock
                 </p>
               </div>
             </>

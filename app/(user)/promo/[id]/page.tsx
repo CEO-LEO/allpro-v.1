@@ -147,10 +147,10 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
 
   if (dbLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">กำลังโหลด...</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">กำลังโหลด...</p>
         </div>
       </div>
     );
@@ -159,17 +159,17 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
   if (!finalPromo) {
     // Get popular promos as fallback
     const popularPromos = getPromotions().slice(0, 6);
-    
+
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Error Message */}
           <div className="text-center mb-12">
-            <div className="w-24 h-24 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
+            <div className="w-24 h-24 mx-auto mb-4 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center">
               <span className="text-4xl">😔</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">ไม่พบโปรโมชั่นที่คุณค้นหา</h1>
-            <p className="text-gray-600 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">ไม่พบโปรโมชั่นที่คุณค้นหา</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               โปรโมชั่น ID: &quot;{resolvedParams.id}&quot; อาจหมดเวลาแล้วหรือถูกลบไป
             </p>
             <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-full font-bold hover:bg-orange-600 transition-colors">
@@ -179,15 +179,15 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
 
           {/* Popular Promos */}
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-6">โปรโมชั่นยอดนิยม</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">โปรโมชั่นยอดนิยม</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {popularPromos.map((promo, index) => (
                 <Link key={promo.id} href={`/promo/${promo.id}`} className="group">
-                  <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 hover:shadow-lg transition-all">
-                    <div className="relative h-40 bg-gray-100">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all">
+                    <div className="relative h-40 bg-gray-100 dark:bg-gray-700">
                       {promo.image ? (
-                        <img 
-                          src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))} 
+                        <img
+                          src={resolveImageUrl(promo.image, getCategoryFallbackImage(promo.category))}
                           alt={promo.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -198,7 +198,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                           }}
                         />
                       ) : null}
-                      <div className={`w-full h-full items-center justify-center text-gray-400 ${promo.image ? 'hidden' : 'flex'}`}>
+                      <div className={`w-full h-full items-center justify-center text-gray-400 dark:text-gray-500 ${promo.image ? 'hidden' : 'flex'}`}>
                         <span className="text-3xl">🛍️</span>
                       </div>
                       {promo.discount_rate && (
@@ -208,12 +208,12 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-bold text-gray-900 line-clamp-1 mb-2">{promo.title}</h3>
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">{promo.description}</p>
+                      <h3 className="font-bold text-gray-900 dark:text-white line-clamp-1 mb-2">{promo.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">{promo.description}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-orange-600">{promo.shop_name}</span>
                         {promo.price && (
-                          <span className="text-lg font-bold text-gray-900">฿{promo.price}</span>  
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">฿{promo.price}</span>
                         )}
                       </div>
                     </div>
@@ -234,19 +234,19 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
   const displayImage = resolveImageUrl(finalPromo.image, getCategoryFallbackImage(finalPromo.category));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-[var(--navbar-h)] z-50">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between">
           <Link href="/" className="text-sm sm:text-base text-[#FF5722] font-semibold hover:underline transition-colors">
             ← <span className="hidden xs:inline">กลับ</span>
           </Link>
           <div className="flex gap-1 sm:gap-2">
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <ShareIcon className="w-5 h-5 text-gray-700" />
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+              <ShareIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <HeartIcon className="w-5 h-5 text-gray-700" />
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+              <HeartIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
           </div>
         </div>
@@ -255,12 +255,12 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
       <main className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Main Image */}
         <div className="card overflow-hidden mb-4 sm:mb-6">
-          <div className="relative h-56 sm:h-72 md:h-80 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center overflow-hidden">
+          <div className="relative h-56 sm:h-72 md:h-80 bg-gradient-to-br from-orange-100 to-orange-50 dark:from-gray-800 dark:to-gray-800 flex items-center justify-center overflow-hidden">
             {displayImage ? (
-              <img 
-                src={displayImage} 
-                alt={finalPromo.title} 
-                className="w-full h-full object-cover" 
+              <img
+                src={displayImage}
+                alt={finalPromo.title}
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.currentTarget;
                   target.style.display = 'none';
@@ -269,11 +269,11 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                 }}
               />
             ) : null}
-            <div className={`flex-col items-center justify-center text-gray-300 w-full h-full ${displayImage ? 'hidden' : 'flex'}`}>
+            <div className={`flex-col items-center justify-center text-gray-300 dark:text-gray-600 w-full h-full ${displayImage ? 'hidden' : 'flex'}`}>
               <ShoppingBagIcon className="w-20 h-20 sm:w-28 sm:h-28" />
               <p className="text-sm mt-2">ไม่มีรูปภาพ</p>
             </div>
-            
+
             {/* Discount Badge */}
             <div className="absolute top-4 right-4 bg-red-500 text-white font-bold px-6 py-3 rounded-full text-2xl shadow-lg">
               -{finalPromo.discount_rate}%
@@ -301,12 +301,12 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
           </Link>
           
           {/* Title */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{finalPromo.title}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{finalPromo.title}</h1>
 
           {/* Price */}
-          <div className="flex items-baseline gap-4 mb-6 pb-6 border-b">
+          <div className="flex items-baseline gap-4 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
             <div>
-              <p className="text-sm text-gray-400 line-through">
+              <p className="text-sm text-gray-400 dark:text-gray-500 line-through">
                 ฿{Math.round(finalPromo.price / (1 - finalPromo.discount_rate / 100))}
               </p>
               <p className="text-4xl font-bold text-[#FF5722]">
@@ -314,7 +314,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
               </p>
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-600">ประหยัด</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">ประหยัด</p>
               <p className="text-2xl font-bold text-green-600">
                 ฿{Math.round(finalPromo.price / (1 - finalPromo.discount_rate / 100)) - finalPromo.price}
               </p>
@@ -323,25 +323,25 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
 
           {/* Description */}
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">รายละเอียด</h2>
-            <p className="text-gray-700 leading-relaxed">{finalPromo.description}</p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">รายละเอียด</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{finalPromo.description}</p>
           </div>
 
           {/* Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <MapPinIcon className="w-5 h-5 text-[#FF5722]" />
               <div>
-                <p className="text-xs text-gray-500">สถานที่</p>
-                <p className="font-semibold text-gray-900">{finalPromo.location}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">สถานที่</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{finalPromo.location}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <CalendarIcon className="w-5 h-5 text-[#FF5722]" />
               <div>
-                <p className="text-xs text-gray-500">ใช้ได้ถึง</p>
-                <p className="font-semibold text-gray-900">
+                <p className="text-xs text-gray-500 dark:text-gray-400">ใช้ได้ถึง</p>
+                <p className="font-semibold text-gray-900 dark:text-white">
                   {new Date(finalPromo.valid_until).toLocaleDateString('th-TH', {
                     day: 'numeric',
                     month: 'long',
@@ -351,19 +351,19 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <ClockIcon className="w-5 h-5 text-[#FF5722]" />
               <div>
-                <p className="text-xs text-gray-500">หมวดหมู่</p>
-                <p className="font-semibold text-gray-900">{finalPromo.category}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">หมวดหมู่</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{finalPromo.category}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <span className="text-xl">👁️</span>
               <div>
-                <p className="text-xs text-gray-500">ความนิยม</p>
-                <p className="font-semibold text-gray-900">
+                <p className="text-xs text-gray-500 dark:text-gray-400">ความนิยม</p>
+                <p className="font-semibold text-gray-900 dark:text-white">
                   {(finalPromo.search_volume || 0).toLocaleString()} views
                 </p>
               </div>

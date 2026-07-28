@@ -454,9 +454,9 @@ export default function Reviews({ productId }: ReviewsProps) {
     <div>
       {/* Reviews content */}
       {allReviews.length === 0 ? (
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200 text-center">
-          <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 mb-4">ยังไม่มีรีวิว</p>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700 text-center">
+          <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-500 dark:text-gray-400 mb-4">ยังไม่มีรีวิว</p>
           <button
             type="button"
             onClick={() => { console.log('[Reviews] Opening write review modal'); setShowWriteReview(true); }}
@@ -466,16 +466,16 @@ export default function Reviews({ productId }: ReviewsProps) {
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 รีวิวจากผู้ใช้งานจริง
               </h3>
               <div className="flex items-center gap-1">
                 <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                <span className="text-2xl font-black text-gray-900">{avgRating.toFixed(1)}</span>
-                <span className="text-gray-500 text-sm">({allReviews.length} รีวิว)</span>
+                <span className="text-2xl font-black text-gray-900 dark:text-white">{avgRating.toFixed(1)}</span>
+                <span className="text-gray-500 dark:text-gray-400 text-sm">({allReviews.length} รีวิว)</span>
               </div>
             </div>
             {userAlreadyReviewed ? (
@@ -497,7 +497,7 @@ export default function Reviews({ productId }: ReviewsProps) {
 
           <div className="space-y-4">
             {displayedReviews.map((review) => (
-              <div key={review.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div key={review.id} className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-start gap-3 mb-3">
                   <UserAvatar
                     name={review.userName}
@@ -506,9 +506,9 @@ export default function Reviews({ productId }: ReviewsProps) {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-gray-900">{review.userName}</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{review.userName}</span>
                       {review.isVerifiedBuyer && (
-                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                        <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" />
                           Verified
                         </span>
@@ -517,21 +517,21 @@ export default function Reviews({ productId }: ReviewsProps) {
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex gap-0.5">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <Star key={star} className={`w-4 h-4 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                          <Star key={star} className={`w-4 h-4 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
                         ))}
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {new Date(review.timestamp).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                     {review.dealValue && <p className="text-xs text-purple-600 mt-1">ซื้อ: {review.dealValue}</p>}
                   </div>
                 </div>
-                <p className="text-gray-700 text-sm leading-relaxed mb-3">{review.comment}</p>
+                <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">{review.comment}</p>
                 {review.photos.length > 0 && (
                   <div className="flex gap-2 mb-3 overflow-x-auto">
                     {review.photos.map((photo, idx) => (
-                      <button key={idx} onClick={() => setSelectedImage(photo)} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-200">
+                      <button key={idx} onClick={() => setSelectedImage(photo)} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
                         <Image src={photo} alt={`Review photo ${idx + 1}`} fill className="object-cover" />
                       </button>
                     ))}
@@ -541,8 +541,8 @@ export default function Reviews({ productId }: ReviewsProps) {
                   onClick={() => handleMarkHelpful(review.id)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                     helpfulReviews.has(review.id)
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600'
                   }`}
                 >
                   <ThumbsUp className={`w-4 h-4 ${helpfulReviews.has(review.id) ? 'fill-current' : ''}`} />
@@ -555,7 +555,7 @@ export default function Reviews({ productId }: ReviewsProps) {
           {allReviews.length > 3 && (
             <button
               onClick={() => setShowAllReviews(!showAllReviews)}
-              className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold transition-all"
+              className="w-full mt-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-semibold transition-all"
             >
               {showAllReviews ? 'แสดงน้อยลง' : `ดูรีวิวทั้งหมด (${allReviews.length})`}
             </button>

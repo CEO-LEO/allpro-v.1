@@ -40,9 +40,9 @@ export default function NotifyButton({
         w-full py-4 px-6 rounded-xl font-semibold text-lg
         flex items-center justify-center gap-3
         transition-all duration-300
-        ${subscribed 
-          ? 'bg-green-600 text-white hover:bg-green-700 border-2 border-green-600' 
-          : 'bg-white text-orange-600 hover:bg-orange-50 border-2 border-orange-400'
+        ${subscribed
+          ? 'bg-green-600 text-white hover:bg-green-700 border-2 border-green-600'
+          : 'bg-white dark:bg-gray-800 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 border-2 border-orange-400 dark:border-orange-700'
         }
       `}
       whileTap={{ scale: 0.97 }}

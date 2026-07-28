@@ -36,16 +36,16 @@ export default function PhotoGallery({ photos, officialImage, productName }: Pho
 
   return (
     <>
-      <div className="bg-white rounded-2xl p-4 shadow-md border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md border border-gray-200 dark:border-gray-700">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-purple-600" />
-            <h3 className="font-bold text-gray-900">
+            <h3 className="font-bold text-gray-900 dark:text-white">
               ภาพจากทางบ้าน ({photos.length})
             </h3>
           </div>
-          <span className="text-xs text-gray-500 bg-purple-50 px-3 py-1 rounded-full font-semibold">
+          <span className="text-xs text-gray-500 dark:text-gray-400 bg-purple-50 dark:bg-purple-900/20 px-3 py-1 rounded-full font-semibold">
             Real Photos
           </span>
         </div>
@@ -57,7 +57,7 @@ export default function PhotoGallery({ photos, officialImage, productName }: Pho
               <motion.button
                 key={index}
                 onClick={() => openLightbox(photo, index)}
-                className="relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gray-100 hover:ring-4 hover:ring-purple-300 transition-all group"
+                className="relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 hover:ring-4 hover:ring-purple-300 transition-all group"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -77,7 +77,7 @@ export default function PhotoGallery({ photos, officialImage, productName }: Pho
           </div>
         </div>
 
-        <p className="text-xs text-gray-500 mt-2 text-center">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
           👆 แตะเพื่อเปรียบเทียบกับภาพโฆษณา
         </p>
       </div>
