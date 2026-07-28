@@ -120,10 +120,16 @@ export default function MerchantBranchesPage() {
   const [newCoords, setNewCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+  // Without a configured API key this never loads — isMapsLoaded stays
+  // false and the address field falls back to a plain input instead of
+  // being stuck permanently disabled (usePlacesAutocomplete's `ready`
+  // never becomes true with no Maps script loaded).
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  const { isLoaded: _isMapsLoaded } = useLoadScript({
+    googleMapsApiKey,
     libraries: GOOGLE_MAPS_LIBS,
   });
+  const isMapsLoaded = googleMapsApiKey ? _isMapsLoaded : false;
 
   const loadBranches = async () => {
     if (!isSupabaseConfigured || !user?.id) {
@@ -152,8 +158,15 @@ export default function MerchantBranchesPage() {
 
   const handleAddBranch = async () => {
     if (!user?.id) return;
-    if (!newName.trim() || !newCoords) {
-      toast.error('กรุณากรอกชื่อสาขาและเลือกที่อยู่จากรายการแนะนำ');
+    if (!newName.trim()) {
+      toast.error('กรุณากรอกชื่อสาขา');
+      return;
+    }
+    // Only force picking a real autocomplete suggestion when the address
+    // system is actually available — otherwise a merchant with no Google
+    // Maps key configured yet could never add a branch at all.
+    if (isMapsLoaded && !newCoords) {
+      toast.error('กรุณาเลือกที่อยู่จากรายการแนะนำ เพื่อให้ปักหมุดบนแผนที่ได้ถูกต้อง');
       return;
     }
     setIsSaving(true);
@@ -161,8 +174,8 @@ export default function MerchantBranchesPage() {
       user_id: user.id,
       branch_name: newName.trim(),
       address: newAddress || null,
-      lat: newCoords.lat,
-      lng: newCoords.lng,
+      lat: newCoords?.lat ?? null,
+      lng: newCoords?.lng ?? null,
       is_main: false,
     });
     setIsSaving(false);
@@ -173,7 +186,7 @@ export default function MerchantBranchesPage() {
       return;
     }
 
-    toast.success('เพิ่มสาขาสำเร็จ!');
+    toast.success(newCoords ? 'เพิ่มสาขาสำเร็จ!' : 'เพิ่มสาขาสำเร็จ! (ยังไม่ขึ้นบนแผนที่จนกว่าจะตั้งค่า Google Maps)');
     setNewName('');
     setNewAddress('');
     setNewCoords(null);
@@ -266,16 +279,30 @@ export default function MerchantBranchesPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">ที่อยู่</label>
-                  <BranchAddressAutocomplete
-                    value={newAddress}
-                    onChange={setNewAddress}
-                    onSelectCoords={setNewCoords}
-                  />
-                  {newCoords && (
+                  {isMapsLoaded ? (
+                    <BranchAddressAutocomplete
+                      value={newAddress}
+                      onChange={setNewAddress}
+                      onSelectCoords={setNewCoords}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={newAddress}
+                      onChange={(e) => setNewAddress(e.target.value)}
+                      placeholder="ที่อยู่สาขาใหม่..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+                    />
+                  )}
+                  {newCoords ? (
                     <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
                       <MapPin className="w-3 h-3" /> ปักหมุดแล้ว
                     </p>
-                  )}
+                  ) : !isMapsLoaded ? (
+                    <p className="text-xs text-amber-600 mt-1.5">
+                      ระบบแนะนำที่อยู่อัตโนมัติยังไม่เชื่อมต่อ — บันทึกเป็นข้อความได้ตามปกติ แต่จะยังไม่ขึ้นหมุดบนแผนที่จนกว่าจะตั้งค่า Google Maps API key
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex gap-3">
                   <button

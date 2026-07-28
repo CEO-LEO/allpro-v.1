@@ -116,11 +116,16 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Loads the Google Maps script so usePlacesAutocomplete (inside
-  // AddressAutocomplete below) can become ready
-  useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+  // AddressAutocomplete below) can become ready. Without a configured
+  // API key this never loads — isMapsLoaded stays false and the address
+  // field below falls back to a plain input instead of being stuck
+  // permanently disabled.
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  const { isLoaded: _isMapsLoaded } = useLoadScript({
+    googleMapsApiKey,
     libraries: GOOGLE_MAPS_LIBS,
   });
+  const isMapsLoaded = googleMapsApiKey ? _isMapsLoaded : false;
 
   // ═══ Controlled Form State ═══
   const [formData, setFormData] = useState({
@@ -499,16 +504,30 @@ export default function EditShopModal({ isOpen, onClose }: EditShopModalProps) {
               {/* Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">ที่อยู่ร้านค้า</label>
-                <AddressAutocomplete
-                  value={formData.address}
-                  onChange={(val) => setFormData(prev => ({ ...prev, address: val }))}
-                  onSelectCoords={({ lat, lng }) => { setShopLat(lat); setShopLng(lng); }}
-                />
-                {shopLat != null && shopLng != null && (
+                {isMapsLoaded ? (
+                  <AddressAutocomplete
+                    value={formData.address}
+                    onChange={(val) => setFormData(prev => ({ ...prev, address: val }))}
+                    onSelectCoords={({ lat, lng }) => { setShopLat(lat); setShopLng(lng); }}
+                  />
+                ) : (
+                  <textarea
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="เลขที่ ถนน แขวง เขต จังหวัด"
+                    rows={2}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all resize-none"
+                  />
+                )}
+                {shopLat != null && shopLng != null ? (
                   <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> ปักหมุดแล้ว — จะแสดงบนหน้าแผนที่
                   </p>
-                )}
+                ) : !isMapsLoaded ? (
+                  <p className="text-xs text-amber-600 mt-1.5">
+                    ระบบแนะนำที่อยู่อัตโนมัติยังไม่เชื่อมต่อ — บันทึกที่อยู่นี้เป็นข้อความได้ตามปกติ แต่จะยังไม่ขึ้นหมุดบนแผนที่จนกว่าจะตั้งค่า Google Maps API key แล้วเลือกที่อยู่จากรายการแนะนำอีกครั้ง
+                  </p>
+                ) : null}
               </div>
 
               {/* Category & Opening Hours */}
