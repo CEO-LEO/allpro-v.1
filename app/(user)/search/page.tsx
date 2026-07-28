@@ -11,7 +11,7 @@ import ShopSearchBar from '@/components/Common/ShopSearchBar';
 import { getPromotions } from '@/lib/getPromotions';
 import { useProductStore, Product } from '@/store/useProductStore';
 import { Promotion } from '@/lib/types';
-import { searchWithSEM, handleAdClick, type SEMProduct } from '@/lib/sem';
+import { searchWithSEM, handleAdClick, logAdImpressions, type SEMProduct } from '@/lib/sem';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
 /*
@@ -112,7 +112,14 @@ export default function SearchPage() {
       // ดึง SEM results จาก Supabase
       if (searchText.trim()) {
         const sem = await searchWithSEM(searchText.trim());
-        if (!cancelled) setSemResults(sem.filter(s => s.is_sem_result));
+        const semOnly = sem.filter(s => s.is_sem_result);
+        if (!cancelled) setSemResults(semOnly);
+        // บันทึกว่าโฆษณาเหล่านี้ถูกแสดงจริง (real impression, ไม่ใช่แค่ตัวเลขปลอม)
+        if (semOnly.length > 0) {
+          logAdImpressions(
+            semOnly.map((ad) => ({ productId: ad.id, shopId: ad.shop_id, keyword: searchText.trim() }))
+          );
+        }
       } else {
         setSemResults([]);
       }

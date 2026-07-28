@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { 
@@ -32,6 +32,19 @@ import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import {
+  updateSEMBid,
+  topUpWallet,
+  getShopWallet,
+  getSEMClickStats,
+  getSEMImpressionStats,
+} from '@/lib/sem';
+
+interface EnrichedCampaign extends AdCampaign {
+  semActive: boolean;
+  semKeywords: string[];
+  cpcBid: number;
+}
 
 interface CampaignRow {
   id: string;
@@ -85,7 +98,8 @@ export default function AdsManagerPage() {
     p => possibleNames.includes(p.shopName) || p.id.startsWith('product-')
   );
 
-  const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [campaigns, setCampaigns] = useState<EnrichedCampaign[]>([]);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [stats, setStats] = useState({
     totalImpressions: 0,
     totalClicks: 0,
@@ -98,7 +112,9 @@ export default function AdsManagerPage() {
   const [showProModal, setShowProModal] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
   const isPro = user?.isPro || false;
 
   // Wizard state
@@ -107,38 +123,87 @@ export default function AdsManagerPage() {
   const [selectedProduct, setSelectedProduct] = useState('');
   const [dailyBudget, setDailyBudget] = useState(500);
   const [duration, setDuration] = useState(7);
+  const [keywords, setKeywords] = useState('');
+  const [cpcBid, setCpcBid] = useState(17);
+  const [cpcManuallyEdited, setCpcManuallyEdited] = useState(false);
 
   const merchantId = user?.id || 'guest';
+  const shopId = user?.id || '';
 
-  useEffect(() => {
-    const fetchCampaigns = async () => {
-      try {
-        setIsPageLoading(true);
-        setError(null);
+  const loadData = useCallback(async () => {
+    try {
+      setIsPageLoading(true);
+      setError(null);
 
-        if (!isSupabaseConfigured || !user?.id) {
-          setCampaigns([]);
-          return;
-        }
+      if (!isSupabaseConfigured || !user?.id) {
+        setCampaigns([]);
+        return;
+      }
 
-        const { data, error: fetchErr } = await supabase
+      const [{ data, error: fetchErr }, wallet, clickStats, impressionStats] = await Promise.all([
+        supabase
           .from('merchant_ad_campaigns')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }),
+        getShopWallet(shopId),
+        getSEMClickStats(shopId),
+        getSEMImpressionStats(shopId),
+      ]);
 
-        if (fetchErr) throw new Error(fetchErr.message);
-        setCampaigns((data || []).map((r) => rowToCampaign(r as CampaignRow, merchantId)));
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
-        setError(message);
-      } finally {
-        setIsPageLoading(false);
+      if (fetchErr) throw new Error(fetchErr.message);
+      setWalletBalance(wallet.balance);
+
+      const rows = (data || []) as CampaignRow[];
+      const productIds = Array.from(new Set(rows.map((r) => r.product_id).filter(Boolean))) as string[];
+
+      // Pull the LIVE SEM state (source of truth is the products row, same
+      // as SEOBidManager) instead of the campaign row's own frozen fields.
+      const semByProduct: Record<string, { sem_active: boolean; sem_keywords: string[]; cpc_bid: number }> = {};
+      if (productIds.length > 0) {
+        const { data: productRows } = await supabase
+          .from('products')
+          .select('id, sem_active, sem_keywords, cpc_bid')
+          .in('id', productIds);
+        (productRows || []).forEach((p) => {
+          semByProduct[p.id] = {
+            sem_active: !!p.sem_active,
+            sem_keywords: p.sem_keywords || [],
+            cpc_bid: p.cpc_bid || 0,
+          };
+        });
       }
-    };
 
-    fetchCampaigns();
-  }, [merchantId, user?.id]);
+      const enriched: EnrichedCampaign[] = rows.map((r) => {
+        const base = rowToCampaign(r, merchantId);
+        const sem = (r.product_id && semByProduct[r.product_id]) || { sem_active: false, sem_keywords: [], cpc_bid: 0 };
+        const realClicks = (r.product_id && clickStats.clicksByProduct[r.product_id]?.clicks) || 0;
+        const realSpent = (r.product_id && clickStats.clicksByProduct[r.product_id]?.spent) || 0;
+        const realImpressions = (r.product_id && impressionStats.impressionsByProduct[r.product_id]) || 0;
+        return {
+          ...base,
+          impressions: realImpressions,
+          clicks: realClicks,
+          spent: realSpent,
+          status: sem.sem_active ? 'active' : (base.status === 'completed' ? 'completed' : 'paused'),
+          semActive: sem.sem_active,
+          semKeywords: sem.sem_keywords,
+          cpcBid: sem.cpc_bid,
+        };
+      });
+
+      setCampaigns(enriched);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+      setError(message);
+    } finally {
+      setIsPageLoading(false);
+    }
+  }, [merchantId, user?.id, shopId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Calculate stats from actual campaigns
   useEffect(() => {
@@ -168,65 +233,128 @@ export default function AdsManagerPage() {
       return;
     }
 
-    const newCampaignData: AdCampaign = {
-      id: `camp-${Date.now()}`,
-      merchantId,
-      merchantName: user.shopName || user.name || 'My Shop',
-      productId: product.id,
-      productName: product.title,
-      productImage: product.image,
-      productPrice: product.promoPrice,
-      productDiscount: product.discount,
-      goal: selectedGoal,
-      dailyBudget,
-      totalBudget: dailyBudget * duration,
-      duration,
-      status: 'active',
-      startDate: new Date(),
-      endDate: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
-      impressions: 0,
-      clicks: 0,
-      spent: 0
-    };
-
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.from('merchant_ad_campaigns').insert({
-        id: newCampaignData.id,
-        user_id: user.id,
-        merchant_name: newCampaignData.merchantName,
-        product_id: newCampaignData.productId,
-        product_name: newCampaignData.productName,
-        product_image: newCampaignData.productImage,
-        product_price: newCampaignData.productPrice,
-        product_discount: newCampaignData.productDiscount,
-        goal: newCampaignData.goal,
-        daily_budget: newCampaignData.dailyBudget,
-        total_budget: newCampaignData.totalBudget,
-        duration: newCampaignData.duration,
-        status: newCampaignData.status,
-        start_date: newCampaignData.startDate.toISOString(),
-        end_date: newCampaignData.endDate.toISOString(),
-      });
-
-      if (error) {
-        console.error('[Ads] create campaign error:', error);
-        toast.error('สร้างแคมเปญไม่สำเร็จ กรุณาลองใหม่');
-        return;
-      }
+    const keywordList = keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    if (keywordList.length === 0) {
+      toast.error('กรุณาระบุคีย์เวิร์ดอย่างน้อย 1 คำ');
+      return;
+    }
+    if (!cpcBid || cpcBid <= 0) {
+      toast.error('กรุณาระบุราคาต่อคลิก (CPC) ที่มากกว่า 0');
+      return;
     }
 
-    setCampaigns(prev => [newCampaignData, ...prev]);
+    setIsSubmitting(true);
+    const totalBudget = dailyBudget * duration;
 
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
+    try {
+      // 1. Activate real SEM bidding on this product — this is the part
+      //    that actually makes it appear as "โฆษณา" in search results.
+      const bidOk = await updateSEMBid(product.id, keywordList, cpcBid, true);
+      if (!bidOk) {
+        toast.error('ตั้งค่าคีย์เวิร์ดไม่สำเร็จ กรุณาลองใหม่');
+        return;
+      }
 
-    toast.success('🚀 Campaign Launched Successfully!', { duration: 4000 });
+      // 2. Fund the shop's real wallet — this is what actually gets
+      //    decremented for real on every click (process_ad_click RPC).
+      const topUp = await topUpWallet(shopId, totalBudget);
+      if (!topUp.success) {
+        toast.error('เติมเงินงบโฆษณาไม่สำเร็จ กรุณาลองใหม่');
+        return;
+      }
+      setWalletBalance(topUp.newBalance);
 
-    setShowCreateWizard(false);
-    setWizardStep(1);
+      // 3. Record the campaign itself (goal/budget/duration bookkeeping —
+      //    the real ranking effect comes from step 1+2 above, not this row).
+      const newCampaignData: EnrichedCampaign = {
+        id: `camp-${Date.now()}`,
+        merchantId,
+        merchantName: user.shopName || user.name || 'My Shop',
+        productId: product.id,
+        productName: product.title,
+        productImage: product.image,
+        productPrice: product.promoPrice,
+        productDiscount: product.discount,
+        goal: selectedGoal,
+        dailyBudget,
+        totalBudget,
+        duration,
+        status: 'active',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
+        impressions: 0,
+        clicks: 0,
+        spent: 0,
+        semActive: true,
+        semKeywords: keywordList,
+        cpcBid,
+      };
+
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from('merchant_ad_campaigns').insert({
+          id: newCampaignData.id,
+          user_id: user.id,
+          merchant_name: newCampaignData.merchantName,
+          product_id: newCampaignData.productId,
+          product_name: newCampaignData.productName,
+          product_image: newCampaignData.productImage,
+          product_price: newCampaignData.productPrice,
+          product_discount: newCampaignData.productDiscount,
+          goal: newCampaignData.goal,
+          daily_budget: newCampaignData.dailyBudget,
+          total_budget: newCampaignData.totalBudget,
+          duration: newCampaignData.duration,
+          status: newCampaignData.status,
+          start_date: newCampaignData.startDate.toISOString(),
+          end_date: newCampaignData.endDate.toISOString(),
+        });
+
+        if (error) {
+          console.error('[Ads] create campaign error:', error);
+          // Bid + wallet top-up already succeeded (the part that actually
+          // matters for visibility), so don't block on this bookkeeping row.
+        }
+      }
+
+      setCampaigns(prev => [newCampaignData, ...prev]);
+
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+
+      toast.success(`🚀 เปิดแคมเปญสำเร็จ! เติมเงิน ฿${totalBudget.toLocaleString()} เข้ากระเป๋าโฆษณาแล้ว`, { duration: 4000 });
+
+      setShowCreateWizard(false);
+      setWizardStep(1);
+      setKeywords('');
+      setCpcManuallyEdited(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleCampaign = async (campaign: EnrichedCampaign) => {
+    setTogglingId(campaign.id);
+    try {
+      const nextActive = !campaign.semActive;
+      const ok = await updateSEMBid(campaign.productId, campaign.semKeywords, campaign.cpcBid, nextActive);
+      if (!ok) {
+        toast.error('เปลี่ยนสถานะแคมเปญไม่สำเร็จ');
+        return;
+      }
+      if (isSupabaseConfigured) {
+        await supabase
+          .from('merchant_ad_campaigns')
+          .update({ status: nextActive ? 'active' : 'paused' })
+          .eq('id', campaign.id);
+      }
+      setCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, semActive: nextActive, status: nextActive ? 'active' : 'paused' } : c));
+      toast.success(nextActive ? 'เปิดแคมเปญอีกครั้งแล้ว' : 'หยุดแคมเปญชั่วคราวแล้ว');
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   const totalBudget = dailyBudget * duration;
@@ -306,6 +434,17 @@ export default function AdsManagerPage() {
         ) : (
         /* ═══ Content ═══ */
         <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 md:p-8">
+        {/* Wallet Balance */}
+        <div className="flex items-center justify-between bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl px-6 py-4 mb-6 text-white shadow-md">
+          <div>
+            <p className="text-sm text-white/80">ยอดเงินคงเหลือในกระเป๋าโฆษณา</p>
+            <p className="text-2xl font-black">฿{walletBalance.toLocaleString()}</p>
+          </div>
+          <p className="text-xs text-white/70 max-w-[45%] text-right">
+            หักจริงทุกครั้งที่มีคนคลิกดูสินค้าจากผลค้นหา — เปิดแคมเปญใหม่เพื่อเติมเงินเพิ่ม
+          </p>
+        </div>
+
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <motion.div
@@ -441,16 +580,41 @@ export default function AdsManagerPage() {
                         <h3 className="font-bold text-gray-900">{campaign.productName}</h3>
                         <p className="text-sm text-gray-600">{campaign.merchantName}</p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        campaign.status === 'active'
-                          ? 'bg-green-100 text-green-700'
-                          : campaign.status === 'paused'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {campaign.status.toUpperCase()}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          campaign.status === 'active'
+                            ? 'bg-green-100 text-green-700'
+                            : campaign.status === 'paused'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {campaign.status.toUpperCase()}
+                        </span>
+                        <button
+                          onClick={() => handleToggleCampaign(campaign)}
+                          disabled={togglingId === campaign.id}
+                          title={campaign.semActive ? 'หยุดแคมเปญชั่วคราว' : 'เปิดแคมเปญอีกครั้ง'}
+                          className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                        >
+                          {campaign.semActive ? (
+                            <Pause className="w-4 h-4 text-gray-700" />
+                          ) : (
+                            <Play className="w-4 h-4 text-gray-700" />
+                          )}
+                        </button>
+                      </div>
                     </div>
+
+                    {campaign.semKeywords.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {campaign.semKeywords.map((kw) => (
+                          <span key={kw} className="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                            {kw}
+                          </span>
+                        ))}
+                        <span className="text-[11px] text-gray-400">CPC ฿{campaign.cpcBid}</span>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-4 gap-4 mb-3">
                       <div>
@@ -556,7 +720,7 @@ export default function AdsManagerPage() {
                           selectedGoal === 'visibility' ? 'text-blue-600' : 'text-gray-400'
                         }`} />
                         <h4 className="font-bold text-gray-900 mb-2">Boost Visibility</h4>
-                        <p className="text-sm text-gray-600">Appear at top of search results</p>
+                        <p className="text-sm text-gray-600">Appear at top of search results as &quot;โฆษณา&quot;</p>
                       </button>
 
                       <button
@@ -571,9 +735,12 @@ export default function AdsManagerPage() {
                           selectedGoal === 'traffic' ? 'text-blue-600' : 'text-gray-400'
                         }`} />
                         <h4 className="font-bold text-gray-900 mb-2">Drive Traffic</h4>
-                        <p className="text-sm text-gray-600">Featured on homepage banner</p>
+                        <p className="text-sm text-gray-600">Pay only when someone actually clicks through</p>
                       </button>
                     </div>
+                    <p className="text-xs text-gray-400">
+                      ทั้งสองแบบทำงานผ่านระบบเดียวกัน: ประมูลคีย์เวิร์ดให้ขึ้นเป็นผลลัพธ์ &quot;โฆษณา&quot; ในหน้าค้นหา แล้วจ่ายเมื่อมีคนคลิกจริงเท่านั้น
+                    </p>
                   </motion.div>
                 )}
 
@@ -630,7 +797,22 @@ export default function AdsManagerPage() {
                     animate={{ opacity: 1, x: 0 }}
                   >
                     <h3 className="text-xl font-bold text-gray-900 mb-4">Set Budget & Duration</h3>
-                    
+
+                    {/* Keywords */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-bold text-gray-700 mb-2">
+                        คีย์เวิร์ดที่จะให้ขึ้นเป็น &quot;โฆษณา&quot; ในผลค้นหา
+                      </label>
+                      <input
+                        type="text"
+                        value={keywords}
+                        onChange={(e) => setKeywords(e.target.value)}
+                        placeholder="เช่น กาแฟ, ลดราคา, บุฟเฟ่ต์ (คั่นด้วยจุลภาค)"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-gray-900"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">เมื่อลูกค้าค้นหาคำเหล่านี้ สินค้าของคุณจะขึ้นเป็นผลลัพธ์แบบ &quot;โฆษณา&quot; ที่ด้านบนสุด</p>
+                    </div>
+
                     {/* Daily Budget */}
                     <div className="mb-6">
                       <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -642,12 +824,39 @@ export default function AdsManagerPage() {
                         max="2000"
                         step="100"
                         value={dailyBudget}
-                        onChange={(e) => setDailyBudget(parseInt(e.target.value))}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          setDailyBudget(val);
+                          if (!cpcManuallyEdited) {
+                            setCpcBid(Math.max(1, Math.round(val / 30)));
+                          }
+                        }}
                         className="w-full"
                       />
                       <div className="flex justify-between text-xs text-gray-500 mt-1">
                         <span>฿100</span>
                         <span>฿2,000</span>
+                      </div>
+                    </div>
+
+                    {/* CPC Bid */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-bold text-gray-700 mb-2">
+                        ราคาต่อคลิก (CPC)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 font-bold">฿</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={cpcBid}
+                          onChange={(e) => {
+                            setCpcManuallyEdited(true);
+                            setCpcBid(Math.max(1, parseInt(e.target.value) || 1));
+                          }}
+                          className="w-28 px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-gray-900 font-bold"
+                        />
+                        <p className="text-xs text-gray-500">แนะนำอัตโนมัติจากงบรายวัน ปรับได้เอง — ยิ่งประมูลสูง ยิ่งได้อันดับดีกว่าคู่แข่ง</p>
                       </div>
                     </div>
 
@@ -731,6 +940,16 @@ export default function AdsManagerPage() {
                         <span className="font-bold">{selectedGoal === 'visibility' ? 'Boost Visibility' : 'Drive Traffic'}</span>
                       </div>
                       <div className="flex justify-between">
+                        <span className="text-gray-600">คีย์เวิร์ด:</span>
+                        <span className="font-bold text-right">
+                          {keywords.split(',').map(k => k.trim()).filter(Boolean).join(', ') || '—'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">CPC:</span>
+                        <span className="font-bold">฿{cpcBid} / คลิก</span>
+                      </div>
+                      <div className="flex justify-between">
                         <span className="text-gray-600">Daily Budget:</span>
                         <span className="font-bold">฿{dailyBudget}</span>
                       </div>
@@ -739,9 +958,12 @@ export default function AdsManagerPage() {
                         <span className="font-bold">{duration} days</span>
                       </div>
                       <div className="flex justify-between text-lg">
-                        <span className="text-gray-900 font-bold">Total:</span>
+                        <span className="text-gray-900 font-bold">Total (เติมเข้ากระเป๋าโฆษณา):</span>
                         <span className="font-black text-blue-600">฿{totalBudget}</span>
                       </div>
+                      <p className="text-xs text-gray-400">
+                        งบนี้จะถูกเติมเข้ากระเป๋าโฆษณาของร้าน (ใช้ร่วมกันได้ทุกแคมเปญ) และหักจริงทุกครั้งที่มีคนคลิกดูสินค้านี้จากผลค้นหา
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -760,7 +982,10 @@ export default function AdsManagerPage() {
                   {wizardStep < 4 ? (
                     <button
                       onClick={() => setWizardStep(wizardStep + 1)}
-                      disabled={wizardStep === 2 && !selectedProduct}
+                      disabled={
+                        (wizardStep === 2 && !selectedProduct) ||
+                        (wizardStep === 3 && (keywords.split(',').map(k => k.trim()).filter(Boolean).length === 0 || cpcBid <= 0))
+                      }
                       className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed"
                     >
                       Next
@@ -769,10 +994,11 @@ export default function AdsManagerPage() {
                   ) : (
                     <button
                       onClick={handleCreateCampaign}
-                      className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                      disabled={isSubmitting}
+                      className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-60 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed"
                     >
                       <Sparkles className="w-5 h-5" />
-                      Launch Campaign
+                      {isSubmitting ? 'กำลังเปิดแคมเปญ...' : 'Launch Campaign'}
                     </button>
                   )}
                 </div>

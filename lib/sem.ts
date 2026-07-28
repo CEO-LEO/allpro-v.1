@@ -287,6 +287,64 @@ export async function getWalletTransactions(shopId: string, limit = 20): Promise
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// Impression Tracking (real "was this ad actually shown?" record)
+// ═══════════════════════════════════════════════════════
+
+/**
+ * บันทึกว่าโฆษณา (sponsored result) ถูกแสดงจริงให้คนค้นหาเห็น
+ * เรียกทันทีหลังจาก searchWithSEM() คืนผลลัพธ์ที่มี is_sem_result = true
+ * — fire-and-forget, ไม่บล็อก UI และไม่มีผลถ้าล้มเหลว
+ */
+export async function logAdImpressions(
+  items: { productId: string; shopId: string; keyword: string }[]
+): Promise<void> {
+  if (!isSupabaseConfigured || items.length === 0) return;
+
+  try {
+    await supabase.from('ad_impression_logs').insert(
+      items.map((item) => ({
+        product_id: item.productId,
+        shop_id: item.shopId,
+        keyword: item.keyword,
+      }))
+    );
+  } catch (err) {
+    console.error('Log ad impressions failed:', err);
+  }
+}
+
+/**
+ * ดึงสถิติการแสดงผล (impressions) ของร้านค้า
+ */
+export async function getSEMImpressionStats(shopId: string, days = 30): Promise<{
+  totalImpressions: number;
+  impressionsByProduct: Record<string, number>;
+}> {
+  if (!isSupabaseConfigured) return { totalImpressions: 0, impressionsByProduct: {} };
+
+  try {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase
+      .from('ad_impression_logs')
+      .select('product_id')
+      .eq('shop_id', shopId)
+      .gte('viewed_at', since);
+
+    if (error || !data) return { totalImpressions: 0, impressionsByProduct: {} };
+
+    const impressionsByProduct: Record<string, number> = {};
+    data.forEach((d) => {
+      impressionsByProduct[d.product_id] = (impressionsByProduct[d.product_id] || 0) + 1;
+    });
+
+    return { totalImpressions: data.length, impressionsByProduct };
+  } catch {
+    return { totalImpressions: 0, impressionsByProduct: {} };
+  }
+}
+
 /**
  * ดึงสถิติคลิก SEM ของร้านค้า
  */
@@ -294,38 +352,46 @@ export async function getSEMClickStats(shopId: string, days = 30): Promise<{
   totalClicks: number;
   totalSpent: number;
   clicksByKeyword: { keyword: string; clicks: number; spent: number }[];
+  clicksByProduct: Record<string, { clicks: number; spent: number }>;
 }> {
-  if (!isSupabaseConfigured) return { totalClicks: 0, totalSpent: 0, clicksByKeyword: [] };
+  if (!isSupabaseConfigured) return { totalClicks: 0, totalSpent: 0, clicksByKeyword: [], clicksByProduct: {} };
 
   try {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
     const { data, error } = await supabase
       .from('ad_click_logs')
-      .select('keyword, cpc_amount')
+      .select('keyword, cpc_amount, product_id')
       .eq('shop_id', shopId)
       .gte('clicked_at', since);
 
-    if (error || !data) return { totalClicks: 0, totalSpent: 0, clicksByKeyword: [] };
+    if (error || !data) return { totalClicks: 0, totalSpent: 0, clicksByKeyword: [], clicksByProduct: {} };
 
     const totalClicks = data.length;
     const totalSpent = data.reduce((sum, d) => sum + (d.cpc_amount || 0), 0);
 
     // Group by keyword
     const kwMap: Record<string, { clicks: number; spent: number }> = {};
+    const productMap: Record<string, { clicks: number; spent: number }> = {};
     data.forEach(d => {
       const kw = d.keyword || 'unknown';
       if (!kwMap[kw]) kwMap[kw] = { clicks: 0, spent: 0 };
       kwMap[kw].clicks++;
       kwMap[kw].spent += d.cpc_amount || 0;
+
+      if (d.product_id) {
+        if (!productMap[d.product_id]) productMap[d.product_id] = { clicks: 0, spent: 0 };
+        productMap[d.product_id].clicks++;
+        productMap[d.product_id].spent += d.cpc_amount || 0;
+      }
     });
 
     const clicksByKeyword = Object.entries(kwMap)
       .map(([keyword, stats]) => ({ keyword, ...stats }))
       .sort((a, b) => b.clicks - a.clicks);
 
-    return { totalClicks, totalSpent, clicksByKeyword };
+    return { totalClicks, totalSpent, clicksByKeyword, clicksByProduct: productMap };
   } catch {
-    return { totalClicks: 0, totalSpent: 0, clicksByKeyword: [] };
+    return { totalClicks: 0, totalSpent: 0, clicksByKeyword: [], clicksByProduct: {} };
   }
 }
