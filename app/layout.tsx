@@ -69,6 +69,20 @@ export default function RootLayout({
     <html lang="th" className={`${kanit.variable} scroll-smooth`}>
       <head>
         <Script src="/polyfills.js" strategy="beforeInteractive" />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`
+            (function () {
+              try {
+                var raw = localStorage.getItem('golden-hunter-settings');
+                if (!raw) return;
+                var theme = JSON.parse(raw).state && JSON.parse(raw).state.theme;
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                }
+              } catch (e) {}
+            })();
+          `}
+        </Script>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />

@@ -73,20 +73,3 @@ export const useSettingsStore = create<SettingsState>()(
     }
   )
 );
-
-// Initialize theme on app load
-if (typeof window !== 'undefined') {
-  // Check for saved theme or system preference
-  const savedTheme = localStorage.getItem('golden-hunter-settings');
-  if (savedTheme) {
-    try {
-      const settings = JSON.parse(savedTheme);
-      const theme = settings.state?.theme || 'light';
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      }
-    } catch (e) {
-      // Ignore parse errors
-    }
-  }
-}
