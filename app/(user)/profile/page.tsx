@@ -152,7 +152,7 @@ export default function ProfilePage() {
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
               <MenuItem icon={Store} title="ตั้งค่าร้านค้า" href="/merchant/settings" />
-              <MenuItem icon={Settings} title="การตั้งค่า" href="/merchant/settings" />
+              <MenuItem icon={Settings} title="การตั้งค่า" href="/merchant/settings?tab=theme" />
               <MenuItem icon={HelpCircle} title="ช่วยเหลือ" href="/contact" />
             </div>
           </>

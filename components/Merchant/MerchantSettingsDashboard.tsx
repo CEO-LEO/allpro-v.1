@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Store, Bell, ShieldCheck, CreditCard, Palette, Globe, Settings2,
   Save, Loader2, CheckCircle, Upload, Camera, AlertTriangle, Trash2,
@@ -203,7 +204,11 @@ function NotWiredNotice({ text }: { text: string }) {
 export default function MerchantSettingsDashboard() {
   const { user, updateUser } = useAuthStore();
   const { theme, setTheme, language, setLanguage } = useSettingsStore();
-  const [activeTab, setActiveTab] = useState('profile');
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    TABS.some((t) => t.id === requestedTab) ? requestedTab! : 'profile'
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'info' | 'error'; text: string } | null>(null);

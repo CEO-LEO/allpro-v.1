@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { QrCode, X, CheckCircle, Camera, Upload, RefreshCw, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function QRScannerComponent() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [redeeming, setRedeeming] = useState(false);
@@ -167,6 +169,13 @@ export default function QRScannerComponent() {
     setCameraError(null);
     scanLockRef.current = false;
   };
+
+  // Hide on menu/settings-style pages where scanning a QR has no purpose —
+  // the fixed button otherwise overlaps menu row chevrons on short pages
+  // like /profile (no scroll room to push it clear of the button's zone).
+  if (pathname.startsWith('/profile')) {
+    return null;
+  }
 
   return (
     <>
