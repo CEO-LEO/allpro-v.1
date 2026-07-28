@@ -6,38 +6,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, ClockIcon, FireIcon, BoltIcon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/solid';
 import { MapPinIcon, HeartIcon } from '@heroicons/react/24/outline';
-import { useProductStore } from '@/store/useProductStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 
-/*
- * Expected API Response: GET /api/flash-sales
- * Response: { sales: FlashSaleItem[], categories: string[] }
- *
- * interface FlashSaleItem {
- *   id: number;
- *   title: string;
- *   merchant: string;
- *   discount: number;         // percent
- *   originalPrice: number;
- *   salePrice: number;
- *   image: string;
- *   endTime: string;          // ISO date — will be converted to Date
- *   claimed: number;
- *   total: number;
- *   location: string;
- *   category: string;
- * }
- */
-
 interface FlashSaleItem {
-  id: number;
+  id: string;
   title: string;
   merchant: string;
   discount: number;
   originalPrice: number;
   salePrice: number;
   image: string;
+  startTime: Date;
   endTime: Date;
   claimed: number;
   total: number;
@@ -45,43 +25,53 @@ interface FlashSaleItem {
   category: string;
 }
 
-// Flash sale data is loaded from API (see state in FlashSalePage component)
-
-function TimeDisplay({ endTime }: { endTime: Date }) {
-  const [timeLeft, setTimeLeft] = useState('');
-  const [secondsLeft, setSecondsLeft] = useState<number>(9999);
+// Real countdown — shows "เริ่มใน..." before startTime, "เหลือเวลา..." once live,
+// and "หมดเวลา" after endTime. Both times come straight from the promotions row
+// (starts_at / ends_at), not a guessed/fallback value.
+function TimeDisplay({ startTime, endTime }: { startTime: Date; endTime: Date }) {
+  const [label, setLabel] = useState('');
+  const [phase, setPhase] = useState<'upcoming' | 'live' | 'urgent' | 'ended'>('upcoming');
 
   useEffect(() => {
     const updateTimer = () => {
       const now = new Date().getTime();
-      const distance = endTime.getTime() - now;
+      const toStart = startTime.getTime() - now;
+      const toEnd = endTime.getTime() - now;
 
-      if (distance < 0) {
-        setTimeLeft('หมดเวลา');
-        setSecondsLeft(0);
-        return;
+      const fmt = (ms: number) => {
+        const totalSec = Math.max(0, Math.floor(ms / 1000));
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      };
+
+      if (toEnd <= 0) {
+        setLabel('หมดเวลา');
+        setPhase('ended');
+      } else if (toStart > 0) {
+        setLabel(`เริ่มใน ${fmt(toStart)}`);
+        setPhase('upcoming');
+      } else {
+        setLabel(fmt(toEnd));
+        setPhase(toEnd < 60000 ? 'urgent' : 'live');
       }
-
-      setSecondsLeft(Math.floor(distance / 1000));
-      const hours = Math.floor(distance / (1000 * 60 * 60));
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-      setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
-
     return () => clearInterval(interval);
-  }, [endTime]);
+  }, [startTime, endTime]);
 
-  const isUrgent = secondsLeft < 60 && secondsLeft > 0;
+  const bg =
+    phase === 'upcoming' ? 'bg-blue-600' :
+    phase === 'urgent' ? 'bg-red-700 animate-pulse' :
+    phase === 'ended' ? 'bg-gray-500' : 'bg-red-600';
 
   return (
-    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm text-white transition-colors ${isUrgent ? 'bg-red-700 animate-pulse' : 'bg-red-600'}`}>
+    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm text-white transition-colors ${bg}`}>
       <ClockIcon className="w-4 h-4" />
-      <span>{timeLeft}</span>
+      <span>{label}</span>
     </div>
   );
 }
@@ -141,7 +131,7 @@ function DealDetailModal({
           </button>
           {/* Timer overlay */}
           <div className="absolute bottom-3 left-3">
-            <TimeDisplay endTime={deal.endTime} />
+            <TimeDisplay startTime={deal.startTime} endTime={deal.endTime} />
           </div>
         </div>
 
@@ -194,34 +184,16 @@ function DealDetailModal({
 
 export default function FlashSalePage() {
   const [filter, setFilter] = useState('ทั้งหมด');
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<FlashSaleItem | null>(null);
 
-  // ── Load flash sale products from product store + Supabase ──
-  const products = useProductStore((s) => s.products);
   const [isLoading, setIsLoading] = useState(true);
-  const [isError] = useState(false);
-  const [apiFlashSales, setApiFlashSales] = useState<FlashSaleItem[]>([]);
+  const [isError, setIsError] = useState(false);
+  const [flashSales, setFlashSales] = useState<FlashSaleItem[]>([]);
 
-  // Convert product-store items tagged "Flash Sale" into FlashSaleItem[]
-  const storeFlashSales: FlashSaleItem[] = products
-    .filter((p) => p.tags?.includes('Flash Sale'))
-    .map((p, idx) => ({
-      id: idx + 1,
-      title: p.title,
-      merchant: p.shopName,
-      discount: p.discount || Math.round(((p.originalPrice - p.promoPrice) / p.originalPrice) * 100),
-      originalPrice: p.originalPrice,
-      salePrice: p.promoPrice,
-      image: resolveImageUrl(p.image, getCategoryFallbackImage(p.category)),
-      endTime: new Date(p.validUntil),
-      claimed: p.reviews || 0,
-      total: Math.max(p.likes || 50, (p.reviews || 0) + 10),
-      location: p.distance || 'กรุงเทพฯ',
-      category: p.category,
-    }));
-
-  // Fetch flash sale deals from Supabase promotions + products tables
+  // Real Flash Sales only — sourced from promotions where promo_type='flash_sale'.
+  // starts_at/ends_at are genuine merchant-set schedules (see CreateFlashSaleModal),
+  // not a guessed/fallback timer.
   useEffect(() => {
     async function fetchDeals() {
       if (!isSupabaseConfigured) {
@@ -229,90 +201,57 @@ export default function FlashSalePage() {
         return;
       }
       try {
-        // Source A: promotions table
-        const { data: promoData } = await supabase
+        const { data, error } = await supabase
           .from('promotions')
-          .select('*')
+          .select('*, merchants(name)')
+          .eq('promo_type', 'flash_sale')
           .eq('status', 'active')
-          .gte('valid_until', new Date().toISOString())
-          .order('created_at', { ascending: false });
+          .gt('ends_at', new Date().toISOString())
+          .order('starts_at', { ascending: true });
 
-        // Source B: products table (merchant-created products with discount)
-        const { data: productData } = await supabase
-          .from('products')
-          .select('*')
-          .gt('discount', 0)
-          .order('created_at', { ascending: false })
-          .limit(20);
+        if (error) throw error;
 
-        const results: FlashSaleItem[] = [];
+        const results: FlashSaleItem[] = (data || []).map((d: Record<string, unknown>) => {
+          const origPrice = Number(d.original_price || 0);
+          const promoPrice = Number(d.promo_price || 0);
+          const discPct = Number(d.discount_pct || 0) || (origPrice > 0 ? Math.round(((origPrice - promoPrice) / origPrice) * 100) : 0);
+          const merchantRel = d.merchants as { name?: string } | { name?: string }[] | null;
+          const merchantName = Array.isArray(merchantRel) ? merchantRel[0]?.name : merchantRel?.name;
+          return {
+            id: String(d.id),
+            title: String(d.title || ''),
+            merchant: merchantName || 'ร้านค้า',
+            discount: discPct,
+            originalPrice: origPrice || promoPrice,
+            salePrice: promoPrice || origPrice,
+            image: resolveImageUrl(String(d.image_url || ''), getCategoryFallbackImage(String(d.category || ''))),
+            startTime: new Date(String(d.starts_at || Date.now())),
+            endTime: new Date(String(d.ends_at || Date.now())),
+            claimed: Number(d.used_quota || 0),
+            total: Number(d.total_quota || 0) || 1,
+            location: 'กรุงเทพฯ',
+            category: String(d.category || 'อื่นๆ'),
+          };
+        });
 
-        if (promoData && promoData.length > 0) {
-          promoData.forEach((d: Record<string, unknown>, idx: number) => {
-            const origPrice = Number(d.original_price || 0);
-            const promoPrice = Number(d.promo_price || 0);
-            const discPct = Number(d.discount_pct || 0) || (origPrice > 0 ? Math.round(((origPrice - promoPrice) / origPrice) * 100) : 0);
-            results.push({
-              id: 1000 + idx,
-              title: String(d.title || ''),
-              merchant: String(d.merchant_id || 'ร้านค้า'),
-              discount: discPct,
-              originalPrice: origPrice || promoPrice,
-              salePrice: promoPrice || origPrice,
-              image: resolveImageUrl(String(d.image_url || ''), getCategoryFallbackImage(String(d.category || ''))),
-              endTime: new Date(String(d.valid_until || Date.now())),
-              claimed: Number(d.quota_used || 0),
-              total: Number(d.quota_total || 50),
-              location: 'กรุงเทพฯ',
-              category: String(d.category || 'อื่นๆ'),
-            });
-          });
-        }
-
-        if (productData && productData.length > 0) {
-          productData.forEach((d: Record<string, unknown>, idx: number) => {
-            const origPrice = Number(d.original_price || d.price || 0);
-            const promoPrice = Number(d.promo_price || d.price || 0);
-            const discPct = Number(d.discount || 0) || (origPrice > 0 ? Math.round(((origPrice - promoPrice) / origPrice) * 100) : 0);
-            if (discPct <= 0) return;
-            const validUntil = String(d.valid_until || new Date(Date.now() + 24 * 3600000).toISOString());
-            results.push({
-              id: 2000 + idx,
-              title: String(d.title || ''),
-              merchant: String(d.shop_name || 'ร้านค้า'),
-              discount: discPct,
-              originalPrice: origPrice,
-              salePrice: promoPrice,
-              image: resolveImageUrl(String(d.image || ''), getCategoryFallbackImage(String(d.category || ''))),
-              endTime: new Date(validUntil),
-              claimed: Math.floor(((new Date(validUntil).getTime() - Date.now()) % 47) + 5),
-              total: 50,
-              location: String(d.location || 'กรุงเทพฯ'),
-              category: String(d.category || 'อื่นๆ'),
-            });
-          });
-        }
-
-        setApiFlashSales(results);
+        setFlashSales(results);
       } catch (e) {
         console.error('[FlashSale] fetch error:', e);
+        setIsError(true);
       }
       setIsLoading(false);
     }
     fetchDeals();
   }, []);
 
-  // Merge both sources
-  const flashSales = [...storeFlashSales, ...apiFlashSales];
-
   const categories = ['ทั้งหมด', ...Array.from(new Set(flashSales.map(s => s.category)))];
 
-  const filteredSales = filter === 'ทั้งหมด' 
-    ? flashSales 
+  const filteredSales = filter === 'ทั้งหมด'
+    ? flashSales
     : flashSales.filter(sale => sale.category === filter);
 
-  const toggleFavorite = (id: number) => {
-    setFavorites(prev => 
+  const toggleFavorite = (id: string) => {
+    setFavorites(prev =>
       prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
     );
   };
@@ -456,7 +395,7 @@ export default function FlashSalePage() {
 
                     {/* Timer */}
                     <div className="absolute bottom-3 left-3">
-                      <TimeDisplay endTime={sale.endTime} />
+                      <TimeDisplay startTime={sale.startTime} endTime={sale.endTime} />
                     </div>
                   </div>
 

@@ -17,14 +17,14 @@ import {
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import { getSearchInsights } from "@/lib/getPromotions";
-import { Package as PackageIcon } from "lucide-react";
-import { useFlashSale } from "@/lib/flashSaleContext";
+import { Package as PackageIcon, Zap } from "lucide-react";
 import UpgradeBanner from "@/components/Merchant/UpgradeBanner";
 import { useProductStore } from "@/store/useProductStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
 import CreateDealWidget from "@/components/Merchant/CreateDealWidget";
 import BoostPromotionModal from "@/components/Merchant/BoostPromotionModal";
+import CreateFlashSaleModal from "@/components/Merchant/CreateFlashSaleModal";
 import EditPromotionModal from "@/components/Merchant/EditPromotionModal";
 import { Product } from "@/store/useProductStore";
 import { fetchMerchantAnalytics, type MerchantDashboardStats, type ActivityItem as AnalyticsActivityItem } from "@/lib/analytics";
@@ -83,8 +83,8 @@ export default function MerchantDashboard() {
   const [sortBy, setSortBy] = useState<"newest" | "popular" | "discount">("newest");
   const [selectedLocation, setSelectedLocation] = useState("อารีย์");
 
-  const { startFlashSale, endFlashSale, isFlashSale } = useFlashSale();
   const [showBoostModal, setShowBoostModal] = useState(false);
+  const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -367,8 +367,41 @@ export default function MerchantDashboard() {
           </div>
         </div>
 
+        {/* Flash Sale Card */}
+        <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-2xl p-5 sm:p-6 mb-8 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <Zap className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Flash Sale</h3>
+                  <p className="text-white/80 text-sm">เปิดดีลเวลาจำกัด นับถอยหลังจริง แสดงผลทันที</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <button
+                onClick={() => setShowFlashSaleModal(true)}
+                className="inline-flex items-center gap-2 bg-white text-purple-700 px-5 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl text-sm"
+              >
+                <Zap className="w-5 h-5" />
+                จัดการ Flash Sale
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Boost Modal */}
         <BoostPromotionModal isOpen={showBoostModal} onClose={() => setShowBoostModal(false)} />
+
+        {/* Flash Sale Modal */}
+        <CreateFlashSaleModal isOpen={showFlashSaleModal} onClose={() => setShowFlashSaleModal(false)} />
 
         {/* Edit Modal */}
         <EditPromotionModal

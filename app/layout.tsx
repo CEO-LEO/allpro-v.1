@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Kanit } from 'next/font/google'
 import './globals.css'
 import { NotificationProvider } from '@/lib/notificationContext'
-import { FlashSaleProvider } from '@/lib/flashSaleContext'
 import GameificationEventListener from '@/components/Common/GameificationEventListener'
 import AuthListener from '@/components/Auth/AuthListener'
 import { Toaster } from 'sonner'
@@ -84,13 +83,11 @@ export default function RootLayout({
       </head>
       <body className="font-kanit antialiased bg-slate-50 text-slate-900">
         <NotificationProvider>
-          <FlashSaleProvider>
-            <AuthListener />
-            <GameificationEventListener />
-            {/* NO UI components here - layouts are in route groups */}
-            {children}
-            <Toaster position="top-center" richColors />
-          </FlashSaleProvider>
+          <AuthListener />
+          <GameificationEventListener />
+          {/* NO UI components here - layouts are in route groups */}
+          {children}
+          <Toaster position="top-center" richColors />
         </NotificationProvider>
       </body>
     </html>
