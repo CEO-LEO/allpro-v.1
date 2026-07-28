@@ -144,20 +144,32 @@ export async function claimPromotion(params: {
 }
 
 /**
- * อัปเดตสถานะ claim เป็น "used" (ใช้จริงแล้ว)
+ * ยืนยันใช้คูปองด้วย PIN จริง (ต้องให้พนักงานยืนยัน ไม่ใช่ลูกค้ากดเองตรงๆ)
+ * ผ่าน SECURITY DEFINER RPC เท่านั้น — client ไม่มีสิทธิ์ UPDATE status ตรงๆ อีกต่อไป
  */
-export async function markClaimAsUsed(claimId: string): Promise<boolean> {
-  if (!isSupabaseConfigured) return false;
+export async function redeemClaimByPin(
+  claimId: string,
+  pin: string
+): Promise<{ success: boolean; message: string }> {
+  if (!isSupabaseConfigured) {
+    return { success: false, message: 'ระบบไม่พร้อมใช้งาน' };
+  }
 
   try {
-    const { error } = await supabase
-      .from('promotion_claims')
-      .update({ status: 'used', used_at: new Date().toISOString() })
-      .eq('id', claimId);
+    const { data, error } = await supabase.rpc('redeem_claim_by_pin', {
+      p_claim_id: claimId,
+      p_pin: pin,
+    });
 
-    return !error;
+    if (error) {
+      console.error('[redeemClaimByPin] rpc error:', error.message);
+      return { success: false, message: 'เกิดข้อผิดพลาด กรุณาลองใหม่' };
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    return { success: !!row?.success, message: row?.message || 'เกิดข้อผิดพลาด' };
   } catch {
-    return false;
+    return { success: false, message: 'เกิดข้อผิดพลาด กรุณาลองใหม่' };
   }
 }
 

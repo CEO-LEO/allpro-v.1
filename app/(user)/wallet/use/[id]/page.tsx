@@ -4,9 +4,9 @@ import { useRouter, useParams } from 'next/navigation';
 import { useProductStore } from '@/store/useProductStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getPromotionById } from '@/lib/getPromotions';
-import { markClaimAsUsed } from '@/lib/analytics';
+import { redeemClaimByPin } from '@/lib/analytics';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { X, Clock, Loader2, Copy, Check, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Clock, Loader2, Copy, Check, CheckCircle, AlertCircle, Lock, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import QRCode from 'react-qr-code';
 
@@ -30,8 +30,15 @@ export default function UseCouponPage() {
   const [isUsed, setIsUsed] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [claimId, setClaimId] = useState<string | null>(null);
+  const [redeemPin, setRedeemPin] = useState<string | null>(null);
+  const [showStaffPin, setShowStaffPin] = useState(false);
+  const [pinInput, setPinInput] = useState('');
 
-  const qrValue = `ALLPRO:${decodedId}:${Date.now()}`;
+  // Computed once on mount (lazy initializer) — NOT recomputed on every
+  // re-render, otherwise the 15-min countdown timer (which ticks every
+  // second) would produce a brand new Date.now() each time and the QR
+  // image would change every second, making it impossible to scan.
+  const [qrValue] = useState(() => `ALLPRO:${decodedId}:${Date.now()}`);
 
   // Find product from multiple sources
   useEffect(() => {
@@ -75,14 +82,17 @@ export default function UseCouponPage() {
       if (!user?.id || !isSupabaseConfigured) return;
       const { data } = await supabase
         .from('promotion_claims')
-        .select('id')
+        .select('id, redeem_pin')
         .eq('user_id', user.id)
         .eq('product_id', decodedId)
         .eq('status', 'claimed')
         .order('claimed_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (data) setClaimId(data.id);
+      if (data) {
+        setClaimId(data.id);
+        setRedeemPin(data.redeem_pin);
+      }
     }
     findClaim();
   }, [user?.id, decodedId]);
@@ -109,21 +119,27 @@ export default function UseCouponPage() {
     });
   };
 
-  const handleConfirmUsed = async () => {
-    if (isConfirming) return;
+  // ไม่มี claim จริง (เช่น มาจากรายการที่บันทึกไว้แต่ไม่เคยกด "รับโปรโมชั่น" มาก่อน)
+  // — ไม่มีอะไรให้ยืนยันด้วย PIN จริง จึงปิดหน้าได้เลยแบบเดิม แต่จะไม่มีประวัติ
+  // เข้าไปในแท็บ "ที่กดรับ" เพราะไม่มี claim ให้ผูก
+  const handleCloseWithoutClaim = () => {
+    setIsUsed(true);
+    toast.success('ปิดหน้าจอแล้ว');
+  };
+
+  // มี claim จริง — ต้องให้พนักงานพิมพ์ PIN ยืนยันก่อนถึงจะ mark ว่าใช้แล้วจริง
+  const handleStaffConfirm = async () => {
+    if (isConfirming || !claimId) return;
     setIsConfirming(true);
     try {
-      if (claimId) {
-        const ok = await markClaimAsUsed(claimId);
-        if (!ok) {
-          toast.error('บันทึกสถานะไม่สำเร็จ กรุณาลองใหม่');
-          return;
-        }
+      const result = await redeemClaimByPin(claimId, pinInput);
+      if (!result.success) {
+        toast.error(result.message);
+        setPinInput('');
+        return;
       }
-      // ไม่มี claim ให้ปิด (เช่น มาจากรายการที่บันทึกไว้แต่ไม่เคยกด "รับโปรโมชั่น" มาก่อน)
-      // — ยังให้ใช้ QR ได้ตามปกติ แต่จะไม่มีประวัติเข้าไปในแท็บ "ที่กดรับ"
       setIsUsed(true);
-      toast.success('ใช้คูปองสำเร็จ! ขอบคุณที่ใช้บริการ');
+      toast.success(result.message);
     } finally {
       setIsConfirming(false);
     }
@@ -217,6 +233,21 @@ export default function UseCouponPage() {
               </button>
             </div>
           </div>
+
+          {/* Staff PIN — only shown when there's a real claim to verify */}
+          {claimId && redeemPin && !isExpired && (
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-500 mb-1.5 flex items-center justify-center gap-1">
+                <KeyRound className="w-3.5 h-3.5" />
+                แจ้งรหัสนี้ให้พนักงานเพื่อยืนยันการใช้งาน
+              </p>
+              <div className="inline-flex bg-amber-50 border-2 border-amber-300 rounded-xl px-5 py-2">
+                <p className="text-2xl font-mono font-black text-amber-700 tracking-[0.3em]">
+                  {redeemPin}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Timer Bar */}
@@ -234,17 +265,62 @@ export default function UseCouponPage() {
               <Clock className="w-4 h-4" />
               <span>หมดอายุใน {formatTime(timeLeft)}</span>
             </div>
-            {!isExpired && (
+            {!isExpired && !claimId && (
               <button
-                onClick={handleConfirmUsed}
-                disabled={isConfirming}
-                className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                onClick={handleCloseWithoutClaim}
+                className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
               >
-                {isConfirming ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                <CheckCircle className="w-4 h-4" />
                 ใช้แล้ว
               </button>
             )}
+            {!isExpired && claimId && !showStaffPin && (
+              <button
+                onClick={() => setShowStaffPin(true)}
+                className="flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 text-black text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+              >
+                <Lock className="w-4 h-4" />
+                ยืนยันการใช้งาน (พนักงาน)
+              </button>
+            )}
           </div>
+
+          {/* Staff PIN entry panel */}
+          {!isExpired && claimId && showStaffPin && (
+            <div className="mt-4 p-4 bg-gray-900 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <Lock className="w-4 h-4 text-yellow-400" />
+                <p className="text-xs font-bold text-yellow-400">STAFF ONLY — กรอกรหัส PIN ที่ลูกค้าแจ้ง</p>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
+                placeholder="0000"
+                autoFocus
+                className="w-full px-4 py-3 border-2 border-yellow-400 rounded-xl text-center text-2xl font-mono font-bold tracking-[0.3em] bg-white"
+              />
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleStaffConfirm}
+                  disabled={pinInput.length !== 4 || isConfirming}
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-green-500 hover:bg-green-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-colors"
+                >
+                  {isConfirming ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                  ยืนยัน
+                </button>
+                <button
+                  onClick={() => { setShowStaffPin(false); setPinInput(''); }}
+                  disabled={isConfirming}
+                  className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
