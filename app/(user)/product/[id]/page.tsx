@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAppStore } from '@/store/useAppStore';
 import { FASTWORK_URLS } from '@/lib/config';
 import { ArrowLeft, Heart, Share2, ExternalLink } from 'lucide-react';
@@ -282,19 +283,19 @@ export default function ProductDetailPage() {
           <ol className="space-y-2 text-sm text-blue-800">
             <li className="flex items-start gap-2">
               <span className="font-bold min-w-[24px]">1️⃣</span>
-              <span>กดปุ่ม "จ้างหิ้ว" ด้านล่าง</span>
+              <span>กดปุ่ม "ฝากคนหิ้วซื้อ" ด้านล่าง</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-bold min-w-[24px]">2️⃣</span>
-              <span>เลือกฟรีแลนซ์ที่ใช่จาก Fastwork</span>
+              <span>รอคนหิ้วในระบบกดรับงานของคุณ</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-bold min-w-[24px]">3️⃣</span>
-              <span>จ้างซื้อและส่งให้ถึงบ้าน</span>
+              <span>คนหิ้วซื้อและนัดส่งให้ถึงบ้าน</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-bold min-w-[24px]">4️⃣</span>
-              <span>รอรับสินค้าตามนัด</span>
+              <span>รับสินค้าแล้วจ่ายเงินสด/โอนตามที่ตกลง</span>
             </li>
           </ol>
         </div>
@@ -302,7 +303,7 @@ export default function ProductDetailPage() {
         {/* Warning Box */}
         <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4 mb-6">
           <p className="text-sm text-yellow-800">
-            ⚠️ <strong>หมายเหตุ:</strong> เราเป็นแค่ตัวกลางแนะนำดีล การจ้างและชำระเงินทำผ่าน Fastwork
+            ⚠️ <strong>หมายเหตุ:</strong> ระบบฝากหิ้วยังไม่มีการชำระเงินในแอป ผู้โพสต์และคนหิ้วนัดจ่ายเงินกันเองตอนรับสินค้า
           </p>
         </div>
 
@@ -549,27 +550,34 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 p-3 px-4 sm:p-4 sm:px-6 z-50 flex items-center gap-3 sm:gap-4 pb-safe">
-        <button
-            onClick={handleSave}
-            className={`p-3 sm:p-4 rounded-full border transition-all flex-shrink-0 ${
-                isSaved(id as string) ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-500' : 'border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-500 hover:border-red-200 hover:text-red-500'
-            }`}
-        >
-            <Heart className={`w-6 h-6 ${isSaved(id as string) ? 'fill-current' : ''}`} />
-        </button>
-
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 z-50 pb-safe">
+        {/* Secondary: Fastwork professional freelancer option */}
         <button
             onClick={handleHireFastwork}
-            className="flex-1 min-w-0 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold h-14 rounded-full shadow-lg hover:opacity-90 active:scale-95 transition-transform flex items-center justify-center gap-1.5 sm:gap-2 px-2"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
         >
-            <img src={FASTWORK_URLS.FAVICON} alt="Fastwork" className="w-5 h-5 flex-shrink-0" />
-            <span className="truncate">
-              <span className="sm:hidden">จ้างหิ้ว</span>
-              <span className="hidden sm:inline">จ้างหิ้ว (Fastwork)</span>
-            </span>
-            <ExternalLink className="w-4 h-4 flex-shrink-0" />
+            <img src={FASTWORK_URLS.FAVICON} alt="Fastwork" className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>หรือจ้างฟรีแลนซ์มืออาชีพผ่าน Fastwork</span>
+            <ExternalLink className="w-3 h-3 flex-shrink-0" />
         </button>
+
+        <div className="p-3 px-4 sm:p-4 sm:px-6 pt-0 flex items-center gap-3 sm:gap-4">
+          <button
+              onClick={handleSave}
+              className={`p-3 sm:p-4 rounded-full border transition-all flex-shrink-0 ${
+                  isSaved(id as string) ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-500' : 'border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-500 hover:border-red-200 hover:text-red-500'
+              }`}
+          >
+              <Heart className={`w-6 h-6 ${isSaved(id as string) ? 'fill-current' : ''}`} />
+          </button>
+
+          <Link
+              href={`/services/shopping/post?title=${encodeURIComponent(product.title)}&storeName=${encodeURIComponent(product.shopName || '')}&budget=${Math.round(promoPrice)}&category=${encodeURIComponent(product.category || '')}`}
+              className="flex-1 min-w-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold h-14 rounded-full shadow-lg hover:opacity-90 active:scale-95 transition-transform flex items-center justify-center gap-1.5 sm:gap-2 px-2"
+          >
+              <span className="truncate">ฝากคนหิ้วซื้อ</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

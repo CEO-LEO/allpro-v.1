@@ -372,28 +372,26 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            {/* Fastwork Shopping Service - PRIMARY CTA */}
-            <a
-              href="https://fastwork.co/shopping-service"
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* In-house "ฝากหิ้ว" marketplace - PRIMARY CTA */}
+            <Link
+              href={`/services/shopping/post?title=${encodeURIComponent(finalPromo.title)}&storeName=${encodeURIComponent(finalPromo.shop_name || '')}&budget=${Math.round(finalPromo.price)}&category=${encodeURIComponent(finalPromo.category || '')}`}
               className="block w-full"
             >
               <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] border-4 border-orange-200 relative overflow-hidden group">
                 {/* Animated Background */}
                 <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-pink-400/20 animate-pulse"></div>
-                
+
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                       <ShoppingBagIcon className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-1">จ้างคนหิ้ว Fastwork</h3>
-                      <p className="text-white/90 text-sm">ไม่ว่างไป? ให้เราช่วยซื้อและส่งให้ถึงบ้าน</p>
+                      <h3 className="text-xl font-bold mb-1">ฝากคนหิ้วซื้อสินค้านี้</h3>
+                      <p className="text-white/90 text-sm">ไม่ว่างไป? โพสต์ฝากซื้อ ให้คนในระบบมารับงาน</p>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 mb-4">
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
@@ -402,7 +400,7 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                       </div>
                       <div>
                         <ShieldCheckIcon className="w-6 h-6 mx-auto mb-1" />
-                        <div className="text-xs text-white/80">ตรวจสอบ</div>
+                        <div className="text-xs text-white/80">รับได้ทีละคน</div>
                       </div>
                       <div>
                         <ArchiveBoxIcon className="w-6 h-6 mx-auto mb-1" />
@@ -412,15 +410,26 @@ export default function PromoDetail({ params }: { params: Promise<{ id: string }
                   </div>
 
                   <button className="w-full bg-white text-orange-600 font-bold py-3 px-6 rounded-xl hover:bg-orange-50 transition-all flex items-center justify-center gap-2 shadow-lg group-hover:scale-105">
-                    <span>จ้างเลย ฿{Math.round(finalPromo.price * 1.15)}</span>
+                    <span>โพสต์ฝากซื้อเลย</span>
                     <span className="text-xl">→</span>
                   </button>
-                  
+
                   <p className="text-center text-white/70 text-xs mt-2">
-                    รวมค่าบริการและส่ง (ประมาณการ +15%)
+                    คุณกำหนดค่าบริการเอง จ่ายเงินสด/โอนตอนรับของ
                   </p>
                 </div>
               </div>
+            </Link>
+
+            {/* Fastwork - secondary/alternative option */}
+            <a
+              href="https://fastwork.co/shopping-service"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 py-2 transition-colors"
+            >
+              <span>หรือจ้างฟรีแลนซ์มืออาชีพผ่าน Fastwork</span>
+              <span>↗</span>
             </a>
 
             {/* Branch Availability Component */}

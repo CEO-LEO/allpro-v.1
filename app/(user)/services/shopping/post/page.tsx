@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingBag, MapPin, DollarSign, Clock, Camera, ArrowLeft, CheckCircle, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLoadScript } from '@react-google-maps/api';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import Footer from '@/components/Footer';
@@ -116,9 +116,22 @@ function PickupLocationInput({
   );
 }
 
-export default function PostShoppingRequestPage() {
+const CATEGORY_HINTS: Record<string, string> = {
+  'อาหาร': 'food', food: 'food',
+  'แฟชั่น': 'fashion', fashion: 'fashion',
+  'อุปกรณ์': 'electronics', electronics: 'electronics',
+  'ความงาม': 'beauty', beauty: 'beauty',
+};
+
+function PostShoppingRequestForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuthStore();
+
+  const prefillTitle = searchParams.get('title') || '';
+  const prefillStoreName = searchParams.get('storeName') || '';
+  const prefillBudget = searchParams.get('budget') || '';
+  const prefillCategory = CATEGORY_HINTS[searchParams.get('category') || ''] || '';
 
   const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
   const { isLoaded: _isMapsLoaded } = useLoadScript({ googleMapsApiKey, libraries: GOOGLE_MAPS_LIBS });
@@ -132,13 +145,13 @@ export default function PostShoppingRequestPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    title: '',
+    title: prefillTitle ? `ฝากซื้อ: ${prefillTitle}` : '',
     description: '',
-    category: '',
-    storeName: '',
+    category: prefillCategory,
+    storeName: prefillStoreName,
     storeLocation: '',
     pickupLocation: '',
-    budget: '',
+    budget: prefillBudget,
     serviceFee: '',
     deadline: '',
     urgency: 'normal' as ShoppingUrgency,
@@ -655,5 +668,19 @@ export default function PostShoppingRequestPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function PostShoppingRequestPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+        </div>
+      }
+    >
+      <PostShoppingRequestForm />
+    </Suspense>
   );
 }
