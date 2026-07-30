@@ -62,11 +62,11 @@ export default function ShoppingServicePage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">3</span>
-                    <span>ชำระเงินและรอรับสินค้า</span>
+                    <span>นัดรับสินค้าและจ่ายเงินสด/โอนโดยตรงกับคนหิ้ว</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">4</span>
-                    <span>รีวิวและให้คะแนนผู้รับงาน</span>
+                    <span>ยกเลิกได้ทุกเมื่อก่อนมีคนรับงาน</span>
                   </li>
                 </ol>
               </motion.div>
@@ -92,7 +92,7 @@ export default function ShoppingServicePage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">2</span>
-                    <span>เสนอราคาค่าบริการ (ไม่รวมราคาสินค้า)</span>
+                    <span>กดรับงาน (ค่าบริการกำหนดโดยผู้โพสต์ไว้แล้ว)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">3</span>
@@ -100,7 +100,7 @@ export default function ShoppingServicePage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">4</span>
-                    <span>รับเงินค่าบริการหลังส่งมอบสำเร็จ</span>
+                    <span>รับเงินสด/โอนจากผู้โพสต์โดยตรงตอนส่งมอบ</span>
                   </li>
                 </ol>
               </motion.div>
@@ -122,19 +122,19 @@ export default function ShoppingServicePage() {
                 <ul className="space-y-3 text-gray-700">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>ระบบชำระเงินผ่านแพลตฟอร์ม</span>
+                    <span>รับงานได้ทีละคน ป้องกันปัญหาแย่งงานซ้ำ</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>ตรวจสอบประวัติผู้รับงาน</span>
+                    <span>เห็นจำนวนงานที่คนหิ้วเคยส่งมอบสำเร็จจริง</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>ระบบรีวิวและให้คะแนน</span>
+                    <span>ยกเลิกงานที่ยังไม่มีคนรับได้ตลอด</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>ประกันความเสียหาย</span>
+                    <span>ชำระเงินสด/โอนกันเองตอนรับสินค้า ไม่ต้องจ่ายล่วงหน้าในแอป</span>
                   </li>
                 </ul>
               </motion.div>
@@ -244,6 +244,14 @@ export default function ShoppingServicePage() {
                   ดูงานที่มี 👀
                 </Link>
               </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4 text-sm">
+                <Link href="/services/shopping/my-requests" className="text-purple-100 hover:text-white underline underline-offset-4">
+                  งานที่ฉันโพสต์
+                </Link>
+                <Link href="/services/shopping/my-jobs" className="text-purple-100 hover:text-white underline underline-offset-4">
+                  งานที่ฉันรับ
+                </Link>
+              </div>
             </motion.div>
           </div>
         </section>
@@ -261,16 +269,16 @@ export default function ShoppingServicePage() {
                   ค่าบริการคิดอย่างไร?
                 </summary>
                 <p className="mt-3 text-gray-600">
-                  ผู้รับงานจะเสนอราคาค่าบริการ (ไม่รวมราคาสินค้า) โดยปกติอยู่ที่ 30-100 บาท ขึ้นอยู่กับระยะทาง น้ำหนัก และความยุ่งยากของงาน
+                  ผู้โพสต์งานเป็นคนกำหนดค่าบริการเองตอนโพสต์ (ไม่รวมราคาสินค้า) โดยปกติอยู่ที่ 30-150 บาท ขึ้นอยู่กับระยะทาง น้ำหนัก และความยุ่งยากของงาน
                 </p>
               </details>
 
               <details className="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors">
                 <summary className="font-bold text-gray-900 cursor-pointer">
-                  ปลอดภัยไหม?
+                  จ่ายเงินยังไง?
                 </summary>
                 <p className="mt-3 text-gray-600">
-                  ปลอดภัยครับ เรามีระบบชำระเงินผ่านแพลตฟอร์ม ตรวจสอบประวัติผู้รับงาน และมีประกันความเสียหาย คุณจะได้รับเงินคืนถ้าสินค้าเสียหายหรือไม่ได้รับ
+                  ตอนนี้แอปยังไม่มีระบบชำระเงินในตัว ผู้โพสต์และคนหิ้วนัดจ่ายเงินสดหรือโอนกันโดยตรงตอนรับสินค้า ระบบจะล็อกงานให้รับได้แค่คนเดียวเพื่อกันปัญหาแย่งงานซ้ำ
                 </p>
               </details>
 
