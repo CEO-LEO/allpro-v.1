@@ -15,6 +15,8 @@ export interface ShoppingRequest {
   category: string;
   storeName: string;
   storeLocation: string;
+  storeLat: number | null;
+  storeLng: number | null;
   pickupLocation: string;
   pickupLat: number | null;
   pickupLng: number | null;
@@ -25,6 +27,8 @@ export interface ShoppingRequest {
   images: string[];
   status: ShoppingRequestStatus;
   runnerId: string | null;
+  offeredRunnerId: string | null;
+  offerExpiresAt: string | null;
   createdAt: string;
   acceptedAt: string | null;
   completedAt: string | null;
@@ -47,6 +51,8 @@ interface RequestRow {
   category: string;
   store_name: string;
   store_location: string;
+  store_lat: number | null;
+  store_lng: number | null;
   pickup_location: string;
   pickup_lat: number | null;
   pickup_lng: number | null;
@@ -57,6 +63,8 @@ interface RequestRow {
   images: string[] | null;
   status: ShoppingRequestStatus;
   runner_id: string | null;
+  offered_runner_id: string | null;
+  offer_expires_at: string | null;
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;
@@ -97,6 +105,8 @@ async function attachProfiles(rows: RequestRow[]): Promise<ShoppingRequest[]> {
     category: r.category,
     storeName: r.store_name,
     storeLocation: r.store_location,
+    storeLat: r.store_lat,
+    storeLng: r.store_lng,
     pickupLocation: r.pickup_location,
     pickupLat: r.pickup_lat,
     pickupLng: r.pickup_lng,
@@ -107,6 +117,8 @@ async function attachProfiles(rows: RequestRow[]): Promise<ShoppingRequest[]> {
     images: r.images || [],
     status: r.status,
     runnerId: r.runner_id,
+    offeredRunnerId: r.offered_runner_id,
+    offerExpiresAt: r.offer_expires_at,
     createdAt: r.created_at,
     acceptedAt: r.accepted_at,
     completedAt: r.completed_at,
@@ -125,6 +137,7 @@ export async function postShoppingRequest(params: {
   category: string;
   storeName: string;
   storeLocation: string;
+  storeCoords?: { lat: number; lng: number } | null;
   pickupLocation: string;
   pickupCoords?: { lat: number; lng: number } | null;
   budget: number;
@@ -148,6 +161,8 @@ export async function postShoppingRequest(params: {
         category: params.category,
         store_name: params.storeName.trim(),
         store_location: params.storeLocation.trim(),
+        store_lat: params.storeCoords?.lat ?? null,
+        store_lng: params.storeCoords?.lng ?? null,
         pickup_location: params.pickupLocation.trim(),
         pickup_lat: params.pickupCoords?.lat ?? null,
         pickup_lng: params.pickupCoords?.lng ?? null,
@@ -163,6 +178,15 @@ export async function postShoppingRequest(params: {
     if (error) {
       console.error('[shoppingService] post error:', error);
       return { success: false, error: 'โพสต์งานไม่สำเร็จ กรุณาลองใหม่' };
+    }
+
+    // Kick off dispatch to the nearest online runner right away — if this
+    // fails, the job simply stays visible in the open browse list (no
+    // different from before dispatch existed), so we don't fail the post.
+    try {
+      await supabase.rpc('assign_next_runner', { p_request_id: data.id });
+    } catch (dispatchErr) {
+      console.warn('[shoppingService] assign_next_runner failed (non-fatal):', dispatchErr);
     }
 
     return { success: true, id: data.id };
@@ -285,7 +309,7 @@ export async function getCompletedJobCount(userId: string): Promise<number> {
 // ═══════════════════════════════════════════════════════
 
 async function callTransitionRpc(
-  rpcName: 'accept_shopping_request' | 'cancel_shopping_request' | 'complete_shopping_request',
+  rpcName: 'accept_shopping_request' | 'cancel_shopping_request' | 'complete_shopping_request' | 'decline_shopping_request',
   requestId: string
 ): Promise<{ success: boolean; message: string }> {
   if (!isSupabaseConfigured) return { success: false, message: 'ระบบไม่พร้อมใช้งาน' };
@@ -306,3 +330,82 @@ async function callTransitionRpc(
 export const acceptShoppingRequest = (requestId: string) => callTransitionRpc('accept_shopping_request', requestId);
 export const cancelShoppingRequest = (requestId: string) => callTransitionRpc('cancel_shopping_request', requestId);
 export const completeShoppingRequest = (requestId: string) => callTransitionRpc('complete_shopping_request', requestId);
+export const declineShoppingRequest = (requestId: string) => callTransitionRpc('decline_shopping_request', requestId);
+
+// ═══════════════════════════════════════════════════════
+// Runner presence — online/offline + live position for dispatch matching
+// ═══════════════════════════════════════════════════════
+
+export async function setRunnerOnline(
+  online: boolean,
+  coords?: { lat: number; lng: number } | null
+): Promise<{ success: boolean; message: string }> {
+  if (!isSupabaseConfigured) return { success: false, message: 'ระบบไม่พร้อมใช้งาน' };
+
+  try {
+    const { data, error } = await supabase.rpc('set_runner_online', {
+      p_online: online,
+      p_lat: coords?.lat ?? null,
+      p_lng: coords?.lng ?? null,
+    });
+    if (error) {
+      console.error('[shoppingService] set_runner_online error:', error.message);
+      return { success: false, message: 'เกิดข้อผิดพลาด กรุณาลองใหม่' };
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    return { success: !!row?.success, message: row?.message || 'เกิดข้อผิดพลาด' };
+  } catch {
+    return { success: false, message: 'เกิดข้อผิดพลาด กรุณาลองใหม่' };
+  }
+}
+
+export async function getMyRunnerStatus(): Promise<{ isOnline: boolean } | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('runner_status')
+      .select('is_online')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error || !data) return { isOnline: false };
+    return { isOnline: !!data.is_online };
+  } catch {
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// The job currently dispatched to me (if any) — single-target offer,
+// not the full open list. Expired offers are excluded client-side too
+// (the server re-validates on accept/decline regardless).
+// ═══════════════════════════════════════════════════════
+
+export async function fetchMyOfferedJob(): Promise<ShoppingRequest | null> {
+  if (!isSupabaseConfigured) return null;
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('shopping_requests')
+      .select('*')
+      .eq('offered_runner_id', user.id)
+      .eq('status', 'open')
+      .gt('offer_expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    const results = await attachProfiles([data as RequestRow]);
+    return results[0] || null;
+  } catch (err) {
+    console.error('[shoppingService] fetchMyOfferedJob failed:', err);
+    return null;
+  }
+}

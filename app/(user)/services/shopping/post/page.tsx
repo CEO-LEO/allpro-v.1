@@ -18,16 +18,18 @@ const GOOGLE_MAPS_LIBS: ('places')[] = ['places'];
 
 // ─── Pickup location — real Google Places Autocomplete when a Maps API key
 // is configured, otherwise a plain always-usable text input ─────────────────
-function PickupLocationInput({
+function LocationAutocompleteInput({
   value,
   onChange,
   onSelectCoords,
   isMapsLoaded,
+  placeholder,
 }: {
   value: string;
   onChange: (val: string) => void;
   onSelectCoords: (coords: { lat: number; lng: number }) => void;
   isMapsLoaded: boolean;
+  placeholder?: string;
 }) {
   const {
     ready,
@@ -58,7 +60,7 @@ function PickupLocationInput({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="เช่น: คอนโด The Address Asoke ชั้น 1"
+        placeholder={placeholder || 'เช่น: คอนโด The Address Asoke ชั้น 1'}
         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
       />
     );
@@ -75,7 +77,7 @@ function PickupLocationInput({
           setAutocompleteValue(e.target.value);
           setShowDropdown(true);
         }}
-        placeholder="เช่น: คอนโด The Address Asoke ชั้น 1"
+        placeholder={placeholder || 'เช่น: คอนโด The Address Asoke ชั้น 1'}
         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
       />
       {showDropdown && status === 'OK' && data.length > 0 && (
@@ -140,6 +142,7 @@ function PostShoppingRequestForm() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [storeCoords, setStoreCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -147,7 +150,7 @@ function PostShoppingRequestForm() {
   const [formData, setFormData] = useState({
     title: prefillTitle ? `ฝากซื้อ: ${prefillTitle}` : '',
     description: '',
-    category: prefillCategory,
+    category: prefillCategory || 'other',
     storeName: prefillStoreName,
     storeLocation: '',
     pickupLocation: '',
@@ -207,6 +210,7 @@ function PostShoppingRequestForm() {
         category: formData.category,
         storeName: formData.storeName,
         storeLocation: formData.storeLocation,
+        storeCoords,
         pickupLocation: formData.pickupLocation,
         pickupCoords,
         budget: budgetNum,
@@ -233,15 +237,6 @@ function PostShoppingRequestForm() {
       setIsSubmitting(false);
     }
   };
-
-  const categories = [
-    { id: 'food', label: 'อาหาร & เครื่องดื่ม', emoji: '🍔' },
-    { id: 'fashion', label: 'เสื้อผ้า & แฟชั่น', emoji: '👕' },
-    { id: 'electronics', label: 'อิเล็กทรอนิกส์', emoji: '📱' },
-    { id: 'beauty', label: 'ความงาม', emoji: '💄' },
-    { id: 'home', label: 'ของใช้ในบ้าน', emoji: '🏠' },
-    { id: 'other', label: 'อื่นๆ', emoji: '📦' },
-  ];
 
   if (!isAuthenticated) {
     return (
@@ -334,34 +329,6 @@ function PostShoppingRequestForm() {
                     />
                   </div>
 
-                  {/* Category */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      หมวดหมู่ *
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() =>
-                            setFormData({ ...formData, category: cat.id })
-                          }
-                          className={`p-4 rounded-lg border-2 transition-all ${
-                            formData.category === cat.id
-                              ? 'border-purple-500 bg-purple-50'
-                              : 'border-gray-200 hover:border-purple-300'
-                          }`}
-                        >
-                          <div className="text-3xl mb-2">{cat.emoji}</div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {cat.label}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Description */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -382,7 +349,7 @@ function PostShoppingRequestForm() {
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    disabled={!formData.title || !formData.category || !formData.description}
+                    disabled={!formData.title || !formData.description}
                     className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     ถัดไป →
@@ -426,16 +393,22 @@ function PostShoppingRequestForm() {
                       <MapPin className="w-4 h-4 inline mr-1" />
                       ที่ตั้งร้านค้า *
                     </label>
-                    <input
-                      type="text"
+                    <LocationAutocompleteInput
                       value={formData.storeLocation}
-                      onChange={(e) =>
-                        setFormData({ ...formData, storeLocation: e.target.value })
-                      }
+                      onChange={(val) => { setFormData((p) => ({ ...p, storeLocation: val })); setStoreCoords(null); }}
+                      onSelectCoords={setStoreCoords}
+                      isMapsLoaded={isMapsLoaded}
                       placeholder="เช่น: ชั้น B ห้าง Central World"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
                     />
+                    {storeCoords ? (
+                      <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> ปักหมุดแล้ว — ระบบจะส่งงานให้คนหิ้วที่ใกล้ร้านนี้ก่อน
+                      </p>
+                    ) : !isMapsLoaded ? (
+                      <p className="text-xs text-amber-600 mt-1.5">
+                        ระบบแนะนำที่อยู่ยังไม่เชื่อมต่อ — บันทึกเป็นข้อความได้ตามปกติ แต่จะเสนองานให้คนหิ้วที่ใกล้ที่สุดไม่ได้จนกว่าจะตั้งค่า Google Maps
+                      </p>
+                    ) : null}
                   </div>
 
                   {/* Pickup Location */}
@@ -444,7 +417,7 @@ function PostShoppingRequestForm() {
                       <MapPin className="w-4 h-4 inline mr-1" />
                       จุดรับสินค้า *
                     </label>
-                    <PickupLocationInput
+                    <LocationAutocompleteInput
                       value={formData.pickupLocation}
                       onChange={(val) => { setFormData((p) => ({ ...p, pickupLocation: val })); setPickupCoords(null); }}
                       onSelectCoords={setPickupCoords}
@@ -634,7 +607,6 @@ function PostShoppingRequestForm() {
                     <h3 className="font-bold text-gray-900 mb-3">สรุปงาน</h3>
                     <div className="space-y-2 text-sm">
                       <p><strong>งาน:</strong> {formData.title}</p>
-                      <p><strong>หมวดหมู่:</strong> {categories.find(c => c.id === formData.category)?.label}</p>
                       <p><strong>ร้านค้า:</strong> {formData.storeName}</p>
                       <p><strong>งบประมาณ:</strong> {formData.budget} บาท</p>
                       <p><strong>ค่าบริการ:</strong> {formData.serviceFee || 0} บาท</p>

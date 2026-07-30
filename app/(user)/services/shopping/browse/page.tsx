@@ -215,11 +215,16 @@ export default function BrowseShoppingRequestsPage() {
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             {getUrgencyBadge(request.urgency)}
                             <span className="text-sm text-gray-500">
                               {timeAgo(request.createdAt)}
                             </span>
+                            {request.offeredRunnerId && request.offerExpiresAt && new Date(request.offerExpiresAt) > new Date() && (
+                              <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">
+                                ⏳ กำลังเสนอให้คนหิ้วอีกคนก่อน
+                              </span>
+                            )}
                           </div>
                           <h3 className="text-xl font-bold text-gray-900 mb-2">
                             {request.title}
