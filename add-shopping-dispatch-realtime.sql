@@ -1,5 +1,5 @@
 -- ============================================================================
--- LINE MAN-style dispatch for the ฝากหิ้ว marketplace
+-- Smart Dispatch — nearest-runner auto-assignment for the ฝากหิ้ว marketplace
 -- ============================================================================
 -- Previously: a posted job just sat in the open list for any runner to browse
 -- and accept (first-come). This adds real single-target dispatch: the job is
