@@ -13,7 +13,8 @@ import {
   Sparkles,
   Plus,
   Loader2,
-  ShieldAlert
+  ShieldAlert,
+  Crown
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -51,6 +52,11 @@ const menuItems = [
     label: 'User Management',
     href: '/admin/users',
     icon: Users
+  },
+  {
+    label: 'Pro Upgrade Requests',
+    href: '/admin/pro-requests',
+    icon: Crown
   }
 ];
 

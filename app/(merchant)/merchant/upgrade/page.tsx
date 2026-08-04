@@ -16,12 +16,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
 import { useAuthStore } from '@/store/useAuthStore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { toast } from 'sonner';
+
+type RequestStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
 export default function MerchantUpgradePage() {
-  const { user, updateUser } = useAuthStore();
+  const { user } = useAuthStore();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [requestStatus, setRequestStatus] = useState<RequestStatus>('none');
 
   // ═══ API-Ready State Management ═══
   const [isLoading, setIsLoading] = useState(true);
@@ -63,9 +68,22 @@ export default function MerchantUpgradePage() {
         // setProStats(await statsRes.json());
         // setTestimonials(await testimonialsRes.json());
 
-        await new Promise(r => setTimeout(r, 500));
         setProStats(null);
         setTestimonials([]);
+
+        if (isSupabaseConfigured && user?.id) {
+          const { data } = await supabase
+            .from('pro_upgrade_requests')
+            .select('status')
+            .eq('merchant_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (data?.status === 'pending') setRequestStatus('pending');
+          else if (data?.status === 'rejected') setRequestStatus('rejected');
+          else setRequestStatus('none');
+        }
       } catch (err: any) {
         setError(err.message || 'เกิดข้อผิดพลาด');
       } finally {
@@ -74,43 +92,44 @@ export default function MerchantUpgradePage() {
     };
 
     fetchUpgradeData();
-  }, []);
+  }, [user?.id]);
 
   const handleUpgradeClick = () => {
     setShowPaymentModal(true);
   };
 
   const handlePayment = async () => {
-    setIsProcessing(true);
-    
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Set merchant to PRO status
-    if (user) {
-        updateUser({ isPro: true, verified: true });
-        
-        // Legacy support (optional)
-        const storeKey = `merchant_${user.id}`;
-        localStorage.setItem(`${storeKey}_isPro`, 'true');
-        localStorage.setItem(`${storeKey}_proSince`, new Date().toISOString());
-        localStorage.setItem(`${storeKey}_billingCycle`, billingCycle);
+    if (!user?.id || !isSupabaseConfigured) {
+      toast.error('กรุณาเข้าสู่ระบบก่อน');
+      return;
     }
-    
-    // Celebration!
-    confetti({
-      particleCount: 150,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-    
-    setIsProcessing(false);
-    setShowPaymentModal(false);
-    
-    // Redirect to dashboard after 1 second
-    setTimeout(() => {
-      window.location.href = '/merchant/dashboard';
-    }, 1000);
+
+    setIsProcessing(true);
+    try {
+      const price = billingCycle === 'monthly' ? monthlyPrice : yearlyPrice;
+      const { error: insertError } = await supabase.from('pro_upgrade_requests').insert({
+        merchant_id: user.id,
+        billing_cycle: billingCycle,
+        price,
+      });
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          toast.error('คุณมีคำขออัพเกรดที่รอตรวจสอบอยู่แล้ว');
+          setRequestStatus('pending');
+        } else {
+          toast.error('ส่งคำขอไม่สำเร็จ กรุณาลองใหม่');
+        }
+        return;
+      }
+
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+      toast.success('ส่งคำขออัพเกรดแล้ว! รอแอดมินตรวจสอบภายใน 1-2 วันทำการ');
+      setRequestStatus('pending');
+      setShowPaymentModal(false);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const freeFeatures = [
@@ -193,20 +212,42 @@ export default function MerchantUpgradePage() {
             <div className="mt-6 flex items-center justify-center gap-6 text-sm">
               <div className="flex items-center gap-2">
                 <BoltIcon className="w-5 h-5 text-yellow-300" />
-                <span>Instant Activation</span>
+                <span>ตรวจสอบโดยแอดมิน 1-2 วันทำการ</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheckIcon className="w-5 h-5 text-yellow-300" />
-                <span>Cancel Anytime</span>
+                <span>ยกเลิกคำขอได้ทุกเมื่อ</span>
               </div>
               <div className="flex items-center gap-2">
                 <ChartBarIcon className="w-5 h-5 text-yellow-300" />
-                <span>30-Day Money Back</span>
+                <span>ไม่มีข้อผูกมัด</span>
               </div>
             </div>
           </motion.div>
         </div>
       </div>
+
+      {/* Real request-status banner */}
+      {user?.isPro ? (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+          <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-5 text-center">
+            <p className="font-bold text-emerald-800">🎉 คุณเป็นสมาชิก Pro อยู่แล้ว</p>
+          </div>
+        </div>
+      ) : requestStatus === 'pending' ? (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+          <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5 text-center">
+            <p className="font-bold text-amber-800">⏳ คำขออัพเกรดของคุณกำลังรอแอดมินตรวจสอบ</p>
+            <p className="text-sm text-amber-700 mt-1">ปกติใช้เวลา 1-2 วันทำการ</p>
+          </div>
+        </div>
+      ) : requestStatus === 'rejected' ? (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-5 text-center">
+            <p className="font-bold text-red-800">คำขอก่อนหน้าไม่ได้รับการอนุมัติ — ส่งคำขอใหม่ได้</p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Stats Banner */}
       {proStats && (
@@ -347,12 +388,13 @@ export default function MerchantUpgradePage() {
             <div className="relative text-center">
               <button
                 onClick={handleUpgradeClick}
-                className="w-full px-8 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 font-bold rounded-xl shadow-lg transform hover:scale-105 transition-all text-lg"
+                disabled={user?.isPro || requestStatus === 'pending'}
+                className="w-full px-8 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 font-bold rounded-xl shadow-lg transform hover:scale-105 transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                🚀 Upgrade Now
+                {user?.isPro ? '✅ เป็น Pro อยู่แล้ว' : requestStatus === 'pending' ? '⏳ รอตรวจสอบ' : '🚀 ส่งคำขออัพเกรด'}
               </button>
               <p className="mt-3 text-xs text-indigo-100">
-                ⚡ Instant activation • 💳 Cancel anytime • 🔒 Secure payment
+                📝 แอดมินตรวจสอบและติดต่อกลับเพื่อชำระเงิน • ยกเลิกได้ทุกเมื่อ
               </p>
             </div>
           </motion.div>
@@ -402,29 +444,29 @@ export default function MerchantUpgradePage() {
                 <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CurrencyDollarIcon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Upgrade to PRO</h3>
-                <p className="text-gray-600">Complete your upgrade and start growing today</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">ส่งคำขออัพเกรดเป็น Pro</h3>
+                <p className="text-gray-600">แอดมินจะตรวจสอบและติดต่อกลับเพื่อนัดชำระเงิน</p>
               </div>
 
               <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 mb-6">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-gray-700">PRO Subscription</span>
+                  <span className="text-gray-700">แพ็กเกจ Pro</span>
                   <span className="font-bold text-gray-900">
                     ฿{billingCycle === 'monthly' ? monthlyPrice.toLocaleString() : yearlyPrice.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
-                  <span>Billing Cycle</span>
-                  <span className="font-medium">{billingCycle === 'monthly' ? 'Monthly' : 'Yearly'}</span>
+                  <span>รอบบิล</span>
+                  <span className="font-medium">{billingCycle === 'monthly' ? 'รายเดือน' : 'รายปี'}</span>
                 </div>
                 {billingCycle === 'yearly' && (
                   <div className="flex justify-between items-center text-sm text-emerald-600 font-semibold">
-                    <span>You Save</span>
+                    <span>ประหยัด</span>
                     <span>฿{yearlySavings.toLocaleString()}</span>
                   </div>
                 )}
                 <div className="mt-4 pt-4 border-t border-indigo-200 flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">Total Today</span>
+                  <span className="font-semibold text-gray-900">ยอดที่ต้องชำระ (หลังอนุมัติ)</span>
                   <span className="text-2xl font-bold text-indigo-600">
                     ฿{billingCycle === 'monthly' ? monthlyPrice.toLocaleString() : yearlyPrice.toLocaleString()}
                   </span>
@@ -439,15 +481,15 @@ export default function MerchantUpgradePage() {
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Processing...
+                    กำลังส่งคำขอ...
                   </span>
                 ) : (
-                  `💳 Confirm & Pay ฿${billingCycle === 'monthly' ? monthlyPrice.toLocaleString() : yearlyPrice.toLocaleString()}`
+                  '📝 ยืนยันส่งคำขออัพเกรด'
                 )}
               </button>
 
               <p className="text-center text-xs text-gray-500 mt-4">
-                🔒 Secure payment powered by Stripe • Cancel anytime
+                ยังไม่มีการเรียกเก็บเงินใดๆ ในขั้นตอนนี้ — แอดมินจะติดต่อกลับเพื่อนัดชำระเงินหลังอนุมัติ
               </p>
             </motion.div>
           </motion.div>

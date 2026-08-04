@@ -40,15 +40,49 @@ export default function WalletPage() {
   const [activeTab, setActiveTab] = useState<Tab>('saved');
   const [couponInput, setCouponInput] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [appliedRewardName, setAppliedRewardName] = useState('');
 
-  const handleApplyCoupon = () => {
+  // Real check against the user's own redeemed vouchers (voucher_redemptions)
+  // — previously this only checked whether the typed string started with
+  // "PRO-"/"ALLPRO" and never touched the database at all.
+  const handleApplyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
-    if (!code) return;
-    if (code.startsWith('PRO-') || code.startsWith('ALLPRO')) {
+    if (!code || !isSupabaseConfigured) return;
+
+    setCouponChecking(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        toast.error('กรุณาเข้าสู่ระบบก่อน');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('voucher_redemptions')
+        .select('reward_name, status')
+        .eq('user_id', authUser.id)
+        .eq('code', code)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast.error('ไม่พบโค้ดนี้ในบัญชีของคุณ');
+        return;
+      }
+      if (data.status === 'used') {
+        toast.error('คูปองนี้ถูกใช้ไปแล้ว');
+        return;
+      }
+      if (data.status === 'expired') {
+        toast.error('คูปองนี้หมดอายุแล้ว');
+        return;
+      }
+
       setCouponApplied(true);
-      toast.success(`ใช้โค้ด "${code}" สำเร็จ!`);
-    } else {
-      toast.error('โค้ดไม่ถูกต้องหรือหมดอายุแล้ว');
+      setAppliedRewardName(data.reward_name);
+      toast.success(`พบคูปอง "${data.reward_name}" ในบัญชีของคุณ!`);
+    } finally {
+      setCouponChecking(false);
     }
   };
   const { savedProductIds, toggleSave, loadSavedFromSupabase } = useProductStore();
@@ -402,15 +436,15 @@ export default function WalletPage() {
                 <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                   <CheckCircle className="w-5 h-5 text-green-500" />
                   <div>
-                    <p className="text-sm font-bold text-green-700">ใช้โค้ดสำเร็จแล้ว!</p>
-                    <p className="text-xs text-green-600">{couponInput.trim().toUpperCase()}</p>
+                    <p className="text-sm font-bold text-green-700">พบคูปองในบัญชีของคุณ!</p>
+                    <p className="text-xs text-green-600">{appliedRewardName}</p>
                   </div>
-                  <button
-                    onClick={() => { setCouponApplied(false); setCouponInput(''); }}
-                    className="ml-auto text-xs text-green-500 hover:text-green-700 underline"
+                  <Link
+                    href="/profile/wallet"
+                    className="ml-auto text-xs text-green-600 hover:text-green-700 underline font-semibold whitespace-nowrap"
                   >
-                    ใช้โค้ดอื่น
-                  </button>
+                    ไปใช้คูปอง
+                  </Link>
                 </div>
               ) : (
                 <div className="flex gap-2">
@@ -424,13 +458,14 @@ export default function WalletPage() {
                   />
                   <button
                     onClick={handleApplyCoupon}
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap"
+                    disabled={couponChecking}
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap disabled:opacity-60"
                   >
-                    ใช้โค้ด
+                    {couponChecking ? 'กำลังตรวจสอบ...' : 'ตรวจสอบโค้ด'}
                   </button>
                 </div>
               )}
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2">รับโค้ดได้จากการแลกรางวัล หรือแคมเปญพิเศษจาก All Pro</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2">รับโค้ดได้จากการแลกรางวัลที่หน้ารางวัล — กรอกโค้ดเพื่อค้นหาคูปองในบัญชีของคุณ</p>
             </div>
 
             {/* Redirect to rewards */}

@@ -245,7 +245,22 @@ export default function Reviews({ productId }: ReviewsProps) {
   const [helpfulReviews, setHelpfulReviews] = useState<Set<string>>(new Set());
   const [dbReviews, setDbReviews] = useState<Review[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canReview, setCanReview] = useState(false);
   const { user } = useAuthStore();
+
+  // Real eligibility check — only users who actually redeemed this product
+  // in-store can write a review (see lib/reviewData.ts)
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setCanReview(false);
+      return;
+    }
+    canUserReview(productId).then((eligible) => {
+      if (!cancelled) setCanReview(eligible);
+    });
+    return () => { cancelled = true; };
+  }, [productId, user]);
 
   // Restore which reviews this browser already marked helpful
   useEffect(() => {
@@ -483,7 +498,7 @@ export default function Reviews({ productId }: ReviewsProps) {
                 <CheckCircle className="w-4 h-4" />
                 รีวิวแล้ว
               </span>
-            ) : canUserReview(productId) && (
+            ) : canReview && (
               <button
                 type="button"
                 onClick={() => setShowWriteReview(true)}

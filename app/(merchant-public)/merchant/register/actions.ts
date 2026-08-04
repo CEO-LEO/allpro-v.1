@@ -7,16 +7,6 @@ export type MerchantRegisterState = {
   message: string;
 };
 
-function createSlug(input: string) {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 50);
-}
-
 export async function registerMerchantAction(
   _prevState: MerchantRegisterState,
   formData: FormData
@@ -39,6 +29,7 @@ export async function registerMerchantAction(
   const branchName = String(formData.get('branchName') ?? '').trim();
   const taxId = String(formData.get('taxId') ?? '').trim();
   const logoUrl = String(formData.get('logoUrl') ?? '').trim();
+  const documentFile = formData.get('documents');
 
   if (!shopName || !branchName || !taxId) {
     return {
@@ -54,91 +45,52 @@ export async function registerMerchantAction(
     };
   }
 
-  const slugBase = createSlug(shopName) || `merchant-${user.id.slice(0, 8)}`;
-  const slug = `${slugBase}-${user.id.slice(0, 6)}`;
+  // Upload the verification document for real, if one was attached
+  let documentUrl: string | undefined;
+  if (documentFile instanceof File && documentFile.size > 0) {
+    const ext = documentFile.name.split('.').pop() || 'pdf';
+    const filePath = `merchant-documents/${user.id}_${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('promotions')
+      .upload(filePath, documentFile, {
+        contentType: documentFile.type || 'application/octet-stream',
+        upsert: false,
+      });
 
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({ role: 'merchant', updated_at: new Date().toISOString() })
-    .eq('id', user.id);
+    if (!uploadError) {
+      const { data: pub } = supabase.storage.from('promotions').getPublicUrl(filePath);
+      documentUrl = pub.publicUrl;
+    } else {
+      console.error('[registerMerchantAction] document upload error:', uploadError.message);
+    }
+  }
 
-  if (profileError) {
+  // Activate the account as a real merchant, atomically, via the RPC — a
+  // plain client-side profiles.update({role:'MERCHANT'}) gets silently
+  // reset by the lock_protected_profile_columns trigger (see
+  // add-merchant-register-fields.sql), so this has to go through a
+  // SECURITY DEFINER function like every other role/points mutation in
+  // this app.
+  const { data: activateData, error: activateError } = await supabase.rpc('activate_merchant', {
+    p_shop_name: shopName,
+    p_tax_id: taxId,
+    p_branch_name: branchName,
+    p_logo_url: logoUrl || null,
+    p_document_url: documentUrl || null,
+  });
+
+  const activateRow = Array.isArray(activateData) ? activateData[0] : activateData;
+
+  if (activateError || !activateRow?.success) {
+    console.error('[registerMerchantAction] activate_merchant error:', activateError?.message);
     return {
       success: false,
-      message: 'ไม่สามารถอัปเดตสิทธิ์เป็น merchant ได้',
+      message: 'ไม่สามารถเปิดใช้งานร้านค้าได้ กรุณาลองใหม่หรือติดต่อแอดมิน',
     };
-  }
-
-  const { data: existingMerchant } = await supabase
-    .from('merchants')
-    .select('id')
-    .eq('owner_id', user.id)
-    .maybeSingle();
-
-  let merchantId = existingMerchant?.id ?? null;
-
-  if (!merchantId) {
-    const { data: createdMerchant, error: merchantCreateError } = await supabase
-      .from('merchants')
-      .insert({
-        owner_id: user.id,
-        name: shopName,
-        slug,
-        tax_id: taxId,
-        status: 'pending',
-        tier: 'sme',
-      })
-      .select('id')
-      .single();
-
-    if (merchantCreateError || !createdMerchant) {
-      return {
-        success: false,
-        message: 'อัปเดต role สำเร็จ แต่สร้างข้อมูลร้านค้าไม่สำเร็จ กรุณาติดต่อแอดมิน',
-      };
-    }
-
-    merchantId = createdMerchant.id;
-  } else {
-    await supabase
-      .from('merchants')
-      .update({
-        name: shopName,
-        tax_id: taxId,
-        status: 'pending',
-      })
-      .eq('id', merchantId);
-  }
-
-  if (merchantId) {
-    await supabase
-      .from('branches')
-      .insert({
-        merchant_id: merchantId,
-        name: branchName,
-      })
-      .select('id')
-      .single();
-  }
-
-  const metaPatch: Record<string, string> = {
-    shop_name: shopName,
-    branch_name: branchName,
-  };
-
-  if (logoUrl) {
-    metaPatch.logo_url = logoUrl;
-  }
-
-  const { error: updateError } = await supabase.auth.updateUser({
-    data: metaPatch,
-  });
-  if (updateError) {
-    console.error('updateUser error:', updateError);
   }
 
   return {
     success: true,
-    message: 'ส่งคำขอสมัคร Partner สำเร็จแล้ว ระบบกำลังตรวจสอบข้อมูลร้านค้า',
+    message: 'สมัคร Partner สำเร็จแล้ว! กำลังพาไปหน้าจัดการร้านค้า...',
   };
 }

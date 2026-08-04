@@ -149,38 +149,3 @@ export function getCategories(): string[] {
   return Array.from(categories);
 }
 
-/**
- * Data Insight Engine
- * คำนวณ Search Intent ในแต่ละย่าน (สำหรับ Merchant Dashboard)
- */
-export function getSearchInsights(location?: string) {
-  const promotions = cachedPromotions;
-
-  const locationPromos = location 
-    ? promotions.filter(p => p.location.includes(location))
-    : promotions;
-
-  // คำนวณ Top Search Keywords
-  const keywordVolume: Record<string, number> = {};
-  
-  locationPromos.forEach(promo => {
-    const keywords = promo.title.split(' ');
-    keywords.forEach(keyword => {
-      if (keyword.length > 2) {
-        keywordVolume[keyword] = (keywordVolume[keyword] || 0) + promo.search_volume;
-      }
-    });
-  });
-
-  const topKeywords = Object.entries(keywordVolume)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 10)
-    .map(([keyword, volume]) => ({ keyword, volume }));
-
-  return {
-    total_searches: locationPromos.reduce((sum, p) => sum + p.search_volume, 0),
-    top_keywords: topKeywords,
-    trending_categories: getCategories(),
-    location: location || 'ทั่วประเทศ'
-  };
-}

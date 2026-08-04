@@ -1,27 +1,29 @@
-// Referral System Utilities
-import { addPoints } from './pointsUtils';
+// Real referral system — stable per-account code + a real referrals ledger
+// via Supabase RPCs (get_or_create_referral_code / apply_referral_code).
+// Previously this whole file was localStorage-only: codes were random per
+// browser, stats were fabricated, and the referrer's bonus was never really
+// awarded (it ran in the referred user's own session, which can't credit a
+// different account). See add-real-referral-system.sql.
+import { supabase, isSupabaseConfigured } from './supabase';
+
+const PENDING_CODE_KEY = 'pendingReferralCode';
 
 /**
- * Generate a unique referral code for a user
- * Format: HUNTER-XXX (where XXX is a 3-digit number)
+ * Get (or create) the current user's real, stable referral code.
  */
-export function generateReferralCode(): string {
-  const randomNum = Math.floor(100 + Math.random() * 900); // 3-digit number
-  return `HUNTER-${randomNum}`;
-}
-
-/**
- * Get or create referral code from localStorage
- */
-export function getUserReferralCode(): string {
-  if (typeof window === 'undefined') return 'HUNTER-000';
-  
-  const stored = localStorage.getItem('referralCode');
-  if (stored) return stored;
-  
-  const newCode = generateReferralCode();
-  localStorage.setItem('referralCode', newCode);
-  return newCode;
+export async function getUserReferralCode(): Promise<string> {
+  if (!isSupabaseConfigured) return '';
+  try {
+    const { data, error } = await supabase.rpc('get_or_create_referral_code');
+    if (error) {
+      console.error('[referralUtils] getUserReferralCode error:', error.message);
+      return '';
+    }
+    return (data as string) || '';
+  } catch (err) {
+    console.error('[referralUtils] getUserReferralCode failed:', err);
+    return '';
+  }
 }
 
 /**
@@ -40,77 +42,81 @@ export function getReferralLink(code: string): string {
  */
 export function getReferralCodeFromURL(): string | null {
   if (typeof window === 'undefined') return null;
-  
+
   const params = new URLSearchParams(window.location.search);
   return params.get('ref');
 }
 
 /**
- * Save referral source (who invited this user)
+ * Remember a referral code seen in the URL so it can be applied for real
+ * once the visitor actually authenticates (the RPC requires a real session —
+ * it can't be applied here, since whoever's browsing may not even have an
+ * account yet).
  */
-export function saveReferralSource(referrerCode: string): void {
+export function rememberPendingReferralCode(code: string): void {
   if (typeof window === 'undefined') return;
-  
-  // Only save if user hasn't been referred before
-  const existing = localStorage.getItem('referredBy');
-  if (!existing) {
-    localStorage.setItem('referredBy', referrerCode);
-    localStorage.setItem('referralBonusClaimed', 'false');
-    
-    // Award points to new user
-    addPoints(50, 'ลงทะเบียนผ่าน Referral', '🎉');
+  if (!localStorage.getItem(PENDING_CODE_KEY)) {
+    localStorage.setItem(PENDING_CODE_KEY, code);
   }
 }
 
 /**
- * Check if user was referred
+ * Called once after a successful login/signup — applies any referral code
+ * captured from the URL for real (credits both the referrer and the
+ * referred user). Safe to call on every auth event: no-ops if there's no
+ * pending code, and the RPC itself rejects a second use.
  */
-export function wasReferred(): { referred: boolean; referrerCode?: string } {
-  if (typeof window === 'undefined') return { referred: false };
-  
-  const referrerCode = localStorage.getItem('referredBy');
-  return {
-    referred: !!referrerCode,
-    referrerCode: referrerCode || undefined
-  };
-}
+export async function applyPendingReferralCodeIfAny(): Promise<void> {
+  if (typeof window === 'undefined' || !isSupabaseConfigured) return;
 
-/**
- * Claim referral bonus
- */
-export function claimReferralBonus(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  const claimed = localStorage.getItem('referralBonusClaimed');
-  if (claimed === 'true') return false;
-  
-  const referrerCode = localStorage.getItem('referredBy');
-  if (referrerCode) {
-    // Award points to referrer (simulated)
-    addPoints(50, `ชวนเพื่อน: ${referrerCode}`, '👥');
+  const code = localStorage.getItem(PENDING_CODE_KEY);
+  if (!code) return;
+
+  // Clear immediately so a failed/duplicate attempt doesn't retry forever
+  localStorage.removeItem(PENDING_CODE_KEY);
+
+  try {
+    const { data, error } = await supabase.rpc('apply_referral_code', { p_code: code });
+    if (error) {
+      console.warn('[referralUtils] apply_referral_code error:', error.message);
+      return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.success) {
+      console.log('[referralUtils] Referral bonus applied:', row.bonus_awarded);
+    }
+  } catch (err) {
+    console.warn('[referralUtils] applyPendingReferralCodeIfAny failed:', err);
   }
-  
-  localStorage.setItem('referralBonusClaimed', 'true');
-  return true;
 }
 
 /**
- * Get referral stats (mock)
+ * Real referral stats for the current user (as referrer) — from the real
+ * `referrals` table, not a fabricated heuristic.
  */
-export function getReferralStats(): {
+export async function getReferralStats(): Promise<{
   totalReferrals: number;
   pointsEarned: number;
-  pendingReferrals: number;
-} {
-  if (typeof window === 'undefined') {
-    return { totalReferrals: 0, pointsEarned: 0, pendingReferrals: 0 };
+}> {
+  if (!isSupabaseConfigured) return { totalReferrals: 0, pointsEarned: 0 };
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { totalReferrals: 0, pointsEarned: 0 };
+
+    const { data, error } = await supabase
+      .from('referrals')
+      .select('referrer_bonus')
+      .eq('referrer_id', user.id);
+
+    if (error || !data) return { totalReferrals: 0, pointsEarned: 0 };
+
+    return {
+      totalReferrals: data.length,
+      pointsEarned: data.reduce((sum, r) => sum + (r.referrer_bonus || 0), 0),
+    };
+  } catch (err) {
+    console.error('[referralUtils] getReferralStats failed:', err);
+    return { totalReferrals: 0, pointsEarned: 0 };
   }
-  
-  // Mock data - in production, fetch from API
-  const referrals = parseInt(localStorage.getItem('totalReferrals') || '0');
-  return {
-    totalReferrals: referrals,
-    pointsEarned: referrals * 50, // 50 points per referral
-    pendingReferrals: Math.floor(referrals * 0.3) // 30% pending
-  };
 }

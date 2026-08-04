@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { fetchProfile, fetchMerchantProfile, getCurrentSession } from '@/lib/supabase/auth';
 import { useAuthStore, UserRole } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
+import { applyPendingReferralCodeIfAny } from '@/lib/referralUtils';
 
 // ★ Global flag — LoginModal sets this BEFORE calling signIn()
 // so the SIGNED_IN event handler knows to skip
@@ -105,10 +106,15 @@ export default function AuthListener() {
           shopSocialFacebook: sessionUser.shopSocialFacebook,
           shopSocialInstagram: sessionUser.shopSocialInstagram,
           shopSocialWebsite: sessionUser.shopSocialWebsite,
+          isPro: sessionUser.isPro,
         });
 
         // Load saved promotions from Supabase into store
         useProductStore.getState().loadSavedFromSupabase(sessionUser.id);
+
+        // Apply any referral code captured from the URL before this user
+        // ever had a session (no-ops if none is pending)
+        applyPendingReferralCodeIfAny();
       } catch (err: unknown) {
         // AbortError is normal during React strict mode / fast navigation
         if (err instanceof Error && err.name === 'AbortError') {
@@ -209,7 +215,12 @@ export default function AuthListener() {
               shopSocialWebsite: merchantData?.website || undefined,
               shopLat: merchantData?.shop_lat ?? undefined,
               shopLng: merchantData?.shop_lng ?? undefined,
+              isPro: merchantData?.is_pro || false,
             });
+
+            // Apply any referral code captured from the URL before this
+            // user ever had a session (no-ops if none is pending)
+            applyPendingReferralCodeIfAny();
           }
 
           // ── SIGNED_OUT ──

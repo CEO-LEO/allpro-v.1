@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Package, Camera, Wallet, X, Gift } from 'lucide-react';
-import { getReferralCodeFromURL, saveReferralSource } from '@/lib/referralUtils';
+import { getReferralCodeFromURL, rememberPendingReferralCode } from '@/lib/referralUtils';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -59,7 +59,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     const code = getReferralCodeFromURL();
     if (code) {
       setReferrerCode(code);
-      saveReferralSource(code);
+      rememberPendingReferralCode(code);
     }
   }, []);
 

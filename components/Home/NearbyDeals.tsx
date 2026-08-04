@@ -1,16 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { MapPin, Navigation, ChevronLeft, ChevronRight, Locate, XCircle } from 'lucide-react';
 import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
-import { useGeolocation, calcDistanceKm } from '@/hooks/useGeolocation';
+import { useGeolocation } from '@/hooks/useGeolocation';
 import { Product } from '@/store/useAppStore';
 import { supabase } from '@/lib/supabase';
-
-// TODO: Replace with real coordinates from API
-const MOCK_COORDS: Record<string, { lat: number; lng: number }> = {};
 
 // Default: สยามสแควร์
 const DEFAULT_LAT = 13.7460;
@@ -45,7 +42,9 @@ export default function NearbyDeals({ products }: NearbyDealsProps) {
     }
   }, [permissionStatus, requestLocation]);
 
-  // ดึงโปรโมชั่นใกล้ฉันจาก Supabase RPC
+  // ดึงโปรโมชั่นใกล้ฉันจาก Supabase RPC — คำนวณระยะทางจริงจากสาขาที่ปักหมุดจริง
+  // ของร้านค้า (merchant_branches.lat/lng); ร้านที่ไม่มีสาขาปักหมุดจะไม่ถูกนับ
+  // ว่า "ใกล้" เลย ไม่มีการ mock พิกัดใดๆ
   useEffect(() => {
     async function fetchNearbyDeals() {
       if (userLat === null || userLng === null) {
@@ -54,53 +53,32 @@ export default function NearbyDeals({ products }: NearbyDealsProps) {
       }
 
       setIsLoadingNearby(true);
-      
+
       try {
-        // Try Supabase RPC Function (only if it exists)
-        let rpcSuccess = false;
-        try {
-          const { data, error } = await supabase.rpc('nearby_products', {
-            user_lat: userLat,
-            user_lng: userLng,
-            radius_km: MAX_RADIUS_KM,
-          });
+        const { data, error } = await supabase.rpc('nearby_products', {
+          user_lat: userLat,
+          user_lng: userLng,
+          radius_km: MAX_RADIUS_KM,
+        });
 
-          if (!error && data) {
-            const nearbyList: ProductWithDistance[] = data.map((item: any) => ({
-              id: item.id,
-              title: item.title,
-              description: item.description,
-              price: item.price || 0,
-              originalPrice: item.originalPrice || item.price,
-              promoPrice: item.promoPrice,
-              image: item.image,
-              category: item.category,
-              shopName: item.shopName,
-              discount: item.discount,
-              rating: item.rating,
-              distanceKm: item.distance_km,
-            }));
-            setNearbyProducts(nearbyList);
-            rpcSuccess = true;
-          }
-        } catch {
-          // RPC not available — fall through to local fallback
-        }
+        if (error) throw error;
 
-        if (!rpcSuccess) {
-          // Fallback: calculate distance from local products with mock coords
-          const fallbackProducts = products
-            .map(p => {
-              const coords = MOCK_COORDS[p.id];
-              if (!coords) return null;
-              const dist = calcDistanceKm(userLat, userLng, coords.lat, coords.lng);
-              return { ...p, distanceKm: Math.round(dist * 10) / 10 } as ProductWithDistance;
-            })
-            .filter((p): p is ProductWithDistance => p !== null && p.distanceKm <= MAX_RADIUS_KM)
-            .sort((a, b) => a.distanceKm - b.distanceKm);
-          
-          setNearbyProducts(fallbackProducts);
-        }
+        const nearbyList: ProductWithDistance[] = (data || []).map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          price: Number(item.price) || 0,
+          originalPrice: Number(item.original_price) || Number(item.price) || 0,
+          promoPrice: Number(item.price) || 0,
+          image: item.image,
+          category: item.category,
+          shopName: item.shop_name,
+          shopId: item.shop_id,
+          discount: item.discount,
+          rating: item.rating,
+          distanceKm: Math.round(Number(item.distance_km) * 10) / 10,
+        }));
+        setNearbyProducts(nearbyList);
       } catch (err) {
         console.error('Error fetching nearby products:', err);
         setNearbyProducts([]);
@@ -110,7 +88,7 @@ export default function NearbyDeals({ products }: NearbyDealsProps) {
     }
 
     fetchNearbyDeals();
-  }, [userLat, userLng, products]);
+  }, [userLat, userLng]);
 
   // ตรวจสอบ scroll
   const checkScroll = () => {
@@ -192,6 +170,25 @@ export default function NearbyDeals({ products }: NearbyDealsProps) {
             </button>
           </div>
         </motion.div>
+      </section>
+    );
+  }
+
+  // ======= กำลังโหลด ========
+  if (isLoadingNearby) {
+    return (
+      <section className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <MapPin className="w-6 h-6 text-orange-500" />
+          <h2 className="text-xl font-bold text-gray-900">โปรเด็ดใกล้คุณ</h2>
+        </div>
+        <div className="bg-gray-50 rounded-2xl p-8 text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            className="w-6 h-6 border-2 border-orange-400 border-t-transparent rounded-full mx-auto"
+          />
+        </div>
       </section>
     );
   }

@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { signUp } from '@/lib/supabase/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
+import { applyPendingReferralCodeIfAny } from '@/lib/referralUtils';
 import { useRouter } from 'next/navigation';
 
 interface RegisterModalProps {
@@ -104,6 +105,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       }),
     };
     login(newUser);
+    applyPendingReferralCodeIfAny();
     handleClose();
   };
 

@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useStockStore } from "@/store/useStockStore";
 import { useProductStore } from "@/store/useProductStore";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Upload, X, Zap, Package, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle, Loader2, Tag } from "lucide-react";
+import { Upload, X, Zap, AlertTriangle, Store, ArrowRight, CheckCircle as CheckCircleIcon, AlertCircle, Loader2, Tag } from "lucide-react";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import EditShopModal from "@/components/Merchant/EditShopModal";
@@ -39,8 +38,6 @@ function isMerchantProfileComplete(user: any): boolean {
 
 export default function CreateDealWidget() {
   const { user, isHydrating } = useAuthStore();
-  const stockItems = useStockStore((s) => s.items);
-  const deductStock = useStockStore((s) => s.deductStock);
   const fetchMerchantProducts = useProductStore((s) => s.fetchMerchantProducts);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -48,17 +45,6 @@ export default function CreateDealWidget() {
   const [useImageUrl, setUseImageUrl] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
-
-
-
-  // Stock-linked fields
-  const [selectedStockId, setSelectedStockId] = useState<string>("");
-  const [promoQuantity, setPromoQuantity] = useState<string>("");
-
-  const selectedStockItem = stockItems.find((s) => s.id === selectedStockId);
-  const availableStock = selectedStockItem?.quantity ?? 0;
-  const quantityNum = parseInt(promoQuantity) || 0;
-  const isOverStock = selectedStockId !== "" && quantityNum > availableStock;
 
   // Cleanup object URL to prevent memory leak
   useEffect(() => {
@@ -109,11 +95,6 @@ export default function CreateDealWidget() {
     // Validation
     if (!formData.productName || !formData.originalPrice || !formData.discountedPrice) {
       toast.error("กรุณากรอกข้อมูลให้ครบทั้งหมด");
-      return;
-    }
-
-    if (isOverStock) {
-      toast.error("จำนวนเกินสต็อกที่มี");
       return;
     }
 
@@ -211,14 +192,6 @@ export default function CreateDealWidget() {
         origin: { y: 0.6 },
       });
 
-      // Deduct stock if linked
-      if (selectedStockId && quantityNum > 0) {
-        const deducted = deductStock(selectedStockId, quantityNum);
-        if (!deducted) {
-          toast.error("สต็อกไม่เพียงพอ");
-        }
-      }
-
       // Reset form
       setFormData({
         productName: "",
@@ -231,8 +204,6 @@ export default function CreateDealWidget() {
         tags: [],
       });
       setTagInput("");
-      setSelectedStockId("");
-      setPromoQuantity("");
       setImageFile(null);
       setImagePreview("");
       setImageUrl("");
@@ -404,64 +375,6 @@ export default function CreateDealWidget() {
             </div>
           )}
         </div>
-
-        {/* Stock Linking */}
-        {stockItems.length > 0 && (
-          <div className="bg-white rounded-2xl p-6 border border-blue-100">
-            <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-600" />
-              เชื่อมสินค้าจากคลัง (ไม่บังคับ)
-            </label>
-            <select
-              value={selectedStockId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setSelectedStockId(id);
-                setPromoQuantity("");
-                const item = stockItems.find((s) => s.id === id);
-                if (item) {
-                  setFormData((prev) => ({ ...prev, productName: item.name }));
-                  if (item.image) setImageUrl(item.image);
-                }
-              }}
-              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">-- ไม่เชื่อม --</option>
-              {stockItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} (คงเหลือ: {item.quantity})
-                </option>
-              ))}
-            </select>
-
-            {selectedStockId && (
-              <div className="mt-4">
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  จำนวนที่จะนำมาลดราคา
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={availableStock}
-                  placeholder={`สูงสุด ${availableStock}`}
-                  value={promoQuantity}
-                  onChange={(e) => setPromoQuantity(e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                    isOverStock
-                      ? "border-red-400 focus:ring-red-500"
-                      : "border-slate-200 focus:ring-blue-500"
-                  }`}
-                />
-                {isOverStock && (
-                  <p className="flex items-center gap-1 text-red-500 text-xs mt-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    จำนวนเกินสต็อกที่มี ({availableStock})
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Product Details */}
         <div className="grid grid-cols-1 gap-4">
@@ -674,7 +587,7 @@ export default function CreateDealWidget() {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={isLoading || isOverStock}
+          disabled={isLoading}
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
         >
           {isLoading ? "กำลังโพสต์..." : "ลงประกาศตอนนี้"}

@@ -108,13 +108,12 @@ export default function MerchantRegisterForm() {
           </div>
 
           <div className="rounded-xl border border-dashed border-blue-700/70 bg-slate-950/60 p-4">
-            <p className="mb-3 text-sm font-medium text-blue-100">อัปโหลดเอกสารร้านค้า (Mockup UI)</p>
+            <p className="mb-3 text-sm font-medium text-blue-100">อัปโหลดเอกสารร้านค้า (ไม่บังคับ)</p>
             <label className="flex cursor-pointer items-center justify-center gap-3 rounded-lg border border-blue-800/70 bg-slate-900/80 px-4 py-6 text-sm text-blue-200 transition hover:border-blue-500 hover:bg-slate-900">
               <UploadCloud className="h-4 w-4" />
-              เลือกไฟล์หนังสือรับรอง / ภพ.20 (ยังไม่อัปโหลดจริง)
-              <input type="file" name="documents" className="hidden" />
+              เลือกไฟล์หนังสือรับรอง / ภพ.20
+              <input type="file" name="documents" accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
             </label>
-            <p className="mt-2 text-xs text-slate-400">* ขั้นตอนนี้เป็น mockup สำหรับ UI เท่านั้น</p>
           </div>
 
           {state.message ? (
@@ -147,7 +146,7 @@ export default function MerchantRegisterForm() {
         </ul>
 
         <div className="mt-6 rounded-xl border border-blue-800/70 bg-blue-900/20 p-4 text-xs text-blue-100">
-          หลังจากส่งคำขอ ระบบจะอัปเดตบทบาทบัญชีเป็น merchant และตั้งสถานะร้านเป็น pending เพื่อรอตรวจสอบ
+          หลังจากส่งคำขอ บัญชีของคุณจะเปิดใช้งานสิทธิ์ merchant ทันที และพาไปหน้าจัดการร้านค้าเพื่อตั้งค่าต่อ
         </div>
       </motion.aside>
     </div>

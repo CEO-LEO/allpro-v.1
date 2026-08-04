@@ -16,7 +16,6 @@ import {
   RocketLaunchIcon,
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
-import { getSearchInsights } from "@/lib/getPromotions";
 import { Package as PackageIcon, Zap } from "lucide-react";
 import UpgradeBanner from "@/components/Merchant/UpgradeBanner";
 import { useProductStore } from "@/store/useProductStore";
@@ -33,7 +32,7 @@ import { resolveImageUrl, getCategoryFallbackImage } from '@/lib/imageUrl';
 // Dynamic Imports for Heavy Components (Charts/Analytics)
 const PredictiveInsights = dynamic(() => import("@/components/PredictiveInsights"), { ssr: false });
 const SEOBidManager = dynamic(() => import("@/components/SEOBidManager"), { ssr: false });
-const StockControl = dynamic(() => import("@/components/Merchant/StockControl"), { ssr: false });
+const StockSummaryCard = dynamic(() => import("@/components/Merchant/StockSummaryCard"), { ssr: false });
 const CustomerInsights = dynamic(() => import("@/components/Merchant/Analytics/CustomerInsights"), { ssr: false });
 
 // Static activity data — extracted to module level (will be replaced by API)
@@ -208,7 +207,6 @@ export default function MerchantDashboard() {
       )
     : 0;
 
-  const insights = useMemo(() => getSearchInsights(selectedLocation), [selectedLocation]);
 
   const handleDelete = async (id: string, name: string) => {
     if (confirm(`คุณต้องการลบ "${name}" ใช่หรือไม่?`)) {
@@ -653,14 +651,10 @@ export default function MerchantDashboard() {
           <CustomerInsights />
         </div>
 
-        {/* Data Insights Section */}
+        {/* Predictive Analytics Section */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <ChartBarIcon className="w-6 h-6 text-[#FF5722]" />
-              Data Insights - ความต้องการของตลาด (Legacy)
-            </h3>
-            <select 
+          <div className="flex justify-end mb-3">
+            <select
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
               className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
@@ -671,93 +665,16 @@ export default function MerchantDashboard() {
               <option value="ทองหล่อ">ทองหล่อ</option>
             </select>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
-            {/* Total Searches */}
-            <div className="card p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-2">
-                <EyeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
-                <span className="text-xs text-green-600 font-semibold bg-green-100 px-2 py-1 rounded-full whitespace-nowrap">
-                  <span className="hidden sm:inline">+50% จากเดือนที่แล้ว</span>
-                  <span className="sm:hidden">+50%</span>
-                </span>
-              </div>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-                {insights.total_searches.toLocaleString()}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-600">
-                <span className="hidden sm:inline">การค้นหาทั้งหมดในเดือนนี้</span>
-                <span className="sm:hidden">ค้นหา/เดือน</span>
-              </p>
-            </div>
-
-            {/* Top Category */}
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-2">
-                <TrophyIcon className="w-8 h-8 text-yellow-500" />
-                <span className="text-xs text-orange-600 font-semibold bg-orange-100 px-2 py-1 rounded-full">
-                  Trending
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">อาหาร</p>
-              <p className="text-sm text-gray-600">หมวดหมู่ยอดนิยม</p>
-            </div>
-
-            {/* Location */}
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-2">
-                <MapPinIcon className="w-8 h-8 text-red-500" />
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{insights.location}</p>
-              <p className="text-sm text-gray-600">พื้นที่ที่เลือก</p>
-            </div>
-          </div>
-
-          {/* Top Keywords */}
-          <div className="card p-6">
-            <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <ArrowTrendingUpIcon className="w-5 h-5 text-[#FF5722]" />
-              คำค้นหายอดนิยมในย่านนี้
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {insights.top_keywords.slice(0, 10).map((keyword, idx) => (
-                <div 
-                  key={idx}
-                  className="bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200 rounded-lg p-3 hover:shadow-md transition-shadow"
-                >
-                  <p className="text-sm font-semibold text-gray-900 mb-1">{keyword.keyword}</p>
-                  <p className="text-xs text-gray-600">
-                    {keyword.volume.toLocaleString()} searches
-                  </p>
-                  {idx < 3 && (
-                    <span className="inline-block mt-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                      HOT
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900">
-                <strong>Insight:</strong> คนในย่าน{selectedLocation}กำลังค้นหา "นมโปรตีน" เพิ่มขึ้น 50% 
-                - ลองสร้างโปรโมชั่นที่เกี่ยวข้องเพื่อดึงดูดลูกค้า!
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Predictive Analytics Section */}
-        <div className="mb-8">
           <PredictiveInsights location={selectedLocation} hourlyData={analyticsData?.demographicData.hourlyDistribution || []} />
         </div>
 
-        {/* Real-Time Stock Status Section */}
+        {/* Stock Status Section */}
         <div className="mb-8">
           <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <PackageIcon className="w-6 h-6 text-[#FF5722]" />
-            Real-Time Stock Status - จัดการสต็อกสินค้า
+            สถานะสต็อกสินค้า
           </h3>
-          <StockControl merchantId={user?.id || ""} merchantName={user?.name || ""} />
+          <StockSummaryCard merchantId={user?.id || ""} />
         </div>
 
         {/* SEO Bid Manager Section */}

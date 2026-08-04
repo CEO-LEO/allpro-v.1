@@ -32,20 +32,26 @@ const QRCodeSVG = dynamic(() => import('qrcode.react').then(mod => mod.QRCodeSVG
 });
 
 export default function ReferPage() {
-  const [referralCode, setReferralCode] = useState('HUNTER-000');
+  const [referralCode, setReferralCode] = useState('');
   const [referralLink, setReferralLink] = useState('');
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [stats, setStats] = useState({ totalReferrals: 0, pointsEarned: 0, pendingReferrals: 0 });
+  const [stats, setStats] = useState({ totalReferrals: 0, pointsEarned: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const code = getUserReferralCode();
-    const link = getReferralLink(code);
-    const referralStats = getReferralStats();
-    
-    setReferralCode(code);
-    setReferralLink(link);
-    setStats(referralStats);
+    async function load() {
+      setIsLoading(true);
+      const [code, referralStats] = await Promise.all([
+        getUserReferralCode(),
+        getReferralStats(),
+      ]);
+      setReferralCode(code);
+      setReferralLink(code ? getReferralLink(code) : '');
+      setStats(referralStats);
+      setIsLoading(false);
+    }
+    load();
   }, []);
 
   const copyCode = async () => {
@@ -100,6 +106,31 @@ export default function ReferPage() {
       copyLink();
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
+  if (!referralCode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 flex flex-col items-center justify-center px-6 text-center">
+        <Gift className="w-16 h-16 text-amber-300 mb-4" />
+        <h2 className="text-lg font-bold text-gray-900 mb-2">กรุณาเข้าสู่ระบบ</h2>
+        <p className="text-sm text-gray-500 mb-6">เพื่อรับโค้ดชวนเพื่อนของคุณ</p>
+        <Link href="/" className="text-amber-600 font-semibold hover:underline">
+          กลับหน้าแรก
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50">
@@ -161,7 +192,7 @@ export default function ReferPage() {
             </p>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 mt-6">
+            <div className="grid grid-cols-2 gap-3 mt-6">
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3">
                 <div className="text-2xl font-bold text-white">{stats.totalReferrals}</div>
                 <div className="text-xs text-white/80">เพื่อนที่ชวนมา</div>
@@ -169,10 +200,6 @@ export default function ReferPage() {
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3">
                 <div className="text-2xl font-bold text-white">{stats.pointsEarned}</div>
                 <div className="text-xs text-white/80">แต้มที่ได้</div>
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3">
-                <div className="text-2xl font-bold text-white">{stats.pendingReferrals}</div>
-                <div className="text-xs text-white/80">รอยืนยัน</div>
               </div>
             </div>
           </div>

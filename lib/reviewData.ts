@@ -12,8 +12,22 @@ export interface Review {
   dealValue?: string;
 }
 
-// Helper to check if user can review (mock - check if they've used voucher)
-export const canUserReview = (productId: string): boolean => {
-  // In real app, check if user has redeemed/scanned voucher
-  return true; // Mock: allow all users for demo
-};
+// Real eligibility check — a user can review a product only if they actually
+// redeemed it in-store (promotion_claims.status = 'used'), not just claimed
+// it into their wallet. Previously this always returned true for anyone.
+export async function canUserReview(productId: string): Promise<boolean> {
+  const { supabase, isSupabaseConfigured } = await import('./supabase');
+  if (!isSupabaseConfigured) return false;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { count } = await supabase
+    .from('promotion_claims')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('product_id', productId)
+    .eq('status', 'used');
+
+  return (count || 0) > 0;
+}
